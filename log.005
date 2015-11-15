@@ -1,0 +1,143 @@
+
+Crafty v23.4 (1 cpus)
+
+White(1): xboard
+White(1): protover 2
+feature ping=1 setboard=1 san=1 time=1 draw=1
+feature sigint=0 sigterm=0 reuse=1 analyze=1
+feature myname="Crafty-23.4" name=1
+feature playother=1 colors=0 memory=1
+feature smp=1
+feature variants="normal,nocastle"
+feature done=1
+White(1): accepted ping
+White(1): accepted setboard
+White(1): accepted san
+White(1): accepted time
+White(1): accepted draw
+White(1): accepted sigint
+White(1): accepted sigterm
+White(1): accepted reuse
+White(1): accepted analyze
+White(1): accepted myname
+White(1): accepted name
+White(1): accepted playother
+White(1): accepted colors
+White(1): accepted memory
+White(1): accepted smp
+White(1): accepted variants
+White(1): accepted done
+White(1): memory 68
+Warning--  xboard 'memory' option disabled
+hash table memory = 64M bytes (4M entries).
+Warning--  xboard 'memory' option disabled
+pawn hash table memory = 4M bytes (128K entries).
+White(1): cores 1
+Warning--  xboard 'cores' option disabled
+max threads set to 1.
+White(1): new
+parallel threads terminated.
+White(1): random
+White(1): level 0 1 0
+ game/60 seconds primary time control
+White(1): post
+White(1): hard
+pondering enabled.
+White(1): ping 1
+pong 1
+White(1): name jan
+Crafty 23.4 vs jan
+White(1): time 6000
+time remaining:   1:00 (Crafty).
+White(1): otim 6000
+time remaining:   1:00 (opponent).
+White(1): d3
+              time used:   2.00
+              time limit 1.76 (+0.00) (10.56)
+              depth   time  score   variation (1)
+               11     0.11  -0.10   1. ... e6 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    Bf4 Bc5 5. d4 Bd6 6. Bxd6 cxd6
+               11->   0.11  -0.10   1. ... e6 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    Bf4 Bc5 5. d4 Bd6 6. Bxd6 cxd6
+               12     0.15  -0.08   1. ... e6 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    Be3 Bd6 5. Qd2 O-O 6. O-O-O Ng4 7.
+                                    Bg5
+               12->   0.18  -0.08   1. ... e6 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    Be3 Bd6 5. Qd2 O-O 6. O-O-O Ng4 7.
+                                    Bg5
+               13     0.23  -0.02   1. ... e6 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    Be3 Bd6 5. Qd2 O-O 6. O-O-O Ng4 7.
+                                    Bg5 Nf6
+               13     0.43  -0.14   1. ... e5 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    e3 d5 5. Be2 Bb4 6. O-O O-O 7. a3 Bc5
+               13->   0.43  -0.14   1. ... e5 2. Nf3 Nc6 3. Nc3 Nf6 4.
+                                    e3 d5 5. Be2 Bb4 6. O-O O-O 7. a3 Bc5
+               14     0.55   0.00   1. ... e5 2. Nf3 Nc6 3. e4 Nf6 4. Be2
+                                    Bc5 5. O-O O-O 6. Nc3 d6 7. Bg5 Nd4
+                                    8. Nd5 Nxe2+ 9. Qxe2
+               14->   0.80   0.00   1. ... e5 2. Nf3 Nc6 3. e4 Nf6 4. Be2
+                                    Bc5 5. O-O O-O 6. Nc3 d6 7. Bg5 Nd4
+                                    8. Nd5 Nxe2+ 9. Qxe2
+               15     0.98   0.00   1. ... e5 2. Nf3 Nc6 3. e4 Nf6 4. Be2
+                                    Bc5 5. Nc3 O-O 6. O-O d6 7. Bg5 Nd4
+                                    8. Nd5 Nxe2+ 9. Qxe2
+               15->   1.32   0.00   1. ... e5 2. Nf3 Nc6 3. e4 Nf6 4. Be2
+                                    Bc5 5. Nc3 O-O 6. O-O d6 7. Bg5 Nd4
+                                    8. Nd5 Nxe2+ 9. Qxe2
+              time=1.76  mat=0  n=4292999  fh=91%  nps=2.4M
+              extensions=20K qchecks=85K reduced=627K pruned=718K
+              predicted=0  evals=2.0M  50move=0  EGTBprobes=0  hits=0
+              SMP->  splits=0  aborts=0  data=0/512  elap=1.76
+Black(1): e5
+              time used:   1.76
+White(2): Nf3 [pondering]
+              time limit 1.71 (+0.00) (10.26)
+              depth   time  score   variation (14)
+               14->   0.19  -0.09   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Nbxd2 O-O 7. O-O d5 8.
+                                    c4 d4 9. Qb3 Qd6
+               15     0.87  -0.16   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5
+               15->   0.89  -0.16   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5
+               16     1.60   0.01   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5 10. Be3
+               16->   2.81   0.01   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5 10. Be3
+               17     3.83   0.07   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5 10. Be3 Nd4 11. Nxd4
+                                    exd4
+               17->   5.95   0.07   2. ... Nc6 3. e4 Nf6 4. Be2 Be7 5.
+                                    O-O O-O 6. Nc3 d5 7. exd5 Nxd5 8. Nxd5
+                                    Qxd5 9. c4 Qc5 10. Be3 Nd4 11. Nxd4
+                                    exd4
+               18     7.48   0.00   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Qxd2 O-O 7. O-O d5 8.
+                                    exd5 Nxd5 9. Nc3 Bf5 10. Ne4 Re8 11.
+                                    Nc5 Rb8
+               18->   9.34   0.00   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Qxd2 O-O 7. O-O d5 8.
+                                    exd5 Nxd5 9. Nc3 Bf5 10. Ne4 Re8 11.
+                                    Nc5 Rb8
+               19    13.24  -0.02   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Qxd2 O-O 7. O-O d5 8.
+                                    exd5 Nxd5 9. Nc3 Bf5 10. Ne4 Re8 11.
+                                    Rfe1 Nd4 12. Nxd4 exd4
+               19->  15.87  -0.02   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Qxd2 O-O 7. O-O d5 8.
+                                    exd5 Nxd5 9. Nc3 Bf5 10. Ne4 Re8 11.
+                                    Rfe1 Nd4 12. Nxd4 exd4
+               20    21.49   0.01   2. ... Nc6 3. e4 Nf6 4. Be2 Bb4+ 5.
+                                    Bd2 Bxd2+ 6. Qxd2 O-O 7. O-O d5 8.
+                                    exd5 Nxd5 9. Nc3 Bf5 10. Nxd5 Qxd5
+                                    11. Qg5 Nd4 12. Nxd4 exd4
+White(2): result * {xboard exit}
+White(2): force
+White(2): ping 2
+pong 2
+White(2): quit

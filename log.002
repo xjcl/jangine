@@ -1,0 +1,167 @@
+
+Crafty v23.4 (1 cpus)
+
+White(1): xboard
+White(1): protover 2
+feature ping=1 setboard=1 san=1 time=1 draw=1
+feature sigint=0 sigterm=0 reuse=1 analyze=1
+feature myname="Crafty-23.4" name=1
+feature playother=1 colors=0 memory=1
+feature smp=1
+feature variants="normal,nocastle"
+feature done=1
+White(1): accepted ping
+White(1): accepted setboard
+White(1): accepted san
+White(1): accepted time
+White(1): accepted draw
+White(1): accepted sigint
+White(1): accepted sigterm
+White(1): accepted reuse
+White(1): accepted analyze
+White(1): accepted myname
+White(1): accepted name
+White(1): accepted playother
+White(1): accepted colors
+White(1): accepted memory
+White(1): accepted smp
+White(1): accepted variants
+White(1): accepted done
+White(1): memory 68
+Warning--  xboard 'memory' option disabled
+hash table memory = 64M bytes (4M entries).
+Warning--  xboard 'memory' option disabled
+pawn hash table memory = 4M bytes (128K entries).
+White(1): cores 1
+Warning--  xboard 'cores' option disabled
+max threads set to 1.
+White(1): new
+parallel threads terminated.
+White(1): random
+White(1): level 0 1 0
+ game/60 seconds primary time control
+White(1): post
+White(1): hard
+pondering enabled.
+White(1): ping 1
+pong 1
+White(1): name jan
+Crafty 23.4 vs jan
+White(1): time 6000
+time remaining:   1:00 (Crafty).
+White(1): otim 6000
+time remaining:   1:00 (opponent).
+White(1): e3
+              time used:   1.22
+              time limit 1.76 (+0.00) (10.56)
+              depth   time  score   variation (1)
+               12     0.13   0.24   1. ... e6 2. Nc3 Nf6 3. Nh3 Nc6 4.
+                                    Bd3 Nb4 5. O-O Nxd3 6. cxd3 Bd6 7.
+                                    Ng5
+               12     0.16   0.06   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. O-O O-O 6. Nb5 Nb4 7. Nfd4
+                                    Nxd3 8. Nxd6 Nxc1 9. Nxc8 Rxc8 10.
+                                    Rxc1
+               12->   0.17   0.06   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. O-O O-O 6. Nb5 Nb4 7. Nfd4
+                                    Nxd3 8. Nxd6 Nxc1 9. Nxc8 Rxc8 10.
+                                    Rxc1
+               13     0.20   0.21   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. Nb5 Bc5 6. O-O O-O 7. Nbd4
+                                    d6 8. Nxc6 bxc6
+               13->   0.28   0.21   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. Nb5 Bc5 6. O-O O-O 7. Nbd4
+                                    d6 8. Nxc6 bxc6
+               14     0.38   0.08   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. Nb5 Bc5 6. O-O O-O 7. Nbd4
+                                    Nb4 8. Bc4
+               14->   0.44   0.08   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. Nb5 Bc5 6. O-O O-O 7. Nbd4
+                                    Nb4 8. Bc4
+               15     0.69   0.05   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. O-O O-O 6. a3 Ng4 7. Ne4
+                                    Nge5 8. Nxd6 Nxd3
+               15->   0.74   0.05   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    Bd3 Bd6 5. O-O O-O 6. a3 Ng4 7. Ne4
+                                    Nge5 8. Nxd6 Nxd3
+               16     1.05   0.11   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    d4 Be7 5. Bd3 Nb4 6. Be2 O-O 7. a3
+                                    Nbd5 8. Nxd5 Nxd5 9. O-O
+               16->   1.31   0.11   1. ... Nf6 2. Nc3 Nc6 3. Nf3 e6 4.
+                                    d4 Be7 5. Bd3 Nb4 6. Be2 O-O 7. a3
+                                    Nbd5 8. Nxd5 Nxd5 9. O-O
+              time=1.77  mat=0  n=4283825  fh=92%  nps=2.4M
+              extensions=12K qchecks=52K reduced=696K pruned=727K
+              predicted=0  evals=2.0M  50move=0  EGTBprobes=0  hits=0
+              SMP->  splits=0  aborts=0  data=0/512  elap=1.77
+Black(1): Nf6
+              time used:   1.77
+White(2): Nc3 [pondering]
+              time limit 1.71 (+0.00) (10.26)
+              depth   time  score   variation (15)
+               15->   0.21   0.03   2. ... Nc6 3. Nf3 e6 4. d4 Be7 5. Bd3
+                                    Nb4 6. Be2 O-O 7. O-O d6 8. Bd2 Bd7
+                                    9. e4 Ng4
+               16     0.50   0.14   2. ... Nc6 3. Nf3 e6 4. d4 Be7 5. Bd3
+                                    Nb4 6. Be2 O-O 7. O-O d6 8. a3 Nbd5
+                                    9. Nxd5 Nxd5 10. Bd2
+White(2): time 5822
+time remaining:  58.22 (Crafty).
+White(2): otim 5816
+time remaining:  58.16 (opponent).
+White(2): d3
+              time used:   1.84
+              time limit 1.71 (+0.00) (10.26)
+              depth   time  score   variation (1)
+               11     0.15  -0.16   2. ... e5 3. Nf3 Nc6 4. Nc3 d5 5. Rg1
+                                    Bf5 6. d4 exd4 7. Nxd4 Nxd4 8. exd4
+               11->   0.15  -0.16   2. ... e5 3. Nf3 Nc6 4. Nc3 d5 5. Rg1
+                                    Bf5 6. d4 exd4 7. Nxd4 Nxd4 8. exd4
+               12     0.20  -0.12   2. ... e5 3. Nc3 Nc6 4. Be2 Bc5 5.
+                                    Nf3 O-O 6. O-O d5 7. d4 exd4 8. exd4
+               12->   0.24  -0.12   2. ... e5 3. Nc3 Nc6 4. Be2 Bc5 5.
+                                    Nf3 O-O 6. O-O d5 7. d4 exd4 8. exd4
+               13     0.31  -0.11   2. ... e5 3. Nc3 Nc6 4. Nf3 Bb4 5.
+                                    Be2 O-O 6. O-O d6 7. a3 Bxc3 8. bxc3
+                                    Be6
+               13->   0.36  -0.11   2. ... e5 3. Nc3 Nc6 4. Nf3 Bb4 5.
+                                    Be2 O-O 6. O-O d6 7. a3 Bxc3 8. bxc3
+                                    Be6
+               14     0.46  -0.03   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Bd7 9. Re1
+               14->   0.63  -0.03   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Bd7 9. Re1
+               15     0.78  -0.11   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Nxd4 9. Qxd4 Bf5
+               15->   0.89  -0.11   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Nxd4 9. Qxd4 Bf5
+               16     1.16  -0.10   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Nxd4 9. exd4 Re8 10. Re1
+               16->   1.46  -0.10   2. ... e5 3. Nc3 Nc6 4. Nf3 Be7 5.
+                                    Be2 O-O 6. O-O d5 7. d4 exd4 8. Nxd4
+                                    Nxd4 9. exd4 Re8 10. Re1
+              time=1.71  mat=0  n=3781919  fh=93%  nps=2.2M
+              extensions=13K qchecks=65K reduced=625K pruned=635K
+              predicted=0  evals=1.8M  50move=0  EGTBprobes=0  hits=0
+              SMP->  splits=0  aborts=0  data=0/512  elap=1.71
+Black(2): e5
+              time used:   1.71
+White(3): Nc3 [pondering]
+              time limit 1.66 (+0.00) (9.96)
+              depth   time  score   variation (15)
+               15->   0.34  -0.10   3. ... Nc6 4. Nf3 Be7 5. Be2 O-O 6.
+                                    O-O d5 7. d4 exd4 8. Nxd4 Nxd4 9. Qxd4
+                                    Bf5 10. Bf3 c6
+               16     0.65  -0.07   3. ... Nc6 4. Nf3 Be7 5. Be2 O-O 6.
+                                    O-O d5 7. d4 exd4 8. Nxd4 Nxd4 9. Qxd4
+                                    Bf5 10. Bd3 c5 11. Qe5
+White(3): result * {xboard exit}
+White(3): force
+White(3): ping 2
+pong 2
+White(3): quit

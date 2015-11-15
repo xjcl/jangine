@@ -1,0 +1,98 @@
+recognized 'normal' (-1) as variant normal
+recognized 'normal' (-1) as variant normal
+recognized 'normal' (-1) as variant normal
+shuffleOpenings = 0
+Requested font set for list -*-helvetica-medium-r-normal--14-*-*-*-*-*-*-*,-misc-fixed-medium-r-normal--14-*-*-*-*-*-*-*,-*-*-*-*-*-*-14-*-*-*-*-*-*-*
+ got list -*-helvetica-medium-r-normal--14-*-*-*-*-*-*-*,-misc-fixed-medium-r-normal--14-*-*-*-*-*-*-*,-*-*-*-*-*-*-14-*-*-*-*-*-*-*, locale en_US.UTF-8
+ got charset -adobe-helvetica-medium-r-normal--14-100-100-100-p-76-iso8859-1
+ got charset -adobe-helvetica-medium-r-normal--14-100-100-100-p-76-iso8859-1
+ got charset -adobe-helvetica-medium-r-normal--14-101-100-100-p-0-iso8859-2
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-3
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-4
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-5
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-koi8-r
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-7
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-9
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-13
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-14
+ got charset -adobe-helvetica-medium-r-normal--14-101-100-100-p-0-iso8859-15
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-140-jisx0208.1983-0
+ got charset -daewoo-gothic-medium-r-normal--14-101-100-100-c-0-ksc5601.1987-0
+ got charset -isas-fangsong ti-medium-r-normal--14-101-100-100-c-0-gb2312.1980-0
+ got charset -misc-fixed-medium-r-normal--14-130-75-75-c-70-jisx0201.1976-0
+ got charset -adobe-helvetica-medium-r-normal--14-100-100-100-p-76-iso10646-1
+Requested font set for list -*-helvetica-bold-r-normal--34-*-*-*-*-*-*-*,-misc-fixed-bold-r-normal--34-*-*-*-*-*-*-*,-*-*-*-*-*-*-34-*-*-*-*-*-*-*
+ got list -*-helvetica-bold-r-normal--34-*-*-*-*-*-*-*,-misc-fixed-bold-r-normal--34-*-*-*-*-*-*-*,-*-*-*-*-*-*-34-*-*-*-*-*-*-*, locale en_US.UTF-8
+ got charset -adobe-helvetica-bold-r-normal--34-240-100-100-p-182-iso8859-1
+ got charset -adobe-helvetica-bold-r-normal--34-240-100-100-p-182-iso8859-1
+ got charset -adobe-helvetica-bold-r-normal--34-246-100-100-p-0-iso8859-2
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-3
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-4
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-5
+ got charset -misc-fixed-medium-r-normal--34-246-100-100-c-0-koi8-r
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-7
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-9
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-13
+ got charset -misc-fixed-bold-r-normal--34-246-100-100-c-0-iso8859-14
+ got charset -adobe-helvetica-bold-r-normal--34-246-100-100-p-0-iso8859-15
+ got charset -jis-fixed-medium-r-normal--34-246-100-100-c-0-jisx0208.1983-0
+ got charset -daewoo-gothic-medium-r-normal--34-246-100-100-c-0-ksc5601.1987-0
+ got charset -isas-fangsong ti-medium-r-normal--34-246-100-100-c-0-gb2312.1980-0
+ got charset -misc-fixed-medium-r-normal--34-246-100-100-c-0-jisx0201.1976-0
+ got charset -adobe-helvetica-bold-r-normal--34-240-100-100-p-182-iso10646-1
+Requested font set for list -*-helvetica-bold-r-normal--12-*-*-*-*-*-*-*,-misc-fixed-bold-r-normal--12-*-*-*-*-*-*-*,-*-*-*-*-*-*-12-*-*-*-*-*-*-*
+ got list -*-helvetica-bold-r-normal--12-*-*-*-*-*-*-*,-misc-fixed-bold-r-normal--12-*-*-*-*-*-*-*,-*-*-*-*-*-*-12-*-*-*-*-*-*-*, locale en_US.UTF-8
+ got charset -adobe-helvetica-bold-r-normal--12-87-100-100-p-0-iso8859-1
+ got charset -adobe-helvetica-bold-r-normal--12-87-100-100-p-0-iso8859-1
+ got charset -adobe-helvetica-bold-r-normal--12-87-100-100-p-0-iso8859-2
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-3
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-4
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-5
+ got charset -misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-koi8-r
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-7
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-9
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-13
+ got charset -misc-fixed-bold-r-normal--12-87-100-100-c-0-iso8859-14
+ got charset -adobe-helvetica-bold-r-normal--12-87-100-100-p-0-iso8859-15
+ got charset -jis-fixed-medium-r-normal--12-87-100-100-c-0-jisx0208.1983-0
+ got charset -daewoo-gothic-medium-r-normal--12-87-100-100-c-0-ksc5601.1987-0
+ got charset -isas-fangsong ti-medium-r-normal--12-87-100-100-c-0-gb2312.1980-0
+ got charset -misc-fixed-medium-r-normal--12-87-100-100-c-0-jisx0201.1976-0
+ got charset -adobe-helvetica-bold-r-normal--12-87-100-100-p-0-iso10646-1
+Version: xboard 4.7.3 + janchess.py ()
+Reset(1, 0) from gameMode 0
+recognized 'normal' (-1) as variant normal
+GameEnds(0, (null), 2)
+shuffleOpenings = 0
+StartChildProcess (dir=".") ./janchess.py
+614 >first : xboard
+protover 2
+shuffleOpenings = 0
+679 <first : feature myname="janchess"
+679 >first : accepted myname
+679 <first : feature done=1
+679 >first : accepted done
+679 <first : feature sigint=0 sigterm=0
+679 >first : accepted sigint
+679 >first : accepted sigterm
+680 >first : new
+random
+680 >first : level 0 1 0
+680 >first : post
+680 >first : hard
+nps: w=-1, b=-1
+nps: w=-1, b=-1
+1517 >first : time 6000
+1517 >first : otim 6000
+book hit = (NULL)
+1517 >first : e2e3
+1650 <first : move f7f6
+2194 >first : time 5986
+2194 >first : otim 5945
+book hit = (NULL)
+2194 >first : d2d3
+2325 <first : move a7a6
+GameEnds(28, xboard exit, 2)
+3453 >first : result * {xboard exit}
+3453 >first : force
+3454 >first : quit

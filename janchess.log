@@ -1,0 +1,2310 @@
+INFO:root:1447558697.6370454
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:1447558782.386801
+INFO:root:dsdsd
+INFO:root:1447558795.5064635
+INFO:root:d
+INFO:root:1447558824.261328
+INFO:root:
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:1447558891.9900506
+INFO:root:ss
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:1447558919.2693663
+INFO:root:dsds
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move d6
+INFO:root:d
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move a6
+INFO:root:f
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move d6
+INFO:root:a
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move e6
+INFO:root:l
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move d6
+INFO:root:1447559014.067177
+INFO:root:fd
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move d7d6
+INFO:root:hj
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move g7g6
+INFO:root:s
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move g7g6
+INFO:root:a
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move g7g6
+INFO:root:ee
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> move h7h6
+INFO:root:1447559038.2488117
+INFO:root:ds
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b7b6
+INFO:root:oo
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:lll
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:1447559053.4096792
+INFO:root:4
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a7a6
+INFO:root:2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [129, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b7b6
+INFO:root:4
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b6b5
+INFO:root:4
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b5b4
+INFO:root:5
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g7g6
+INFO:root:6
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move h7h6
+INFO:root:0
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 129, 129, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b4b3
+INFO:root:9
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 129, 0, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move d7d6
+INFO:root:29
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 0, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a6a5
+INFO:root:2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 129, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move e7e6
+INFO:root:2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 129, 129, 129, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 129, 129, 0, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move e6e5
+INFO:root:2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 129, 129, 0, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 129, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move e5e4
+INFO:root:4
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 129, 129, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 129, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g6g5
+INFO:root:5
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 129, 129, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 129, 0, 129, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g5g4
+INFO:root:1447559072.4054298
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 0, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:accepted done
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 0, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c6c5
+INFO:root:new
+INFO:root:random
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g7g6
+INFO:root:level 0 1 0
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g6g5
+INFO:root:post
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 129, 0, 129]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b7b6
+INFO:root:hard
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 0, 129, 129, 0, 129]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move d7d6
+INFO:root:result * {xboard exit}
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 0, 129]
+INFO:root:>>> [129, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a7a6
+INFO:root:force
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 0, 0]
+INFO:root:>>> [129, 129, 0, 129, 0, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move h7h6
+INFO:root:quit
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 0, 0]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a6a5
+INFO:root:1447559090.7730892
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 0, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:accepted done
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 0, 129, 129, 129, 129, 0]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move h7h6
+INFO:root:new
+INFO:root:random
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a7a6
+INFO:root:level 0 1 0
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 129, 129, 129, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g7g6
+INFO:root:post
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 129, 129, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 129, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move f7f6
+INFO:root:hard
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 129, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 0, 129, 129, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move e7e6
+INFO:root:result * {xboard exit}
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 129, 129, 129, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move d7d6
+INFO:root:force
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 129, 129, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move g6g5
+INFO:root:quit
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 0, 0, 0, 129]
+INFO:root:>>> [129, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 129, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move e6e5
+INFO:root:1447559109.9099848
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move b7b6
+INFO:root:accepted done
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move c7c6
+INFO:root:new
+INFO:root:random
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move f7f6
+INFO:root:level 0 1 0
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move d7d6
+INFO:root:post
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move d6d5
+INFO:root:hard
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move f6f5
+INFO:root:result * {xboard exit}
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a7a6
+INFO:root:force
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [129, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a6a5
+INFO:root:quit
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> found one
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 129, 129, 0, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 0, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> move a5a4
+INFO:root:1447559181.035131
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:>>> move g7g6
+INFO:root:hard
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447559206.6634107
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:1447559585.9537556
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447559727.8201783
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:1447559752.5108435
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:1447559774.6768272
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d3
+INFO:root:>>> move d7d6
+INFO:root:1447559799.6182961
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> move c7c6
+INFO:root:1447560014.4765277
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e4
+INFO:root:>>> move b7b6
+INFO:root:1447560038.114907
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:
+INFO:root:1447560064.8365755
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d3
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:1447560099.3856888
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e3
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:time 5984
+INFO:root:otim 5896
+INFO:root:d2d3
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:time 5964
+INFO:root:otim 5645
+INFO:root:f2f3
+INFO:root:>>> move d6d5
+INFO:root:
+INFO:root:time 5944
+INFO:root:otim 5486
+INFO:root:e3e4
+INFO:root:>>> move b6b5
+INFO:root:
+INFO:root:time 5924
+INFO:root:otim 5371
+INFO:root:e4e5
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:d3d4
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:c2c3
+INFO:root:>>> move f6f5
+INFO:root:
+INFO:root:time 5883
+INFO:root:otim 4834
+INFO:root:a2a3
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:time 5863
+INFO:root:otim 4688
+INFO:root:b2b3
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:otim 4447
+INFO:root:c3c4
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:time 5828
+INFO:root:otim 4122
+INFO:root:c4c5
+INFO:root:>>> move f5f4
+INFO:root:
+INFO:root:time 5807
+INFO:root:otim 3949
+INFO:root:b3b4
+INFO:root:>>> move h6h5
+INFO:root:
+INFO:root:time 5787
+INFO:root:otim 3839
+INFO:root:a3a4
+INFO:root:>>> move g6g5
+INFO:root:
+INFO:root:time 5767
+INFO:root:otim 3742
+INFO:root:a4a5
+INFO:root:>>> move c6c5
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:
+INFO:root:
+INFO:root:1447560198.250328
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d3
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:time 5601
+INFO:root:otim 5077
+INFO:root:b2b3
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:
+INFO:root:1447560272.3242946
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:f2f3
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:time 5839
+INFO:root:otim 5866
+INFO:root:d2d4
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:time 5638
+INFO:root:otim 5698
+INFO:root:c2c3
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:otim 5228
+INFO:root:d4d5
+INFO:root:>>> move c6c5
+INFO:root:
+INFO:root:time 5288
+INFO:root:otim 5051
+INFO:root:c3c4
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:time 5087
+INFO:root:otim 4869
+INFO:root:f3f4
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:time 4887
+INFO:root:otim 4755
+INFO:root:f4f5
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:otim 4656
+INFO:root:f5f6
+INFO:root:>>> move d6d5
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:
+INFO:root:
+INFO:root:1447560347.9095936
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447560356.5848505
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:1447560362.0648599
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d3
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:time 5984
+INFO:root:otim 5882
+INFO:root:e2e4
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447560372.261353
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:time 5984
+INFO:root:otim 5854
+INFO:root:e2e4
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:otim 5618
+INFO:root:g1f3
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:otim 5450
+INFO:root:b1c3
+INFO:root:>>> move f6f5
+INFO:root:
+INFO:root:otim 5237
+INFO:root:e4f5
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:
+INFO:root:force
+INFO:root:quit
+INFO:root:1447560446.4173694
+INFO:root:
+INFO:root:
+INFO:root:
+INFO:root:
+INFO:root:
+INFO:root:1447560655.9371061
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:1447560680.7611678
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e3
+INFO:root:1447560930.6986892
+INFO:root:ss
+INFO:root:e4
+INFO:root:1447560954.6889973
+INFO:root:e2
+INFO:root:e2e4
+INFO:root:1447560996.206912
+INFO:root:e2e4
+INFO:root:d3d5
+INFO:root:MOVE d
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:q
+INFO:root:1447561069.1807673
+INFO:root:e2e4
+INFO:root:>>> move b7b6
+INFO:root:e4e5
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:
+INFO:root:
+INFO:root:
+INFO:root:q
+INFO:root:1447561092.0624847
+INFO:root:1447561107.3909068
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:a2a4
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:time 5996
+INFO:root:otim 5861
+INFO:root:e2e4
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:otim 5743
+INFO:root:d2d4
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:time 5989
+INFO:root:otim 5623
+INFO:root:c2c4
+INFO:root:>>> move f6f5
+INFO:root:
+INFO:root:otim 5517
+INFO:root:b2b4
+INFO:root:>>> move e6e5
+INFO:root:
+INFO:root:
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561168.8720288
+INFO:root:
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move f7f6
+INFO:root:e4e5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 6, 2, 6), (1, 7, 2, 7), (2, 5, 3, 5)]
+INFO:root:>>> move g7g6
+INFO:root:e5e6
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 65, 129, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 7, 2, 7), (2, 5, 3, 5), (2, 6, 3, 6)]
+INFO:root:>>> move g6g5
+INFO:root:a2a4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 65, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [65, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 7, 2, 7), (2, 5, 3, 5), (3, 6, 4, 6)]
+INFO:root:>>> move b7b6
+INFO:root:a4
+INFO:root:a4a5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 0, 0, 129]
+INFO:root:>>> [0, 129, 0, 0, 65, 129, 0, 0]
+INFO:root:>>> [65, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 3, 2, 3), (1, 7, 2, 7), (2, 1, 3, 1), (2, 5, 3, 5), (3, 6, 4, 6)]
+INFO:root:>>> move c7c6
+INFO:root:a5a6
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 129, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 129, 0, 65, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 3, 2, 3), (1, 7, 2, 7), (2, 1, 3, 1), (2, 2, 3, 2), (2, 5, 3, 5), (3, 6, 4, 6)]
+INFO:root:>>> move g5g4
+INFO:root:b2b4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 129, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 129, 0, 65, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 65, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 3, 2, 3), (1, 7, 2, 7), (2, 1, 3, 1), (2, 2, 3, 2), (2, 5, 3, 5), (4, 6, 5, 6)]
+INFO:root:>>> move c6c5
+INFO:root:b4b5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 129, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 0, 0, 65, 129, 0, 0]
+INFO:root:>>> [0, 65, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 3, 2, 3), (1, 7, 2, 7), (2, 5, 3, 5), (3, 2, 4, 2), (4, 6, 5, 6)]
+INFO:root:>>> move c5c4
+INFO:root:c2c5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 129, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 0, 0, 65, 129, 0, 0]
+INFO:root:>>> [0, 65, 65, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 3, 2, 3), (1, 7, 2, 7), (2, 5, 3, 5), (4, 2, 5, 2), (4, 6, 5, 6)]
+INFO:root:>>> move d7d6
+INFO:root:c5c3
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 0, 129, 65, 129, 0, 0]
+INFO:root:>>> [0, 65, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 65, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 7, 2, 7), (2, 3, 3, 3), (2, 5, 3, 5), (4, 6, 5, 6)]
+INFO:root:>>> move g4g3
+INFO:root:d2d5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 0, 129, 65, 129, 0, 0]
+INFO:root:>>> [0, 65, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 7, 2, 7), (2, 5, 3, 5)]
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:q
+INFO:root:1447561310.263392
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d3
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:time 5996
+INFO:root:otim 5869
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 0, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 3, 3, 3)]
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:time 5992
+INFO:root:otim 5756
+INFO:root:f2f4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 0, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 3, 3, 3)]
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:time 5988
+INFO:root:otim 5648
+INFO:root:d3d4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 129, 129]
+INFO:root:>>> [129, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 65, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 0, 3, 0), (2, 1, 3, 1), (2, 3, 3, 3)]
+INFO:root:>>> move d6d5
+INFO:root:
+INFO:root:time 5983
+INFO:root:otim 5531
+INFO:root:e4e5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 129, 129, 129, 129]
+INFO:root:>>> [129, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 0, 3, 0), (2, 1, 3, 1)]
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:c2c4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 129, 129]
+INFO:root:>>> [129, 129, 0, 0, 129, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 129, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 0, 3, 0), (2, 1, 3, 1)]
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:time 5977
+INFO:root:otim 5337
+INFO:root:b2b4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 129, 0]
+INFO:root:>>> [129, 129, 0, 0, 129, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 129, 65, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 5, 2, 5), (1, 6, 2, 6), (2, 0, 3, 0), (2, 1, 3, 1), (2, 7, 3, 7)]
+INFO:root:>>> move b6b5
+INFO:root:
+INFO:root:otim 5222
+INFO:root:a2a4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 129, 0]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 0, 129]
+INFO:root:>>> [0, 129, 0, 129, 65, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 5, 2, 5), (1, 6, 2, 6), (2, 0, 3, 0), (2, 7, 3, 7)]
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:time 5969
+INFO:root:otim 5157
+INFO:root:a4a5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 129, 129]
+INFO:root:>>> [65, 129, 0, 129, 65, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 5, 2, 5), (2, 6, 3, 6), (2, 7, 3, 7)]
+INFO:root:>>> move g6g5
+INFO:root:
+INFO:root:time 5965
+INFO:root:otim 5080
+INFO:root:c4c5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 129, 0, 0]
+INFO:root:>>> [129, 0, 0, 0, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 65, 129, 65, 0, 129, 0]
+INFO:root:>>> [0, 65, 0, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 2, 2, 2), (1, 5, 2, 5), (2, 7, 3, 7), (3, 6, 4, 6)]
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:time 5961
+INFO:root:otim 5021
+INFO:root:c5c6
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [129, 0, 65, 0, 129, 129, 0, 129]
+INFO:root:>>> [65, 129, 0, 129, 65, 0, 129, 0]
+INFO:root:>>> [0, 65, 0, 65, 0, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(2, 5, 3, 5), (2, 7, 3, 7), (3, 6, 4, 6)]
+INFO:root:>>> move f6f5
+INFO:root:
+INFO:root:time 5956
+INFO:root:otim 4857
+INFO:root:g2g4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [129, 0, 65, 0, 129, 0, 0, 129]
+INFO:root:>>> [65, 129, 0, 129, 65, 129, 129, 0]
+INFO:root:>>> [0, 65, 0, 65, 0, 65, 65, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(2, 7, 3, 7)]
+INFO:root:>>> move h6h5
+INFO:root:
+INFO:root:time 5952
+INFO:root:otim 4776
+INFO:root:h2h3
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [129, 0, 65, 0, 129, 0, 0, 0]
+INFO:root:>>> [65, 129, 0, 129, 65, 129, 129, 129]
+INFO:root:>>> [0, 65, 0, 65, 0, 65, 65, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 65]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(3, 7, 4, 7)]
+INFO:root:>>> move h5h4
+INFO:root:
+INFO:root:otim 4401
+INFO:root:h1h2
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [129, 0, 65, 0, 129, 0, 0, 0]
+INFO:root:>>> [65, 129, 0, 129, 65, 129, 129, 0]
+INFO:root:>>> [0, 65, 0, 65, 0, 65, 65, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 65]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 72]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 0]
+INFO:root:>>> []
+INFO:root:1447561418.2141092
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:time 5996
+INFO:root:otim 5910
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 6, 2, 6), (1, 7, 2, 7), (2, 5, 3, 5)]
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:time 5992
+INFO:root:otim 5768
+INFO:root:c2c4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 0, 0, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 129, 129, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 0, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 7, 2, 7), (2, 5, 3, 5), (2, 6, 3, 6)]
+INFO:root:>>> move g6g5
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561478.988381
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 65, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:time 5996
+INFO:root:otim 5866
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1)]
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:time 5992
+INFO:root:otim 5746
+INFO:root:c2c4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 0, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 0, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 3, 3, 3)]
+INFO:root:>>> move e7e6
+INFO:root:
+INFO:root:time 5988
+INFO:root:otim 5573
+INFO:root:f2f4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 0, 0, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 129, 129, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 65, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 3, 3, 3), (2, 4, 3, 4)]
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:time 5983
+INFO:root:otim 5411
+INFO:root:b2b4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 0, 129, 129, 129]
+INFO:root:>>> [0, 129, 129, 129, 129, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 65, 65, 65, 65, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 2, 3, 2), (2, 3, 3, 3), (2, 4, 3, 4)]
+INFO:root:>>> move e6e5
+INFO:root:
+INFO:root:time 5979
+INFO:root:otim 5266
+INFO:root:a2a4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 0, 129, 129, 129]
+INFO:root:>>> [0, 129, 129, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 129, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 2, 3, 2), (2, 3, 3, 3)]
+INFO:root:>>> move c6c5
+INFO:root:
+INFO:root:time 5975
+INFO:root:otim 5143
+INFO:root:g2g4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 0, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 129, 0, 129, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1), (2, 3, 3, 3)]
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:time 5971
+INFO:root:otim 5040
+INFO:root:h2h4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 0, 129, 129, 0]
+INFO:root:>>> [0, 129, 0, 129, 0, 0, 0, 129]
+INFO:root:>>> [0, 0, 129, 0, 129, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 65, 65, 65]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 5, 2, 5), (1, 6, 2, 6), (2, 1, 3, 1), (2, 3, 3, 3), (2, 7, 3, 7)]
+INFO:root:>>> move f7f6
+INFO:root:
+INFO:root:otim 4924
+INFO:root:f4f5
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 0, 0, 0, 0, 129, 0]
+INFO:root:>>> [0, 129, 0, 129, 0, 129, 0, 129]
+INFO:root:>>> [0, 0, 129, 0, 129, 65, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 65, 0, 65, 65]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 6, 2, 6), (2, 1, 3, 1), (2, 3, 3, 3), (2, 7, 3, 7)]
+INFO:root:>>> move a7a6
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561511.9071066
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move b7b6
+INFO:root:
+INFO:root:time 5995
+INFO:root:otim 5888
+INFO:root:d2d4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 1, 3, 1)]
+INFO:root:>>> move b6b5
+INFO:root:
+INFO:root:time 5990
+INFO:root:otim 5783
+INFO:root:c2c4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 0, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 129, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 65, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 0, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (3, 1, 4, 1)]
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561538.737602
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 129, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 65, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 2, 2, 2), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7)]
+INFO:root:>>> move c7c6
+INFO:root:
+INFO:root:time 5986
+INFO:root:otim 5907
+INFO:root:d2d4
+INFO:root:>>> [136, 130, 132, 144, 160, 132, 130, 136]
+INFO:root:>>> [129, 129, 0, 129, 129, 129, 129, 129]
+INFO:root:>>> [0, 0, 129, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 65, 65, 0, 0, 0]
+INFO:root:>>> [0, 0, 0, 0, 0, 0, 0, 0]
+INFO:root:>>> [65, 65, 65, 0, 0, 65, 65, 65]
+INFO:root:>>> [72, 66, 68, 80, 96, 68, 66, 72]
+INFO:root:>>> [(1, 0, 2, 0), (1, 1, 2, 1), (1, 3, 2, 3), (1, 4, 2, 4), (1, 5, 2, 5), (1, 6, 2, 6), (1, 7, 2, 7), (2, 2, 3, 2)]
+INFO:root:>>> move h7h6
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561633.0191061
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e4
+INFO:root:>>> move d7d6
+INFO:root:
+INFO:root:time 5985
+INFO:root:otim 5885
+INFO:root:d2d4
+INFO:root:>>> move d6d5
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561642.6394777
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> move g7g6
+INFO:root:
+INFO:root:
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561745.286156
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:>>> feature sigint=0 sigterm=0
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:accepted sigint
+INFO:root:accepted sigterm
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:d2d4
+INFO:root:>>> move c7c6
+INFO:root:time 5986
+INFO:root:otim 5908
+INFO:root:e2e4
+INFO:root:>>> move e7e6
+INFO:root:time 5973
+INFO:root:otim 5816
+INFO:root:f2f4
+INFO:root:>>> move g7g6
+INFO:root:time 5960
+INFO:root:otim 5717
+INFO:root:c2c4
+INFO:root:>>> move h7h6
+INFO:root:time 5947
+INFO:root:otim 5617
+INFO:root:b2b4
+INFO:root:>>> move c6c5
+INFO:root:time 5933
+INFO:root:otim 5521
+INFO:root:a2a4
+INFO:root:>>> move b7b6
+INFO:root:time 5920
+INFO:root:otim 5409
+INFO:root:g2g4
+INFO:root:>>> move e6e5
+INFO:root:time 5907
+INFO:root:otim 5323
+INFO:root:h2h4
+INFO:root:>>> move h6h5
+INFO:root:time 5894
+INFO:root:otim 5245
+INFO:root:d4d5
+INFO:root:>>> move g6g5
+INFO:root:time 5881
+INFO:root:otim 5190
+INFO:root:d5d6
+INFO:root:>>> move a7a6
+INFO:root:time 5867
+INFO:root:otim 5132
+INFO:root:f4f5
+INFO:root:>>> move a6a5
+INFO:root:time 5854
+INFO:root:otim 5093
+INFO:root:f5f6
+INFO:root:>>> move b6b5
+INFO:root:time 5841
+INFO:root:otim 4837
+INFO:root:g1f3
+INFO:root:>>> Error (no legal moves): undo
+INFO:root:1447561763.795384
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:>>> feature sigint=0 sigterm=0
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:accepted sigint
+INFO:root:accepted sigterm
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e4
+INFO:root:>>> move d7d6
+INFO:root:time 5986
+INFO:root:otim 5925
+INFO:root:d2d4
+INFO:root:>>> move b7b6
+INFO:root:time 5973
+INFO:root:otim 5850
+INFO:root:f2f4
+INFO:root:>>> move e7e6
+INFO:root:time 5960
+INFO:root:otim 5731
+INFO:root:g1f3
+INFO:root:>>> move e6e5
+INFO:root:time 5947
+INFO:root:otim 5646
+INFO:root:g2g4
+INFO:root:>>> move d6d5
+INFO:root:time 5934
+INFO:root:otim 5564
+INFO:root:h2h4
+INFO:root:>>> move c7c6
+INFO:root:time 5921
+INFO:root:otim 5496
+INFO:root:f4f5
+INFO:root:>>> move g7g6
+INFO:root:time 5907
+INFO:root:otim 5445
+INFO:root:g4g5
+INFO:root:>>> move b6b5
+INFO:root:time 5894
+INFO:root:otim 5392
+INFO:root:f5f6
+INFO:root:>>> move c6c5
+INFO:root:time 5881
+INFO:root:otim 5293
+INFO:root:h4h5
+INFO:root:>>> move b5b4
+INFO:root:time 5868
+INFO:root:otim 5251
+INFO:root:h5h6
+INFO:root:>>> move a7a6
+INFO:root:time 5853
+INFO:root:otim 5166
+INFO:root:c2c3
+INFO:root:>>> move c5c4
+INFO:root:time 5840
+INFO:root:otim 5019
+INFO:root:b2b3
+INFO:root:>>> move a6a5
+INFO:root:time 5827
+INFO:root:otim 4961
+INFO:root:a2a3
+INFO:root:>>> move a5a4
+INFO:root:time 5814
+INFO:root:otim 4820
+INFO:root:a3b4
+INFO:root:>>> move a4a3
+INFO:root:time 5801
+INFO:root:otim 4320
+INFO:root:d4e5
+INFO:root:>>> move d5d4
+INFO:root:time 5788
+INFO:root:otim 4166
+INFO:root:e5e6
+INFO:root:>>> move a3a2
+INFO:root:time 5774
+INFO:root:otim 3970
+INFO:root:e6f7
+INFO:root:>>> move d4d3
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561804.408397
+INFO:root:xboard
+INFO:root:>>> feature done=1
+INFO:root:>>> feature sigint=0 sigterm=0
+INFO:root:protover 2
+INFO:root:accepted done
+INFO:root:accepted sigint
+INFO:root:accepted sigterm
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:c2c3
+INFO:root:>>> move b7b6
+INFO:root:time 5986
+INFO:root:otim 5916
+INFO:root:d2d4
+INFO:root:>>> move c7c6
+INFO:root:time 5973
+INFO:root:otim 5836
+INFO:root:e2e4
+INFO:root:>>> move e7e6
+INFO:root:time 5960
+INFO:root:otim 5769
+INFO:root:f2f4
+INFO:root:>>> move c6c5
+INFO:root:time 5947
+INFO:root:otim 5501
+INFO:root:g1f3
+INFO:root:>>> move e6e5
+INFO:root:time 5933
+INFO:root:otim 5410
+INFO:root:g2g4
+INFO:root:>>> move c5c4
+INFO:root:time 5920
+INFO:root:otim 5306
+INFO:root:f3e5
+INFO:root:>>> move a7a6
+INFO:root:time 5907
+INFO:root:otim 5232
+INFO:root:d4d5
+INFO:root:>>> move d7d6
+INFO:root:time 5894
+INFO:root:otim 5061
+INFO:root:e5f7
+INFO:root:>>> move a6a5
+INFO:root:time 5881
+INFO:root:otim 4941
+INFO:root:e4e5
+INFO:root:>>> move b6b5
+INFO:root:time 5868
+INFO:root:otim 4884
+INFO:root:e5e6
+INFO:root:>>> move a5a4
+INFO:root:time 5854
+INFO:root:otim 4836
+INFO:root:e6e7
+INFO:root:>>> move b5b4
+INFO:root:time 5841
+INFO:root:otim 4752
+INFO:root:e7d8q
+INFO:root:>>> move b4b3
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit
+INFO:root:1447561871.3145554
+INFO:root:xboard
+INFO:root:>>> feature myname="janchess"
+INFO:root:>>> feature done=1
+INFO:root:>>> feature sigint=0 sigterm=0
+INFO:root:protover 2
+INFO:root:accepted myname
+INFO:root:accepted done
+INFO:root:accepted sigint
+INFO:root:accepted sigterm
+INFO:root:new
+INFO:root:random
+INFO:root:level 0 1 0
+INFO:root:post
+INFO:root:hard
+INFO:root:time 6000
+INFO:root:otim 6000
+INFO:root:e2e3
+INFO:root:>>> move f7f6
+INFO:root:time 5986
+INFO:root:otim 5945
+INFO:root:d2d3
+INFO:root:>>> move a7a6
+INFO:root:result * {xboard exit}
+INFO:root:force
+INFO:root:quit

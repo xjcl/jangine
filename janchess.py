@@ -215,12 +215,6 @@ def gen_legals():
 
 
 
-    # pprint()
-    # print(ret)
-
-
-    # XXX not moving into check
-
     ret2 = []
 
     for mv in ret:
@@ -231,8 +225,6 @@ def gen_legals():
             ret2.append(mv)
 
         unmake_move(mv, hit_piece)
-
-    print(ret, ret2)
 
     if not ret2:
         print('result 1/2-1/2')  # stalemate

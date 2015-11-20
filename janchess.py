@@ -10,6 +10,8 @@ import random
 import sys
 # import contextlib
 import itertools
+import functools
+import collections
 
 logging.basicConfig(filename='janchess.log', level=logging.DEBUG)
 logging.info(str(time.time()))
@@ -38,10 +40,19 @@ BLACK = 128
 LETTERMAP = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h'}
 LETTERMAPINV = {v:k for k,v in LETTERMAP.items()}
 
+PIECEMAP = {PAWN:'p', KNIGHT:'n', BISHOP:'b', ROOK:'r', QUEEN:'q'}
+PIECEMAPINV = {v:k for k,v in PIECEMAP.items()}
+
+PIECEVALS = {PAWN: 1, KNIGHT: 3, BISHOP: 3, ROOK: 5, QUEEN: 9, KING: 300, 0: 0}
 
 
+# XXX castling
 WHITEKINGMOVED = False
 BLACKKINGMOVED = False
+WHITELEFTROOKMOVED = False
+BLACKLEFTROOKMOVED = False
+WHITERIGHTROOKMOVED = False
+BLACKRIGHTROOKMOVED = False
 
 # XXX used for en-passant
 LASTMOVE = None
@@ -77,7 +88,13 @@ def new_board():
 
 
 def gentuples():
-    return itertools.product(range(7), range(7))
+    return itertools.product(range(8), range(8))
+
+# def genpieces():
+#     return (KNIGHT, BISHOP, ROOK, QUEEN)
+
+def genpieces():
+    return ('n', 'b', 'r', 'q')
 
 def input_is_move(i):
     return len(i) >= 4 and i[0] in 'abcdefgh' and i[1] in '12345678' \
@@ -107,111 +124,149 @@ def pprint():
 
 
 
-def king_not_in_check(col=...):
 
-    col  = WHITE if IM_WHITE else BLACK
-    ncol = WHITE if not IM_WHITE else BLACK
-    myking = KING + col
-    ADD = -1 if IM_WHITE else 1
 
-    for i, row in enumerate(board):
-        for j, col in enumerate(row):
-            bij = board[i][j]
-            if bij & ncol:
-                if bij & PAWN:
-                    if is_inside(i-ADD, j+1) and board[i-ADD][j+1] == myking:
+
+
+Evaluation = collections.namedtuple('Evaluation', 'value moves')
+_verbosity = 1  # depth of search to print
+inf = 3000
+
+# https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
+def turochamp():
+    eval = 0
+    for i,j in gentuples():
+        bij = board[i][j] & ~WHITE & ~BLACK
+        eval += (1 if board[i][j] & WHITE else -1) * PIECEVALS[bij]
+    return eval
+
+# 5 once ---> 55505 calls
+def minmax(COLOR, _depth=3, _verbosity=1):
+    if not _depth:   return Evaluation(turochamp(), [])
+
+    best = Evaluation(-inf if COLOR == WHITE else inf, None)
+    for mv in genlegals(COLOR):
+        hit_piece = make_move(mv)
+        rec = minmax(BLACK if COLOR == WHITE else WHITE, _depth - 1, _verbosity - 1)
+        if ((rec.value > best.value) if COLOR == WHITE else (rec.value < best.value)):
+            best = Evaluation(rec.value, [mv] + rec.moves)
+        unmake_move(mv, hit_piece)
+        if _verbosity > 0: print(mv, rec)
+    if _verbosity > 0: print('chose', best)
+    return best
+
+
+
+def king_not_in_check(COLOR):
+    NCOLOR = BLACK if COLOR == WHITE else WHITE
+    ADD = -1 if COLOR == WHITE else 1
+    myking = KING + COLOR
+
+    for i, j in gentuples():
+        bij = board[i][j]
+        if not bij & NCOLOR:
+            continue
+        if bij & PAWN:
+            if is_inside(i-ADD, j+1) and board[i-ADD][j+1] == myking:
+                return False
+            if is_inside(i-ADD, j-1) and board[i-ADD][j-1] == myking:
+                return False
+        elif bij & KNIGHT:
+            for x,y in ((1,2), (2,1), (-1,2), (2,-1), (-1,-2), (-2,-1), (1,-2), (-2,1)):
+                if is_inside(i+x, j+y):
+                    if board[i+x][j+y] == myking:
                         return False
-                    if is_inside(i-ADD, j-1) and board[i-ADD][j-1] == myking:
+        elif bij & BISHOP or bij & QUEEN:
+            for a,b in ((1,1), (1,-1), (-1,1), (-1,-1)):
+                for k in range(1, 8):
+                    if is_inside(i+a*k, j+b*k):
+                        if board[i+a*k][j+b*k] == myking:
+                            return False
+                        elif board[i+a*k][j+b*k]:
+                            break  # important
+                    else:
+                        break
+        if bij & ROOK or bij & QUEEN:
+            for a,b in ((0,1), (1,0), (0,-1), (-1,0)):
+                for k in range(1, 8):
+                    if is_inside(i+a*k, j+b*k):
+                        if board[i+a*k][j+b*k] == myking:
+                            return False
+                        elif board[i+a*k][j+b*k]:
+                            break  # important
+                    else:
+                        break
+        elif bij & KING:
+            for a,b in ((0,1), (1,0), (0,-1), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
+                if is_inside(i+a, j+b):
+                    if board[i+a][j+b] == myking:
                         return False
-                elif bij & KNIGHT:
-                    for x,y in ((1,2), (2,1), (-1,2), (2,-1), (-1,-2), (-2,-1), (1,-2), (-2,1)):
-                        if is_inside(i+x, j+y):
-                            if board[i+x][j+y] == myking:
-                                return False
-                elif bij & BISHOP or bij & QUEEN:
-                    for a,b in ((1,1), (1,-1), (-1,1), (-1,-1)):
-                        for k in range(1, 8):
-                            if is_inside(i+a*k, j+b*k):
-                                if board[i+a*k][j+b*k] == myking:
-                                    return False
-                                elif board[i+a*k][j+b*k]:
-                                    break  # important
-                            else:
-                                break
-                if bij & ROOK or bij & QUEEN:
-                    for a,b in ((0,1), (1,0), (0,-1), (-1,0)):
-                        for k in range(1, 8):
-                            if is_inside(i+a*k, j+b*k):
-                                if board[i+a*k][j+b*k] == myking:
-                                    return False
-                                elif board[i+a*k][j+b*k]:
-                                    break  # important
-                            else:
-                                break
-                elif bij & KING:
-                    for a,b in ((0,1), (1,0), (0,-1), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
-                        if is_inside(i+a, j+b):
-                            if board[i+a][j+b] == myking:
-                                return False
 
     return True
 
 
-# XXX add col
-def gen_legals():
-    COLOR  = WHITE if IM_WHITE else BLACK
-    NCOLOR = BLACK if IM_WHITE else WHITE
-    ADD = -1 if IM_WHITE else 1
+def genlegals(COLOR):
+    NCOLOR = BLACK if COLOR == WHITE else WHITE
+    ADD = -1 if COLOR == WHITE else 1
+    PROMRANK = 0 if COLOR == WHITE else 7
 
     ret = []
 
-    for i, row in enumerate(board):
-        for j, col in enumerate(row):
-            bij = board[i][j]
-            if bij & COLOR:
-                if bij & PAWN:
-                    if is_empty(i+ADD, j):
-                        ret.append((i,j,i+ADD,j))
-                    if is_inside(i+ADD, j+1) and board[i+ADD][j+1] & NCOLOR:
-                        ret.append((i,j,i+ADD,j+1))
-                    if is_inside(i+ADD, j-1) and board[i+ADD][j-1] & NCOLOR:
-                        ret.append((i,j,i+ADD,j-1))
-                elif bij & KNIGHT:
-                    for x,y in ((1,2), (2,1), (-1,2), (2,-1), (-1,-2), (-2,-1), (1,-2), (-2,1)):
-                        if is_inside(i+x, j+y):
-                            if not board[i+x][j+y] or board[i+x][j+y] & NCOLOR:
-                                ret.append((i,j,i+x,j+y))
-                elif bij & BISHOP or bij & QUEEN:
-                    for a,b in ((1,1), (1,-1), (-1,1), (-1,-1)):
-                        for k in range(1, 8):
-                            if is_inside(i+a*k, j+b*k):
-                                if not board[i+a*k][j+b*k]:
-                                    ret.append((i,j,i+a*k,j+b*k))
-                                elif board[i+a*k][j+b*k] & NCOLOR:
-                                    ret.append((i,j,i+a*k,j+b*k))
-                                    break  # important
-                                elif board[i+a*k][j+b*k] & COLOR:
-                                    break  # important
-                            else:
-                                break
-                if bij & ROOK or bij & QUEEN:
-                    for a,b in ((0,1), (1,0), (0,-1), (-1,0)):
-                        for k in range(1, 8):
-                            if is_inside(i+a*k, j+b*k):
-                                if not board[i+a*k][j+b*k]:
-                                    ret.append((i,j,i+a*k,j+b*k))
-                                elif board[i+a*k][j+b*k] & NCOLOR:
-                                    ret.append((i,j,i+a*k,j+b*k))
-                                    break  # important
-                                elif board[i+a*k][j+b*k] & COLOR:
-                                    break  # important
-                            else:
-                                break
-                elif bij & KING:
-                    for a,b in ((0,1), (1,0), (0,-1), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
-                        if is_inside(i+a, j+b):
-                            if not board[i+a][j+b] or board[i+a][j+b] & NCOLOR:
-                                ret.append((i,j,i+a,j+b))
+    for i, j in gentuples():
+        bij = board[i][j]
+        if not bij & COLOR:
+            continue
+        if bij & PAWN:
+            lr = len(ret)
+            if is_empty(i+ADD, j):
+                ret.append((i,j,i+ADD,j))
+            if is_inside(i+ADD, j+1) and board[i+ADD][j+1] & NCOLOR:
+                ret.append((i,j,i+ADD,j+1))
+            if is_inside(i+ADD, j-1) and board[i+ADD][j-1] & NCOLOR:
+                ret.append((i,j,i+ADD,j-1))
+            if i+ADD == PROMRANK:
+                temp = []
+                while lr < len(ret):
+                    for p in genpieces():
+                        temp.append(ret[lr] + (p,))
+                    del ret[lr]
+                ret += temp
+        elif bij & KNIGHT:
+            for x,y in ((1,2), (2,1), (-1,2), (2,-1), (-1,-2), (-2,-1), (1,-2), (-2,1)):
+                if is_inside(i+x, j+y):
+                    if not board[i+x][j+y] or board[i+x][j+y] & NCOLOR:
+                        ret.append((i,j,i+x,j+y))
+        elif bij & BISHOP or bij & QUEEN:
+            for a,b in ((1,1), (1,-1), (-1,1), (-1,-1)):
+                for k in range(1, 8):
+                    if is_inside(i+a*k, j+b*k):
+                        if not board[i+a*k][j+b*k]:
+                            ret.append((i,j,i+a*k,j+b*k))
+                        elif board[i+a*k][j+b*k] & NCOLOR:
+                            ret.append((i,j,i+a*k,j+b*k))
+                            break  # important
+                        elif board[i+a*k][j+b*k] & COLOR:
+                            break  # important
+                    else:
+                        break
+        if bij & ROOK or bij & QUEEN:
+            for a,b in ((0,1), (1,0), (0,-1), (-1,0)):
+                for k in range(1, 8):
+                    if is_inside(i+a*k, j+b*k):
+                        if not board[i+a*k][j+b*k]:
+                            ret.append((i,j,i+a*k,j+b*k))
+                        elif board[i+a*k][j+b*k] & NCOLOR:
+                            ret.append((i,j,i+a*k,j+b*k))
+                            break  # important
+                        elif board[i+a*k][j+b*k] & COLOR:
+                            break  # important
+                    else:
+                        break
+        elif bij & KING:
+            for a,b in ((0,1), (1,0), (0,-1), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
+                if is_inside(i+a, j+b):
+                    if not board[i+a][j+b] or board[i+a][j+b] & NCOLOR:
+                        ret.append((i,j,i+a,j+b))
 
 
 
@@ -221,15 +276,10 @@ def gen_legals():
         hit_piece = make_move(mv)
         assert not hit_piece & KING
 
-        if king_not_in_check():
+        if king_not_in_check(COLOR):
             ret2.append(mv)
 
         unmake_move(mv, hit_piece)
-
-    if not ret2:
-        print('result 1/2-1/2')  # stalemate
-        logging.shutdown()
-        exit()
 
 
     return ret2
@@ -241,6 +291,8 @@ def make_move(mv):
     hit_piece = board[mv[2]][mv[3]]
     board[mv[0]][mv[1]] = 0
     board[mv[2]][mv[3]] = piece
+    if len(mv) == 5:
+        board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
     return hit_piece
 
 
@@ -248,33 +300,41 @@ def unmake_move(mv, hit_piece):
     piece = board[mv[2]][mv[3]]
     board[mv[2]][mv[3]] = hit_piece
     board[mv[0]][mv[1]] = piece
+    if len(mv) == 5:
+        board[mv[0]][mv[1]] = PAWN + (WHITE if mv[2] == 0 else BLACK)
 
 
 def make_move_str(mv):
-    print('making move ' + mv)
+    print('recv move ' + mv)
 
     a = 8 - int(mv[1])
     b = LETTERMAPINV[mv[0]]
     c = 8 - int(mv[3])
     d = LETTERMAPINV[mv[2]]
+    if len(mv) == 5:
+        to_mv = (a, b, c, d, mv[4])
+    else:
+        to_mv = (a, b, c, d)
 
-    make_move((a, b, c, d))
-
-    LASTMOVE = (a,b,c,d)
+    make_move(to_mv)
+    LASTMOVE = to_mv
 
 
 def calc_move():
-    mv = random.choice(gen_legals())
+    # legals = genlegals(WHITE if IM_WHITE else BLACK)
+    # if not legals:
+    #     print('out of moves')
+    #     pprint()
+    #     return  # either stalemate or checkmate
+    # mv = random.choice(legals)
 
-    piece = board[mv[0]][mv[1]]
-    board[mv[0]][mv[1]] = 0
-    board[mv[2]][mv[3]] = piece
+    mv = minmax(WHITE if IM_WHITE else BLACK).moves[0]
 
+    make_move(mv)
     LASTMOVE = mv
 
     # [print(row) for row in board]
-
-    return LETTERMAP[mv[1]] + str(8 - mv[0]) + LETTERMAP[mv[3]] + str(8 - mv[2])
+    return LETTERMAP[mv[1]] + str(8 - mv[0]) + LETTERMAP[mv[3]] + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
 
 
 
@@ -286,7 +346,7 @@ def calc_move():
 
 if len(sys.argv) >= 2:
     if sys.argv[1].startswith('-t'):
-        king_check_test = [
+        t1 = [
             [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
             [0] * 8,
             [0] * 8,
@@ -297,7 +357,23 @@ if len(sys.argv) >= 2:
             [0] * 8,
         ]
 
-        board = king_check_test
+        board = t1
+        assert not king_not_in_check()
+
+        IM_WHITE = True
+
+        t2 = [
+            [0] * 8,
+            [0] * 8,
+            [0] * 8,
+            [0] * 8,
+            [0, 0, 0, 0, 0, 0, 0, BLACK + QUEEN],
+            [0] * 8,
+            [0] * 8,
+            [0, 0, 0, 0, WHITE + KING, 0, 0, 0],
+        ]
+
+        board = t2
         assert not king_not_in_check()
 
         exit()
@@ -314,6 +390,9 @@ while True:
         print('feature myname="janchess"')
         print('feature sigint=0 sigterm=0')  # else xboard sends KeyboardInterrupts
         print('feature done=1')
+
+    elif i.startswith('result'):
+        started = False
 
     elif i == 'white':
         IM_WHITE = True
@@ -338,19 +417,18 @@ while True:
         BUF = i
 
     elif input_is_move(i) and started:
-        print('RECV MOVE', i)
         make_move_str(i)
-        print('move ' + calc_move())
+        mv = calc_move()
+        if mv:  print('move ' + mv)
 
     # go/force stuff needed, else xboard skips second move
     elif i == 'go':
         started = True
         if BUF:
             make_move_str(BUF)
-            print('move ' + calc_move())
             BUF = ''
-        else:
-            print('move ' + calc_move())
+        mv = calc_move()
+        if mv:  print('move ' + mv)
 
     elif i == 'quit' or i == 'q':
         pprint()

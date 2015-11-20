@@ -37,11 +37,12 @@ def input(*args, **kwargs):
 move_number = 0
 
 moves = [
-    'move e7e5', # pawn
-    'move f8e7', # bishop
-    'move g8f6', # knight
-    'move b8c6', # knight
-    'move e8g8'  # castling
+    'move e7e5',  # pawn
+    'move f8e7',  # bishop
+    'move g8f6',  # knight
+    'move b8c6',  # knight
+    'move e8g8',  # castling
+    #'move e2e1q' # promotion (to queen)
 ]
 
 

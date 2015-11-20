@@ -1,0 +1,1 @@
+./janchess.py -m random

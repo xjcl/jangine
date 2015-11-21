@@ -20,6 +20,9 @@ parser = argparse.ArgumentParser(description='Plays chess poorly.')
 parser.add_argument('-m', '--mode', type=str, default='minmax',
                    help='random or minmax (default)')
 
+parser.add_argument('-t', '--test', action='store_true',
+                   help='run tests???!!?')
+
 args = parser.parse_args()
 
 
@@ -148,6 +151,11 @@ def pprint():
 
 
 Evaluation = collections.namedtuple('Evaluation', 'value moves')
+Evaluation.__eq__ = lambda self, other: self.value == other.value
+Evaluation.__lt__ = lambda self, other: self.value < other.value
+Evaluation.__gt__ = lambda self, other: self.value > other.value
+Evaluation.__le__ = lambda self, other: self < other or self == other
+
 _verbosity = 1  # depth of search to print
 inf = 3000
 
@@ -159,19 +167,26 @@ def turochamp():
         eval += (1 if board[i][j] & WHITE else -1) * PIECEVALS[bij]
     return eval
 
-# 5 once ---> 55505 calls
-def minmax(COLOR, _depth=3, _verbosity=1):
-    if not _depth:   return Evaluation(turochamp(), [])
+
+def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), depth=3):
+    if not depth:   return Evaluation(turochamp(), [])
 
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
+    # if _verbosity > -1:  print(genlegals(COLOR))
     for mv in genlegals(COLOR):
         hit_piece = make_move(mv)
-        rec = minmax(BLACK if COLOR == WHITE else WHITE, _depth - 1, _verbosity - 1)
-        if ((rec.value > best.value) if COLOR == WHITE else (rec.value < best.value)):
+        rec = minmax(BLACK if COLOR == WHITE else WHITE, alpha, beta, depth - 1)
+        # print((3 - depth) * '    ', mv, rec, alpha.value, beta.value)
+        if not rec.moves:
+            best = Evaluation(rec.value, [mv])  # no more moves --> checkmate (or stalemate :3)
+        elif ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
         unmake_move(mv, hit_piece)
-        if _verbosity > 0: print(mv, rec)
-    if _verbosity > 0: print('chose', best)
+
+        if COLOR == WHITE and (best > alpha):   alpha = best
+        if COLOR == BLACK and (best < beta) :   beta  = best
+        if beta <= alpha:   break
+    if depth > 2: print('chose', best)
     return best
 
 
@@ -226,7 +241,9 @@ def king_not_in_check(COLOR):
 def genlegals(COLOR):
     NCOLOR = BLACK if COLOR == WHITE else WHITE
     ADD = -1 if COLOR == WHITE else 1
-    PROMRANK = 0 if COLOR == WHITE else 7
+    STARTRANK = 6 if COLOR == WHITE else 1
+    PROMRANK = 1 if COLOR == WHITE else 6
+    EPRANK = 3 if COLOR == WHITE else 5
 
     ret = []
 
@@ -239,17 +256,24 @@ def genlegals(COLOR):
             lr = len(ret)
             if is_empty(i+ADD, j):
                 ret.append((i,j,i+ADD,j))
+                if is_empty(i+ADD+ADD, j) and i == STARTRANK:
+                    ret.append((i,j,i+ADD+ADD,j))
             if is_inside(i+ADD, j+1) and board[i+ADD][j+1] & NCOLOR:
                 ret.append((i,j,i+ADD,j+1))
             if is_inside(i+ADD, j-1) and board[i+ADD][j-1] & NCOLOR:
                 ret.append((i,j,i+ADD,j-1))
-            if i+ADD == PROMRANK:
+            if i == PROMRANK:  # promotion
                 temp = []
                 while lr < len(ret):
                     for p in genpieces():
                         temp.append(ret[lr] + (p,))
                     del ret[lr]
                 ret += temp
+            if i == EPRANK:
+                if LASTMOVE == (i+ADD+ADD, j-1, i, j-1):
+                    ret.append((i, j, i+ADD, j-1, 'e'))
+                if LASTMOVE == (i+ADD+ADD, j+1, i, j+1):
+                    ret.append((i, j, i+ADD, j+1, 'e'))
         else:
             for a,b in PIECEDIRS[bijpiece]:
                 for k in PIECERANGE[bijpiece]:
@@ -288,7 +312,10 @@ def make_move(mv):
     board[mv[0]][mv[1]] = 0
     board[mv[2]][mv[3]] = piece
     if len(mv) == 5:
-        board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
+        if mv[4] == 'e':
+            board[mv[0]][mv[3]] = 0
+        else:
+            board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
     return hit_piece
 
 
@@ -297,7 +324,10 @@ def unmake_move(mv, hit_piece):
     board[mv[2]][mv[3]] = hit_piece
     board[mv[0]][mv[1]] = piece
     if len(mv) == 5:
-        board[mv[0]][mv[1]] = PAWN + (WHITE if mv[2] == 0 else BLACK)
+        if mv[4] == 'e':
+            board[mv[0]][mv[3]] = PAWN + (WHITE if mv[2] == 6 else BLACK)
+        else:
+            board[mv[0]][mv[1]] = PAWN + (WHITE if mv[2] == 0 else BLACK)
 
 
 def make_move_str(mv):
@@ -309,6 +339,8 @@ def make_move_str(mv):
     d = LETTERMAPINV[mv[2]]
     if len(mv) == 5:
         to_mv = (a, b, c, d, mv[4])
+    elif a != c and not board[c][d]:  # en passant
+        to_mv = (a, b, c, d, 'e')
     else:
         to_mv = (a, b, c, d)
 
@@ -343,8 +375,8 @@ def calc_move():
 
 
 if len(sys.argv) >= 2:
-    if sys.argv[1].startswith('-t'):
-        t1 = [
+    if args.test:
+        t0 = [
             [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
             [0] * 8,
             [0] * 8,
@@ -355,12 +387,10 @@ if len(sys.argv) >= 2:
             [0] * 8,
         ]
 
-        board = t1
-        assert not king_not_in_check()
+        board = t0
+        assert not king_not_in_check(BLACK)
 
-        IM_WHITE = True
-
-        t2 = [
+        t1 = [
             [0] * 8,
             [0] * 8,
             [0] * 8,
@@ -371,8 +401,52 @@ if len(sys.argv) >= 2:
             [0, 0, 0, 0, WHITE + KING, 0, 0, 0],
         ]
 
-        board = t2
-        assert not king_not_in_check()
+        board = t1
+        assert not king_not_in_check(WHITE)
+
+
+
+
+        g0 =  [
+            [0, BLACK + ROOK, BLACK + BISHOP, BLACK + QUEEN,
+                BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK],
+            [BLACK + PAWN] * 4 + [0] + [BLACK + PAWN] * 3,
+            [0] * 4 + [WHITE + PAWN] + [0] * 3,
+            [0] * 8,
+            [0, BLACK + KNIGHT, 0, 0, WHITE + PAWN] + [0] * 3,
+            [0] * 8,
+            [WHITE + PAWN] * 3 + [WHITE + BISHOP, 0] + [WHITE + PAWN] * 3,
+            [WHITE + ROOK, WHITE + KNIGHT, 0, WHITE + QUEEN,
+                WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
+        ]
+
+        board = g0
+        # find good enough move
+        assert (1, 5, 2, 4) in minmax(BLACK)
+
+
+
+        m0 =  [
+            [0, BLACK + ROOK, BLACK + BISHOP, 0, BLACK + KING, 0, 0, BLACK + ROOK],
+            [BLACK + PAWN] * 4 + [BLACK + QUEEN] + [BLACK + PAWN] * 3,
+            [0] * 2 + [WHITE + PAWN] + [0] * 2 + [BLACK + KNIGHT] + [0] * 2,
+            [0] * 8,
+            [0, BLACK + BISHOP] + [0] * 6,
+            [0, 0, WHITE + PAWN] + [0] * 6,
+            [WHITE + PAWN] * 2 + [0] * 2 + [WHITE + QUEEN] + [WHITE + PAWN] * 3,
+            [WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, 0,
+                WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
+        ]
+
+        board = m0
+
+        # bestmove = minmax(BLACK).moves[0]
+        # print('bestmove', bestmove)
+
+        # assert bestmove[0] == 5 and bestmove[1] == 2
+        # with depth=3 this will be 'wrong' as it thinks pulling back
+        #   the bishop will result in the loss of the Q
+
 
         exit()
 

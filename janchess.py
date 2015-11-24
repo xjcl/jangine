@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/local/bin/pypy3
 
 
 
@@ -17,8 +17,8 @@ import time
 
 parser = argparse.ArgumentParser(description='Plays chess poorly.')
 
-parser.add_argument('-m', '--mode', type=str, default='minmax',
-                   help='random or minmax (default)')
+parser.add_argument('-m', '--mode', type=str, default='quiescence',
+                   help='random or minmax or quiescence (default)')
 
 parser.add_argument('-t', '--test', action='store_true',
                    help='run tests???!!?')
@@ -136,12 +136,28 @@ def sq_to_str2(sq):
     if sq & KING: return 'K'
     return ' '
 
+def str_to_sq1(sq):
+    return {'B':BLACK, 'W':WHITE, ' ':0}[sq]
+
+def str_to_sq2(sq):
+    return {'P':PAWN, 'N':KNIGHT, 'B':BISHOP, 'R':ROOK, 'Q':QUEEN, 'K':KING, ' ':0}[sq]
+
 def pprint():
     print()
     for row in board:
         print(' '.join(sq_to_str1(sq) + sq_to_str2(sq) for sq in row))
     print()
 
+def log_to_board(s):
+    global board
+    board = [[], [], [], [], [], [], [], []]
+    for j, row in enumerate(s.split('\n')):
+        i = row.find('>>>') + 4
+        for k in range(8):
+            if i+3*k+1 >= len(row):  # subl trims trailing whitespace...
+                board[j] += [0] * (8 - k)
+                break
+            board[j].append(str_to_sq1(row[i+3*k]) + str_to_sq2(row[i+3*k+1]))
 
 
 
@@ -155,6 +171,7 @@ Evaluation.__eq__ = lambda self, other: self.value == other.value
 Evaluation.__lt__ = lambda self, other: self.value < other.value
 Evaluation.__gt__ = lambda self, other: self.value > other.value
 Evaluation.__le__ = lambda self, other: self < other or self == other
+Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
 
 _verbosity = 1  # depth of search to print
 inf = 3000
@@ -168,7 +185,8 @@ def turochamp():
     return eval
 
 
-def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), depth=3):
+
+def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), depth=5):
     if not depth:   return Evaluation(turochamp(), [])
 
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
@@ -186,8 +204,76 @@ def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), dep
         if COLOR == WHITE and (best > alpha):   alpha = best
         if COLOR == BLACK and (best < beta) :   beta  = best
         if beta <= alpha:   break
-    if depth > 2: print('chose', best)
+    # if depth > 4: print('chose', best)
     return best
+
+
+def eval_quies(COLOR, mv):
+    NCOLOR = BLACK if COLOR == WHITE else WHITE
+
+    quies = 30
+    eval = 0
+
+    if ((mv[0] > mv[2]) if COLOR == WHITE else (mv[0] < mv[2])):
+        quies *= .6
+        eval += .08
+
+    if ((mv[0] < mv[2]) if COLOR == WHITE else (mv[0] > mv[2])):
+        quies *= 1.4
+        eval -= .08
+
+    if board[mv[2]][mv[3]] or len(mv) == 5:
+        quies *= 0
+        # we can't let that happen: else it calculates n-1 moves and then captures
+        #   since it doesn't see the opponent's recapture, it evals it favorably
+        eval += .03
+
+    hit_piece = make_move(mv)
+    if not king_not_in_check(NCOLOR) or board[mv[0]][mv[1]] & KING:
+        quies *= .3
+        eval += .07
+
+    return hit_piece, quies, eval
+
+
+def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=45, depth=0):
+
+    if quies <= 0:   return Evaluation(turochamp(), [])
+
+    best = Evaluation(-inf if COLOR == WHITE else inf, None)
+
+    for mv in genlegals(COLOR):
+        hit_piece, mv_quies, mv_eval = eval_quies(COLOR, mv)
+
+        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - mv_quies, depth + 1)
+        rec += (1 if COLOR == WHITE else -1) * mv_eval
+
+        if ((rec > best) if COLOR == WHITE else (rec < best)):
+            best = Evaluation(rec.value, [mv] + rec.moves)
+
+        unmake_move(mv, hit_piece)
+
+        if depth == 0:
+            print(mv, rec)
+        # if board[mv[2]][mv[3]] & QUEEN or board[mv[2]][mv[3]] & KNIGHT or True:
+        #     print('   '*depth, mv, rec, alpha.value, beta.value)
+
+        if COLOR == WHITE and (best > alpha):   alpha = best
+        if COLOR == BLACK and (best < beta) :   beta  = best
+        if beta <= alpha:   break
+
+    # genlegals was empty
+    if best.value == None:
+        return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
+
+
+    if depth == 0:
+        print('BBBB ', best)
+
+    return best
+    # deeply explored moves are better
+    # DON'T ADD ANYTHING HERE! ab is based on the minmax-assumption
+    #   so defying the max and sneaking in rogue unexplored moves
 
 
 
@@ -269,7 +355,7 @@ def genlegals(COLOR):
                         temp.append(ret[lr] + (p,))
                     del ret[lr]
                 ret += temp
-            if i == EPRANK:
+            if i == EPRANK:  # en passant
                 if LASTMOVE == (i+ADD+ADD, j-1, i, j-1):
                     ret.append((i, j, i+ADD, j-1, 'e'))
                 if LASTMOVE == (i+ADD+ADD, j+1, i, j+1):
@@ -339,12 +425,15 @@ def make_move_str(mv):
     d = LETTERMAPINV[mv[2]]
     if len(mv) == 5:
         to_mv = (a, b, c, d, mv[4])
-    elif a != c and not board[c][d]:  # en passant
+    elif b != d and board[a][b] & PAWN and not board[c][d]:  # en passant
         to_mv = (a, b, c, d, 'e')
     else:
         to_mv = (a, b, c, d)
 
+    print('calc\'d move', to_mv)
+
     make_move(to_mv)
+    pprint()
     LASTMOVE = to_mv
 
 
@@ -358,7 +447,7 @@ def calc_move():
         mv = random.choice(legals)
 
     else:
-        mv = minmax(WHITE if IM_WHITE else BLACK).moves[0]
+        mv = quiescence(WHITE if IM_WHITE else BLACK).moves[0]
 
     make_move(mv)
     LASTMOVE = mv
@@ -374,81 +463,161 @@ def calc_move():
 
 
 
-if len(sys.argv) >= 2:
-    if args.test:
-        t0 = [
-            [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-        ]
+if args.test:
+    t0 = [
+        [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+    ]
 
-        board = t0
-        assert not king_not_in_check(BLACK)
+    board = t0
+    assert not king_not_in_check(BLACK)
 
-        t1 = [
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0] * 8,
-            [0, 0, 0, 0, 0, 0, 0, BLACK + QUEEN],
-            [0] * 8,
-            [0] * 8,
-            [0, 0, 0, 0, WHITE + KING, 0, 0, 0],
-        ]
+    t1 = [
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0] * 8,
+        [0, 0, 0, 0, 0, 0, 0, BLACK + QUEEN],
+        [0] * 8,
+        [0] * 8,
+        [0, 0, 0, 0, WHITE + KING, 0, 0, 0],
+    ]
 
-        board = t1
-        assert not king_not_in_check(WHITE)
-
+    board = t1
+    assert not king_not_in_check(WHITE)
 
 
 
-        g0 =  [
-            [0, BLACK + ROOK, BLACK + BISHOP, BLACK + QUEEN,
-                BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK],
-            [BLACK + PAWN] * 4 + [0] + [BLACK + PAWN] * 3,
-            [0] * 4 + [WHITE + PAWN] + [0] * 3,
-            [0] * 8,
-            [0, BLACK + KNIGHT, 0, 0, WHITE + PAWN] + [0] * 3,
-            [0] * 8,
-            [WHITE + PAWN] * 3 + [WHITE + BISHOP, 0] + [WHITE + PAWN] * 3,
-            [WHITE + ROOK, WHITE + KNIGHT, 0, WHITE + QUEEN,
-                WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
-        ]
 
-        board = g0
-        # find good enough move
-        assert (1, 5, 2, 4) in minmax(BLACK)
+    g0 =  [
+        [0, BLACK + ROOK, BLACK + BISHOP, BLACK + QUEEN,
+            BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK],
+        [BLACK + PAWN] * 4 + [0] + [BLACK + PAWN] * 3,
+        [0] * 4 + [WHITE + PAWN] + [0] * 3,
+        [0] * 8,
+        [0, BLACK + KNIGHT, 0, 0, WHITE + PAWN] + [0] * 3,
+        [0] * 8,
+        [WHITE + PAWN] * 3 + [WHITE + BISHOP, 0] + [WHITE + PAWN] * 3,
+        [WHITE + ROOK, WHITE + KNIGHT, 0, WHITE + QUEEN,
+            WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
+    ]
 
-
-
-        m0 =  [
-            [0, BLACK + ROOK, BLACK + BISHOP, 0, BLACK + KING, 0, 0, BLACK + ROOK],
-            [BLACK + PAWN] * 4 + [BLACK + QUEEN] + [BLACK + PAWN] * 3,
-            [0] * 2 + [WHITE + PAWN] + [0] * 2 + [BLACK + KNIGHT] + [0] * 2,
-            [0] * 8,
-            [0, BLACK + BISHOP] + [0] * 6,
-            [0, 0, WHITE + PAWN] + [0] * 6,
-            [WHITE + PAWN] * 2 + [0] * 2 + [WHITE + QUEEN] + [WHITE + PAWN] * 3,
-            [WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, 0,
-                WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
-        ]
-
-        board = m0
-
-        # bestmove = minmax(BLACK).moves[0]
-        # print('bestmove', bestmove)
-
-        # assert bestmove[0] == 5 and bestmove[1] == 2
-        # with depth=3 this will be 'wrong' as it thinks pulling back
-        #   the bishop will result in the loss of the Q
+    board = g0
+    # find good enough move
+    # assert (1, 5, 2, 4) in quiescence(BLACK)
 
 
-        exit()
+
+    m0 =  [
+        [0, BLACK + ROOK, BLACK + BISHOP, 0, BLACK + KING, 0, 0, BLACK + ROOK],
+        [BLACK + PAWN] * 4 + [BLACK + QUEEN] + [BLACK + PAWN] * 3,
+        [0] * 2 + [WHITE + PAWN] + [0] * 2 + [BLACK + KNIGHT] + [0] * 2,
+        [0] * 8,
+        [0, BLACK + BISHOP] + [0] * 6,
+        [0, 0, WHITE + PAWN] + [0] * 6,
+        [WHITE + PAWN] * 2 + [0] * 2 + [WHITE + QUEEN] + [WHITE + PAWN] * 3,
+        [WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, 0,
+            WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
+    ]
+
+    board = m0
+
+    # bestmove = quiescence(BLACK).moves[0]
+    # print('bestmove', bestmove)
+
+    # assert bestmove[0] == 5 and bestmove[1] == 2
+    # with depth=3 this will be 'wrong' as it thinks pulling back
+    #   the bishop will result in the loss of the Q
+
+    # log_to_board("""INFO:root:>>> BR       BQ BK BB BN BR
+    #     INFO:root:>>> BP BP BP    BP BP BP BP
+    #     INFO:root:>>>
+    #     INFO:root:>>>          WP
+    #     INFO:root:>>>    BN             BB
+    #     INFO:root:>>> WP    WN    WP
+    #     INFO:root:>>>    WP WP WQ       WP WP
+    #     INFO:root:>>> WR    WB    WK WB WN WR """)
+
+
+    # bestmove = quiescence(BLACK).moves[0]
+    # print('bestmove', bestmove)
+    # assert bestmove == (4, 1, 2, 0)
+
+
+
+    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
+    #     INFO:root:>>> BP BP BP BP    BP BP BP
+    #     INFO:root:>>>       BN    BP
+    #     INFO:root:>>>
+    #     INFO:root:>>>          WP WP
+    #     INFO:root:>>>                WN
+    #     INFO:root:>>> WP WP WP       WP WP WP
+    #     INFO:root:>>> WR WN WB WQ WK WB    WR""")
+
+    # bestmove = quiescence(BLACK).moves[0]
+    # print('bestmove', bestmove)
+    # assert bestmove != (2, 2, 3, 4)
+
+
+
+    #     log_to_board("""INFO:root:>>> BR    BB BQ BK BB    BR
+    # INFO:root:>>> BP    BP    BP BP BP BP
+    # INFO:root:>>> BN BP    BP          BN
+    # INFO:root:>>>
+    # INFO:root:>>>       WB WP WP
+    # INFO:root:>>>                WN
+    # INFO:root:>>> WP WP WP       WP WP WP
+    # INFO:root:>>> WR WN WB WQ       WK WR""")
+
+    #     # for mv in genlegals(BLACK):
+    #     #     hp = make_move(mv)
+    #     #     for mv2 in genlegals(WHITE):
+    #     #         hp2 = make_move(mv2)
+    #     #         print(mv, mv2, turochamp())
+    #     #         unmake_move(mv2, hp2)
+    #     #     unmake_move(mv, hp)
+
+    #     bestmove = quiescence(BLACK).moves[0]
+    #     print('bestmove', bestmove)
+    #     assert bestmove != (0, 2, 4, 6)
+
+    # make_move((0, 2, 4, 6))
+
+    # bestmove = quiescence(WHITE).moves[0]
+    # print('bestmove', bestmove)
+    # assert bestmove == (4, 2, 2, 0) or bestmove == (7, 2, 2, 7)
+
+    # y u no see white's  (4,2,2,0)
+
+
+
+    # make_move((0, 2, 4, 6))
+    # make_move((4, 2, 5, 3))  # XXX
+    # print(turochamp())
+
+
+
+
+    log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
+INFO:root:>>> BP BP BP BP BP BP BP BP
+INFO:root:>>>       BN
+INFO:root:>>>          WP
+INFO:root:>>>
+INFO:root:>>>
+INFO:root:>>> WP WP WP    WP WP WP WP
+INFO:root:>>> WR WN WB WQ WK WB WN WR""")
+
+    bestmove = quiescence(BLACK).moves[0]
+    print('bestmove', bestmove)
+
+
+    exit()
 
 
 

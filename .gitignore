@@ -1,2 +1,4 @@
 *.log
 *.debug
+gnuchess-6.2.2/
+sunfish.py

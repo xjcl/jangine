@@ -179,9 +179,14 @@ inf = 3000
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 def turochamp():
     eval = 0
+
     for i,j in gentuples():
-        bij = board[i][j] & ~WHITE & ~BLACK
-        eval += (1 if board[i][j] & WHITE else -1) * PIECEVALS[bij]
+        bijp = board[i][j] & ~WHITE & ~BLACK
+        bij = board[i][j]
+        eval += (1 if bij & WHITE else -1) * PIECEVALS[bijp]
+        if bij & PAWN:
+            eval += (-.1 * i if bij & WHITE else .1 * i)
+
     return eval
 
 
@@ -195,9 +200,7 @@ def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), dep
         hit_piece = make_move(mv)
         rec = minmax(BLACK if COLOR == WHITE else WHITE, alpha, beta, depth - 1)
         # print((3 - depth) * '    ', mv, rec, alpha.value, beta.value)
-        if not rec.moves:
-            best = Evaluation(rec.value, [mv])  # no more moves --> checkmate (or stalemate :3)
-        elif ((rec > best) if COLOR == WHITE else (rec < best)):
+        if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
         unmake_move(mv, hit_piece)
 
@@ -205,6 +208,10 @@ def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), dep
         if COLOR == BLACK and (best < beta) :   beta  = best
         if beta <= alpha:   break
     # if depth > 4: print('chose', best)
+
+    if best.moves == None:
+        return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
+
     return best
 
 
@@ -216,22 +223,17 @@ def eval_quies(COLOR, mv):
 
     if ((mv[0] > mv[2]) if COLOR == WHITE else (mv[0] < mv[2])):
         quies *= .6
-        eval += .08
-
     if ((mv[0] < mv[2]) if COLOR == WHITE else (mv[0] > mv[2])):
         quies *= 1.4
-        eval -= .08
 
     if board[mv[2]][mv[3]] or len(mv) == 5:
         quies *= 0
         # we can't let that happen: else it calculates n-1 moves and then captures
         #   since it doesn't see the opponent's recapture, it evals it favorably
-        eval += .03
 
     hit_piece = make_move(mv)
     if not king_not_in_check(NCOLOR) or board[mv[0]][mv[1]] & KING:
         quies *= .3
-        eval += .07
 
     return hit_piece, quies, eval
 
@@ -246,7 +248,6 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
         hit_piece, mv_quies, mv_eval = eval_quies(COLOR, mv)
 
         rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - mv_quies, depth + 1)
-        rec += (1 if COLOR == WHITE else -1) * mv_eval
 
         if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
@@ -263,7 +264,7 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
         if beta <= alpha:   break
 
     # genlegals was empty
-    if best.value == None:
+    if best.moves == None:
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
 
@@ -604,14 +605,27 @@ if args.test:
 
 
 
+    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
+    #     INFO:root:>>> BP BP BP BP BP BP BP BP
+    #     INFO:root:>>>       BN
+    #     INFO:root:>>>          WP
+    #     INFO:root:>>>
+    #     INFO:root:>>>
+    #     INFO:root:>>> WP WP WP    WP WP WP WP
+    #     INFO:root:>>> WR WN WB WQ WK WB WN WR""")
+
+    # bestmove = quiescence(BLACK).moves[0]
+    # print('bestmove', bestmove)
+
+
     log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
-INFO:root:>>> BP BP BP BP BP BP BP BP
-INFO:root:>>>       BN
-INFO:root:>>>          WP
-INFO:root:>>>
-INFO:root:>>>
-INFO:root:>>> WP WP WP    WP WP WP WP
-INFO:root:>>> WR WN WB WQ WK WB WN WR""")
+        INFO:root:>>> BP    BP BP BP BP BP BP
+        INFO:root:>>> BP
+        INFO:root:>>>
+        INFO:root:>>>             WP
+        INFO:root:>>>                WN
+        INFO:root:>>> WP WP WP WP    WP WP WP
+        INFO:root:>>> WR WN WB WQ WK       WR""")
 
     bestmove = quiescence(BLACK).moves[0]
     print('bestmove', bestmove)

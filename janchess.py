@@ -67,16 +67,11 @@ PIECEMAPINV = {v:k for k,v in PIECEMAP.items()}
 
 PIECEVALS = {PAWN: 1, KNIGHT: 3, BISHOP: 3, ROOK: 5, QUEEN: 9, KING: 300, 0: 0}
 
-
 # XXX castling
-WHITEKINGMOVED = False
-BLACKKINGMOVED = False
-WHITELEFTROOKMOVED = False
-BLACKLEFTROOKMOVED = False
-WHITERIGHTROOKMOVED = False
-BLACKRIGHTROOKMOVED = False
+CASTLINGWHITE = (True, True, True)
+CASTLINGBLACK = (True, True, True)
 
-# XXX used for en-passant
+# used for en-passant
 LASTMOVE = None
 
 board = None
@@ -197,12 +192,12 @@ def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), dep
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
     # if _verbosity > -1:  print(genlegals(COLOR))
     for mv in genlegals(COLOR):
-        hit_piece = make_move(mv)
+        hit_piece, c_rights = make_move(mv)
         rec = minmax(BLACK if COLOR == WHITE else WHITE, alpha, beta, depth - 1)
         # print((3 - depth) * '    ', mv, rec, alpha.value, beta.value)
         if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
-        unmake_move(mv, hit_piece)
+        unmake_move(mv, hit_piece, c_rights)
 
         if COLOR == WHITE and (best > alpha):   alpha = best
         if COLOR == BLACK and (best < beta) :   beta  = best
@@ -210,6 +205,8 @@ def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), dep
     # if depth > 4: print('chose', best)
 
     if best.moves == None:
+        if king_not_in_check(COLOR):  # stalemate
+            return Evaluation(0, [])
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
     return best
@@ -231,11 +228,11 @@ def eval_quies(COLOR, mv):
         # we can't let that happen: else it calculates n-1 moves and then captures
         #   since it doesn't see the opponent's recapture, it evals it favorably
 
-    hit_piece = make_move(mv)
+    hit_piece, c_rights = make_move(mv)
     if not king_not_in_check(NCOLOR) or board[mv[0]][mv[1]] & KING:
         quies *= .3
 
-    return hit_piece, quies, eval
+    return hit_piece, c_rights, quies, eval
 
 
 def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=45, depth=0):
@@ -245,14 +242,14 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
 
     for mv in genlegals(COLOR):
-        hit_piece, mv_quies, mv_eval = eval_quies(COLOR, mv)
+        hit_piece, c_rights, mv_quies, mv_eval = eval_quies(COLOR, mv)
 
         rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - mv_quies, depth + 1)
 
         if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
 
-        unmake_move(mv, hit_piece)
+        unmake_move(mv, hit_piece, c_rights)
 
         if depth == 0:
             print(mv, rec)
@@ -265,6 +262,8 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
 
     # genlegals was empty
     if best.moves == None:
+        if king_not_in_check(COLOR):  # stalemate
+            return Evaluation(0, [])
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
 
@@ -331,6 +330,7 @@ def genlegals(COLOR):
     STARTRANK = 6 if COLOR == WHITE else 1
     PROMRANK = 1 if COLOR == WHITE else 6
     EPRANK = 3 if COLOR == WHITE else 5
+    CASTLERANK = 7 if COLOR == WHITE else 0
 
     ret = []
 
@@ -375,18 +375,33 @@ def genlegals(COLOR):
                     else:
                         break
 
-
+    if ((CASTLINGWHITE[0] and CASTLINGWHITE[1]) if COLOR == WHITE
+    else (CASTLINGBLACK[0] and CASTLINGBLACK[1])):
+        if not board[CASTLERANK][3] and not board[CASTLERANK][2] and not board[CASTLERANK][1]:
+            print('castle left',  board[CASTLERANK][3] ,  board[CASTLERANK][2] ,  board[CASTLERANK][1] )
+            board[CASTLERANK][2:4] = [COLOR + KING]*2
+            if king_not_in_check(COLOR):
+                ret.append((CASTLERANK, 4, CASTLERANK, 2, 'c'))
+            board[CASTLERANK][2:4] = [0]*2
+    if ((CASTLINGWHITE[2] and CASTLINGWHITE[1]) if COLOR == WHITE
+    else (CASTLINGBLACK[2] and CASTLINGBLACK[1])):
+        if not board[CASTLERANK][5] and not board[CASTLERANK][6]:
+            print('castle right',  board[CASTLERANK][5] ,  board[CASTLERANK][6] )
+            board[CASTLERANK][5:7] = [COLOR + KING]*2
+            if king_not_in_check(COLOR):
+                ret.append((CASTLERANK, 4, CASTLERANK, 6, 'c'))
+            board[CASTLERANK][5:7] = [0]*2
 
     ret2 = []
 
     for mv in ret:
-        hit_piece = make_move(mv)
+        hit_piece, c_rights = make_move(mv)
         assert not hit_piece & KING
 
         if king_not_in_check(COLOR):
             ret2.append(mv)
 
-        unmake_move(mv, hit_piece)
+        unmake_move(mv, hit_piece, c_rights)
 
 
     return ret2
@@ -394,30 +409,72 @@ def genlegals(COLOR):
 
 
 def make_move(mv):
+
+    global CASTLINGWHITE
+    global CASTLINGBLACK
+
     piece = board[mv[0]][mv[1]]
     hit_piece = board[mv[2]][mv[3]]
     board[mv[0]][mv[1]] = 0
     board[mv[2]][mv[3]] = piece
+
+    CASTLERANK = 7 if piece & WHITE else 0
     if len(mv) == 5:
         if mv[4] == 'e':
-            board[mv[0]][mv[3]] = 0
+            board[mv[0]][mv[3]] = 0  # en passant
+        elif mv[4] == 'c':
+            print(mv, piece & WHITE, piece & BLACK, CASTLINGWHITE, CASTLINGBLACK)
+            pprint()
+            assert mv[0:2] == (CASTLERANK, 4)
+            if mv[3] == 2:
+                board[CASTLERANK][3] = board[CASTLERANK][0]
+                board[CASTLERANK][0] = 0
+            else:
+                assert mv[3] == 6
+                board[CASTLERANK][5] = board[CASTLERANK][7]
+                board[CASTLERANK][7] = 0
+            board[CASTLERANK][4] = 0
+            pprint()
+            print("TRANSACTION DONE")
         else:
             board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
-    return hit_piece
+
+    old_cr = CASTLINGWHITE, CASTLINGBLACK
+    cr = (CASTLINGWHITE if piece & WHITE else CASTLINGBLACK)
+    if mv[0] == CASTLERANK:
+        cr = (mv[1] != 0 and cr[0],  mv[1] != 4 and cr[1],  mv[1] != 7 and cr[2])
+        if piece & WHITE:   CASTLINGWHITE = cr
+        else:               CASTLINGBLACK = cr
+
+    return hit_piece, old_cr
 
 
-def unmake_move(mv, hit_piece):
+def unmake_move(mv, hit_piece, c_rights):
     piece = board[mv[2]][mv[3]]
     board[mv[2]][mv[3]] = hit_piece
     board[mv[0]][mv[1]] = piece
+
     if len(mv) == 5:
         if mv[4] == 'e':
             board[mv[0]][mv[3]] = PAWN + (WHITE if mv[2] == 6 else BLACK)
+        elif mv[4] == 'c':
+            if mv[3] == 2:
+                board[mv[0]][0] = board[mv[0]][3]
+                board[mv[0]][3] = 0
+            else:
+                assert mv[3] == 6
+                board[mv[0]][7] = board[mv[0]][5]
+                board[mv[0]][5] = 0
         else:
             board[mv[0]][mv[1]] = PAWN + (WHITE if mv[2] == 0 else BLACK)
 
+    CASTLINGWHITE = c_rights[0]
+    CASTLINGBLACK = c_rights[1]
+
+
 
 def make_move_str(mv):
+    #XXX receiv castling
     print('recv move ' + mv)
 
     a = 8 - int(mv[1])
@@ -428,12 +485,15 @@ def make_move_str(mv):
         to_mv = (a, b, c, d, mv[4])
     elif b != d and board[a][b] & PAWN and not board[c][d]:  # en passant
         to_mv = (a, b, c, d, 'e')
+    elif board[a][b] & KING and abs(d - b) > 1:
+        to_mv = (a, b, c, d, 'c')
     else:
         to_mv = (a, b, c, d)
 
-    print('calc\'d move', to_mv)
+    print('parsed input as', to_mv)
 
     make_move(to_mv)
+    print(to_mv)
     pprint()
     LASTMOVE = to_mv
 
@@ -448,7 +508,13 @@ def calc_move():
         mv = random.choice(legals)
 
     else:
-        mv = quiescence(WHITE if IM_WHITE else BLACK).moves[0]
+        ans = quiescence(WHITE if IM_WHITE else BLACK)
+        if ans:
+            return ans.moves[0]
+        else:
+            print('out of moves')
+            pprint()
+            return  # either stalemate or checkmate
 
     make_move(mv)
     LASTMOVE = mv
@@ -465,6 +531,7 @@ def calc_move():
 
 
 if args.test:
+
     t0 = [
         [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
         [0] * 8,
@@ -618,17 +685,17 @@ if args.test:
     # print('bestmove', bestmove)
 
 
-    log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
-        INFO:root:>>> BP    BP BP BP BP BP BP
-        INFO:root:>>> BP
-        INFO:root:>>>
-        INFO:root:>>>             WP
-        INFO:root:>>>                WN
-        INFO:root:>>> WP WP WP WP    WP WP WP
-        INFO:root:>>> WR WN WB WQ WK       WR""")
+    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
+    #     INFO:root:>>> BP    BP BP BP BP BP BP
+    #     INFO:root:>>> BP
+    #     INFO:root:>>>
+    #     INFO:root:>>>             WP
+    #     INFO:root:>>>                WN
+    #     INFO:root:>>> WP WP WP WP    WP WP WP
+    #     INFO:root:>>> WR WN WB WQ WK       WR""")
 
-    bestmove = quiescence(BLACK).moves[0]
-    print('bestmove', bestmove)
+    # bestmove = quiescence(BLACK).moves[0]
+    # print('bestmove', bestmove)
 
 
     exit()

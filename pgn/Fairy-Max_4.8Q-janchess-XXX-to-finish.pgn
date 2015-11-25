@@ -1,0 +1,16 @@
+[Event "Computer Chess Game"]
+[Site "trusty"]
+[Date "2015.11.25"]
+[Round "-"]
+[White "Fairy-Max 4.8Q"]
+[Black "janchess"]
+[Result "*"]
+[TimeControl "60"]
+[Annotator "1. +0,20"]
+
+1. Nc3 {+0,20/7} Nc6 2. d3 {+0,10/8 1,4} g6 3. Bg5 {+0,07/8 5} h6 4. Bf4
+{-0,12/8 1,7} h5 5. Qd2 {-0,06/8 2,7} e5 6. Qe3 {-0,23/8 1,6} Qe7 7. Nd5
+{-0,15/8 0,9} Qd6 8. Nc3 {-0,54/8 1,2} Be7 9. Bg5 {-0,72/8 0,9} Nd4 10.
+O-O-O {-0,10/7 0,6} b5 11. Nf3 {+0,24/8 1,0} b4 12. Ne4 {+0,66/8 1,4}
+*
+

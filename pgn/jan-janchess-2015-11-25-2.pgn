@@ -1,0 +1,16 @@
+[Event "Computer Chess Game"]
+[Site "trusty"]
+[Date "2015.11.25"]
+[Round "-"]
+[White "jan"]
+[Black "janchess"]
+[Result "0-1"]
+[TimeControl "60"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 Nd4 4. Nxd4 exd4 5. c3 c6 6. Ba4 Qg5 7. O-O b5
+8. Bc2 Qe5 9. cxd4 Qxd4 10. Nc3 b4 11. Na4 h5 12. Re1 g5 13. a3 bxa3 14.
+Rxa3 Bxa3 15. bxa3 Rb8 16. Qf3 g4 17. Qf4 d6 18. Nc3 Ne7 19. Ne2 Qc5 20.
+Ng3 Qxc2 21. d4 h4 22. Nf5 Bxf5 23. exf5 Qc3 24. Bd2 Qxa3 25. f6 Rg8 26.
+Rxe7+ Kd8 27. h3 Rb1+ 28. Kh2 g3+ 29. fxg3 hxg3+ 30. Qxg3 Qxg3#
+{Xboard adjudication: Checkmate} 0-1
+

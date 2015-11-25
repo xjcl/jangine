@@ -145,7 +145,7 @@ Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.mov
 
 
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
-def turochamp():
+def turochamp(loud=False):
 
     eval = 0
 
@@ -154,28 +154,51 @@ def turochamp():
         bijp = board[i][j] & ~WHITE & ~BLACK
         bij = board[i][j]
         MUL = 1 if bij & WHITE else -1
+
         eval += MUL * PIECEVALS[bijp]
 
         # king safety
+        # if bijp == KING:
+        #     i = 0
+        #     for a,b in PIECEDIRS[QUEEN]:
+        #         for k in PIECERANGE[QUEEN]:
+        #             if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
+        #                 break
+        #             # eval -= MUL * 8
+        #             i += 1
+        #     eval -= MUL * 350 * round(i**.5)
+
+        # pawn advancement
+        # if bij & PAWN:
+        #     eval += 8 * (6-i if bij & WHITE else 1-i)
+
+    if loud:
+        print('pieces and pawns', eval)
+
+    for i,j in gentuples:
+        bijp = board[i][j] & ~WHITE & ~BLACK
+        bij = board[i][j]
+        MUL = 1 if bij & WHITE else -1
         if bijp == KING:
-            i = 0
+            c = 0
             for a,b in PIECEDIRS[QUEEN]:
                 for k in PIECERANGE[QUEEN]:
                     if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
                         break
                     # eval -= MUL * 8
-                    i += 1
-            eval -= MUL * 15 * round(i**.5)
+                    c += 1
+            eval -= MUL * 30 * round(c**.5)
 
-        # pawn advancement
-        if bij & PAWN:
-            eval += 10 * (7-i if bij & WHITE else -i)
-
+    if loud:
+        print('king safety', eval)
 
     # center control
     center = [board[3][3], board[3][4], board[4][3], board[4][4]]
-    eval += 15 * len([x for x in center if x & WHITE])
-    eval -= 15 * len([x for x in center if x & BLACK])
+    eval += 8 * len([x for x in center if x & WHITE and not x & QUEEN and not x & ROOK])
+    eval -= 8 * len([x for x in center if x & BLACK and not x & QUEEN and not x & ROOK])
+
+    if loud:
+        print('center', eval)
 
     # mobility (possible moves) + (implicitly) king in check
     for COLOR, MUL in [(WHITE, 1), (BLACK, -1)]:
@@ -198,86 +221,14 @@ def turochamp():
             j += 1
 
 
-    # XXX didn't consider EP once
+    if loud: print('mobility', eval)
 
-    # XXX maybe mobility thru friendly piece (/= pawn) counts half or so
-    # XXX
-    #   INFO:root:>>> BBBB  Evaluation(value=-162, moves=[(0, 4, 7, 4), (7, 4, 7, 6), (2, 2, 1, 2), (0, 3, 0, 4)])
-    # INFO:root:>>>       BB BK BR
-    # INFO:root:>>>       BP       BQ
-    # INFO:root:>>>       WQ       WP
-    # INFO:root:>>>       BP       BR
-    # INFO:root:>>>    BP WP             WB
-    # INFO:root:>>> BP WP    WP          WP
-    # INFO:root:>>> WP    WK             WR
-    # INFO:root:>>>                   WR
+    # eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] and not board[7][1] and not board[7][2] \
+    #     and not board[7][3] or CASTLINGWHITE[2] and not board[7][5] and not board[7][6])) else 0
+    # eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] and not board[0][1] and not board[0][2] \
+    #     and not board[0][3] or CASTLINGBLACK[2] and not board[0][5] and not board[0][6])) else 0
 
-
-
-    # INFO:root:>>>
-    # INFO:root:>>>       BK
-    # INFO:root:>>>       BP
-    # INFO:root:>>>
-    # INFO:root:>>>
-    # INFO:root:>>>    WB WP             WP
-    # INFO:root:>>>          WP    WK
-    # INFO:root:>>>
-    # INFO:root:>>> BQ
-    # INFO:root:>>>
-    # INFO:root:>>> 1131
-    # INFO:root:>>> (0, 2, 1, 3) Evaluation(value=-306, moves=[(5, 5, 5, 6), (7, 0, 4, 3)])
-    # INFO:root:>>> (7, 0, 7, 3) Evaluation(value=-367, moves=[(5, 5, 5, 4), (7, 3, 7, 2), (4, 1, 6, 3), (0, 2, 0, 3)])
-    # INFO:root:>>> (1, 2, 2, 2) Evaluation(value=-365, moves=[(5, 5, 4, 4), (7, 0, 7, 7), (4, 4, 3, 5)])
-    # INFO:root:>>> (0, 2, 1, 1) Evaluation(value=-356, moves=[(4, 1, 3, 2), (7, 0, 3, 4)])
-    # INFO:root:>>> (7, 0, 6, 0) Evaluation(value=-361, moves=[(5, 5, 4, 6), (6, 0, 0, 0)])
-    # INFO:root:>>> (7, 0, 7, 7) Evaluation(value=-301, moves=[(5, 5, 5, 4), (5, 4, 6, 3)])
-    # INFO:root:>>> (7, 0, 7, 4) Evaluation(value=-637, moves=[(7, 4, 4, 1), (5, 5, 5, 6)])
-    # INFO:root:>>> (7, 0, 0, 0) Evaluation(value=-581, moves=[(5, 5, 5, 4), (0, 0, 4, 4), (5, 4, 6, 5), (4, 4, 5, 3), (5, 3, 4, 2), (4, 1, 6, 3)])
-    # INFO:root:>>> (7, 0, 7, 1) Evaluation(value=-301, moves=[(5, 5, 5, 4), (5, 4, 6, 3)])
-    # INFO:root:>>> (7, 0, 3, 4) Evaluation(value=-499, moves=[(5, 3, 4, 3), (3, 4, 4, 3), (5, 5, 6, 4)])
-    # INFO:root:>>> (7, 0, 7, 2) Evaluation(value=-394, moves=[(0, 2, 1, 1)])
-    # INFO:root:>>> (7, 0, 7, 6) Evaluation(value=-406, moves=[(5, 5, 4, 4), (7, 6, 4, 3), (4, 4, 3, 5)])
-    # INFO:root:>>> (1, 2, 3, 2) Evaluation(value=-627, moves=[(5, 5, 5, 4), (3, 2, 4, 1), (5, 4, 6, 3)])
-    # INFO:root:>>> (0, 2, 0, 3) Evaluation(value=-386, moves=[(5, 5, 5, 4), (7, 0, 3, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 7, 5) Evaluation(value=-324, moves=[(5, 5, 5, 6)])
-    # INFO:root:>>> (7, 0, 4, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 4, 3) Evaluation(value=-504, moves=[(5, 5, 6, 4), (4, 3, 5, 3), (6, 4, 6, 5)])
-    # INFO:root:>>> (0, 2, 0, 1) Evaluation(value=-416, moves=[(5, 5, 5, 4), (7, 0, 3, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 2, 0) Evaluation(value=-368, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 1, 6) Evaluation(value=-411, moves=[(5, 5, 5, 4), (1, 6, 1, 3)])
-    # INFO:root:>>> (7, 0, 5, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 5, 2) Evaluation(value=-637, moves=[(4, 1, 5, 0), (5, 2, 5, 0), (5, 5, 5, 6)])
-    # INFO:root:>>> (7, 0, 0, 7) Evaluation(value=-431, moves=[(5, 5, 5, 4), (0, 7, 4, 7), (5, 4, 6, 3)])
-    # INFO:root:>>> (7, 0, 3, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
-    # INFO:root:>>> (7, 0, 2, 5) Evaluation(value=-511, moves=[(5, 5, 4, 6), (2, 5, 5, 5), (4, 6, 3, 6), (5, 5, 5, 3), (3, 6, 2, 5)])
-    # INFO:root:>>> (7, 0, 6, 1) Evaluation(value=-328, moves=[(5, 5, 5, 4), (5, 4, 4, 5)])
-    # INFO:root:>>> (7, 0, 1, 0) Evaluation(value=-406, moves=[(5, 5, 4, 4), (1, 0, 4, 3), (4, 4, 3, 5)])
-    # INFO:root:>>> BBBB  Evaluation(value=-637, moves=[(7, 0, 7, 4), (7, 4, 4, 1), (5, 5, 5, 6)])
-    # INFO:root:>>> move a1e1
-    # castling (will be weighed with king safety)
-
-
-    # WE NEED THREE FOLD REP RULE!!!
-
-    # INFO:root:>>>
-    # INFO:root:>>> WK    BK
-    # INFO:root:>>>
-    # INFO:root:>>>          BQ
-    # INFO:root:>>>
-    # INFO:root:>>>
-    # INFO:root:>>>
-    # INFO:root:>>>
-    # INFO:root:>>>
-    # INFO:root:>>> 6
-    # INFO:root:>>> (3, 3, 0, 0) Evaluation(value=0, moves=[(1, 0, 0, 0), (1, 2, 0, 2), (0, 0, 1, 0), (0, 2, 0, 3)])
-    # INFO:root:>>> (3, 3, 2, 2) Evaluation(value=0, moves=[])
-    # INFO:root:>>> (1, 2, 2, 2) Evaluation(value=-918, moves=[(1, 0, 0, 0), (2, 2, 1, 3), (0, 0, 1, 0)])
-    # INFO:root:>>> (1, 2, 2, 3) Evaluation(value=-958, moves=[(1, 0, 0, 1), (2, 3, 1, 3)])
-    # INFO:root:>>> (3, 3, 4, 4) Evaluation(value=-32999, moves=[(1, 0, 2, 0), (4, 4, 4, 0)])
-    eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] and not board[7][1] and not board[7][2] \
-        and not board[7][3] or CASTLINGWHITE[2] and not board[7][5] and not board[7][6])) else 0
-    eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] and not board[0][1] and not board[0][2] \
-        and not board[0][3] or CASTLINGBLACK[2] and not board[0][5] and not board[0][6])) else 0
+    if loud: print('castling', eval)
 
     return eval
 
@@ -315,30 +266,37 @@ def killer_order(mvs):
     return sorted(mvs, key=lambda x: KILLERHEURISTIC[x], reverse=True)
 
 
-def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=41, depth=0):
+def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=41, depth=0, lastmv=()):
 
     global TRANSPOSITIONS
+
+    # hashable_board = tuple(tuple(row) for row in board) + (COLOR,)  # COLOR! else it might 'go twice'
+    # if hashable_board in TRANSPOSITIONS:
+    #     return TRANSPOSITIONS[hashable_board]
 
     if quies <= 0 or depth > 7:     return Evaluation(turochamp(), [])
     if depth == 0:
         print(len(TRANSPOSITIONS))
-        TRANSPOSITIONS = collections.defaultdict(int)  # print: bursts the pipe lol
+        print(CASTLINGWHITE)
+        TRANSPOSITIONS = dict()  # print: bursts the pipe lol
 
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
 
-    hashable_board = tuple(tuple(row) for row in board)
-    if hashable_board in TRANSPOSITIONS:
-        return TRANSPOSITIONS[hashable_board]
+    if depth == 0:
+        print(genlegals(BLACK))
+        print(genlegals(COLOR))
+        print(killer_order(genlegals(COLOR)))
 
     for mv in killer_order(genlegals(COLOR)):
+
         hit_piece, c_rights = make_move(mv)
 
-        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - eval_quies(COLOR, mv, hit_piece), depth + 1)
+        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - eval_quies(COLOR, mv, hit_piece), depth + 1, mv)
+
+        unmake_move(mv, hit_piece, c_rights)
 
         if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
-
-        unmake_move(mv, hit_piece, c_rights)
 
         if depth == 0:
             print(mv, rec)
@@ -359,7 +317,7 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
             return Evaluation(0, [])
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
-    TRANSPOSITIONS[hashable_board] = best
+    # TRANSPOSITIONS[hashable_board] = best
 
     if depth == 0:
         print('BBBB ', best)
@@ -423,7 +381,7 @@ def genlegals(COLOR, ignore_king_capture=False):
     ADD = -1 if COLOR == WHITE else 1
     STARTRANK = 6 if COLOR == WHITE else 1
     PROMRANK = 1 if COLOR == WHITE else 6
-    EPRANK = 3 if COLOR == WHITE else 5
+    EPRANK = 3 if COLOR == WHITE else 4
     CASTLERANK = 7 if COLOR == WHITE else 0
 
     ret = []
@@ -453,8 +411,10 @@ def genlegals(COLOR, ignore_king_capture=False):
                 ret += temp
             if i == EPRANK:  # en passant
                 if LASTMOVE == (i+ADD+ADD, j-1, i, j-1):
+                    print('epadd')
                     ret.append((i, j, i+ADD, j-1, 'e'))
                 if LASTMOVE == (i+ADD+ADD, j+1, i, j+1):
+                    print('epadd')
                     ret.append((i, j, i+ADD, j+1, 'e'))
         else:
             for a,b in PIECEDIRS[bijpiece]:
@@ -473,7 +433,6 @@ def genlegals(COLOR, ignore_king_capture=False):
     if ((CASTLINGWHITE[0] and CASTLINGWHITE[1]) if COLOR == WHITE
     else (CASTLINGBLACK[0] and CASTLINGBLACK[1])):
         if not board[CASTLERANK][3] and not board[CASTLERANK][2] and not board[CASTLERANK][1]:
-            print('castle left',  board[CASTLERANK][3] ,  board[CASTLERANK][2] ,  board[CASTLERANK][1] )
             board[CASTLERANK][2:4] = [COLOR + KING]*2
             if king_not_in_check(COLOR):
                 ret.append((CASTLERANK, 4, CASTLERANK, 2, 'c'))
@@ -481,7 +440,6 @@ def genlegals(COLOR, ignore_king_capture=False):
     if ((CASTLINGWHITE[2] and CASTLINGWHITE[1]) if COLOR == WHITE
     else (CASTLINGBLACK[2] and CASTLINGBLACK[1])):
         if not board[CASTLERANK][5] and not board[CASTLERANK][6]:
-            print('castle right',  board[CASTLERANK][5] ,  board[CASTLERANK][6] )
             board[CASTLERANK][5:7] = [COLOR + KING]*2
             if king_not_in_check(COLOR):
                 ret.append((CASTLERANK, 4, CASTLERANK, 6, 'c'))
@@ -518,8 +476,6 @@ def make_move(mv):
         if mv[4] == 'e':
             board[mv[0]][mv[3]] = 0  # en passant
         elif mv[4] == 'c':
-            print(mv, piece & WHITE, piece & BLACK, CASTLINGWHITE, CASTLINGBLACK)
-            pprint()
             assert mv[0:2] == (CASTLERANK, 4)
             if mv[3] == 2:
                 board[CASTLERANK][3] = board[CASTLERANK][0]
@@ -529,7 +485,6 @@ def make_move(mv):
                 board[CASTLERANK][5] = board[CASTLERANK][7]
                 board[CASTLERANK][7] = 0
             board[CASTLERANK][4] = 0
-            pprint()
         else:
             board[mv[2]][mv[3]] = PIECECHARSINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
 
@@ -544,13 +499,17 @@ def make_move(mv):
 
 
 def unmake_move(mv, hit_piece, c_rights):
+
+    global CASTLINGWHITE
+    global CASTLINGBLACK
+
     piece = board[mv[2]][mv[3]]
     board[mv[2]][mv[3]] = hit_piece
     board[mv[0]][mv[1]] = piece
 
     if len(mv) == 5:
         if mv[4] == 'e':
-            board[mv[0]][mv[3]] = PAWN + (WHITE if mv[2] == 6 else BLACK)
+            board[mv[0]][mv[3]] = PAWN + (WHITE if mv[2] == 5 else BLACK)
         elif mv[4] == 'c':
             if mv[3] == 2:
                 board[mv[0]][0] = board[mv[0]][3]
@@ -622,11 +581,36 @@ def calc_move():
 
 
 
-
 if args.test:
-    import logic_tests
+    CASTLINGWHITE = (False, False, False)
+    CASTLINGBLACK = (False, False, False)
 
-while True:
+    ...
+
+    log_to_board("""\
+    INFO:root:>>> BR       BQ BK BB BN BR
+    INFO:root:>>> BP BP BP    BP       BP
+    INFO:root:>>>       BN       BP
+    INFO:root:>>>          BP    BB BP
+    INFO:root:>>>          BP    WB
+    INFO:root:>>>                WN
+    INFO:root:>>> WP WP BP WN WP WP WP WP
+    INFO:root:>>> WR       WQ WK WB    WR\
+    """)
+
+    pprint()
+    make_move((3,6,4,5))
+    pprint()
+    genlegals(WHITE)
+    pprint()
+    quiescence(WHITE)
+    pprint()
+
+
+
+
+
+while __name__ == '__main__' and True:
     i = input()
     ins = i.split(' ')[1:]
 

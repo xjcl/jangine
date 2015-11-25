@@ -18,7 +18,7 @@ import time
 parser = argparse.ArgumentParser(description='Plays chess poorly.')
 
 parser.add_argument('-m', '--mode', type=str, default='quiescence',
-                   help='random or minmax or quiescence (default)')
+                   help='random or quiescence (default)')
 
 parser.add_argument('-t', '--test', action='store_true',
                    help='run tests???!!?')
@@ -27,15 +27,9 @@ args = parser.parse_args()
 
 
 
-
-
-# XXX try to mate
-# XXX ep
-# XXX castling
-# XXX ab-pruning
 # XXX C-rewrite
 
-logging.basicConfig(filename='janchess.log', level=logging.DEBUG)
+logging.basicConfig(filename='janchess.log', level=logging.DEBUG, filemode='w')
 logging.info(str(time.time()))
 
 def print(*args, **kwargs):
@@ -49,15 +43,7 @@ def input(*args, **kwargs):
 
 
 
-PAWN = 1
-KNIGHT = 2
-BISHOP = 4
-ROOK = 8
-QUEEN = 16
-KING = 32
-
-WHITE = 64
-BLACK = 128
+PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, WHITE, BLACK = 1, 2, 4, 8, 16, 32, 64, 128
 
 LETTERMAP = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h'}
 LETTERMAPINV = {v:k for k,v in LETTERMAP.items()}
@@ -65,9 +51,9 @@ LETTERMAPINV = {v:k for k,v in LETTERMAP.items()}
 PIECEMAP = {PAWN:'p', KNIGHT:'n', BISHOP:'b', ROOK:'r', QUEEN:'q'}
 PIECEMAPINV = {v:k for k,v in PIECEMAP.items()}
 
-PIECEVALS = {PAWN: 1, KNIGHT: 3, BISHOP: 3, ROOK: 5, QUEEN: 9, KING: 300, 0: 0}
+PIECEVALS = {PAWN: 100, KNIGHT: 300, BISHOP: 300, ROOK: 500, QUEEN: 900, KING: 33000, 0: 0}
 
-# XXX castling
+# castling
 CASTLINGWHITE = (True, True, True)
 CASTLINGBLACK = (True, True, True)
 
@@ -78,6 +64,13 @@ board = None
 IM_WHITE = False
 started = True
 BUF = ''
+
+# XXX instead use lru-cache?
+KILLERHEURISTIC = collections.defaultdict(int)
+
+# XXX currently castling-rights-agnostic!!
+# XXX currently draw-by-rep-agnostic!!
+TRANSPOSITIONS = collections.defaultdict(int)
 
 
 
@@ -169,82 +162,117 @@ Evaluation.__le__ = lambda self, other: self < other or self == other
 Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
 
 _verbosity = 1  # depth of search to print
-inf = 3000
+inf = 33000
 
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 def turochamp():
+
     eval = 0
 
     for i,j in gentuples():
+        # material counting
         bijp = board[i][j] & ~WHITE & ~BLACK
         bij = board[i][j]
-        eval += (1 if bij & WHITE else -1) * PIECEVALS[bijp]
+        MUL = 1 if bij & WHITE else -1
+        eval += MUL * PIECEVALS[bijp]
+
+        # king safety
+        if bijp == KING:
+            for a,b in PIECEDIRS[QUEEN]:
+                for k in PIECERANGE[QUEEN]:
+                    if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
+                        break
+                    eval -= MUL * 10
+
+        # pawn advancement
         if bij & PAWN:
-            eval += (-.1 * i if bij & WHITE else .1 * i)
+            eval += 10 * (7-i if bij & WHITE else -i)
+
+
+    # center control
+    center = [board[3][3], board[3][4], board[4][3], board[4][4]]
+    eval += 15 * len([x for x in center if x & WHITE])
+    eval -= 15 * len([x for x in center if x & BLACK])
+
+    # mobility (possible moves) + king in check
+    for COLOR, MUL in [(WHITE, 1), (BLACK, -1)]:
+        gl = genlegals(COLOR, ignore_king_capture=True)  # XXX maybe calc it directly and dont use gl
+        if not gl:
+            if king_not_in_check(COLOR):  # stalemate
+                return 0
+            return MUL * (-inf+1)
+        j = 0
+        while j < len(gl):
+            ref_mv = gl[j]
+            i = 0
+            while j < len(gl) and gl[j][0:2] == ref_mv[0:2]:
+                i += 1
+                j += 1
+            eval += MUL * 20 * round(i**.5)
+            j += 1
+
+    # king safety
+
+
+    # castling (will be weighed with king safety)
+    eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] or CASTLINGWHITE[2])) else 0
+    eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] or CASTLINGBLACK[2])) else 0
 
     return eval
 
 
 
-def minmax(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), depth=5):
-    if not depth:   return Evaluation(turochamp(), [])
-
-    best = Evaluation(-inf if COLOR == WHITE else inf, None)
-    # if _verbosity > -1:  print(genlegals(COLOR))
-    for mv in genlegals(COLOR):
-        hit_piece, c_rights = make_move(mv)
-        rec = minmax(BLACK if COLOR == WHITE else WHITE, alpha, beta, depth - 1)
-        # print((3 - depth) * '    ', mv, rec, alpha.value, beta.value)
-        if ((rec > best) if COLOR == WHITE else (rec < best)):
-            best = Evaluation(rec.value, [mv] + rec.moves)
-        unmake_move(mv, hit_piece, c_rights)
-
-        if COLOR == WHITE and (best > alpha):   alpha = best
-        if COLOR == BLACK and (best < beta) :   beta  = best
-        if beta <= alpha:   break
-    # if depth > 4: print('chose', best)
-
-    if best.moves == None:
-        if king_not_in_check(COLOR):  # stalemate
-            return Evaluation(0, [])
-        return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
-
-    return best
 
 
-def eval_quies(COLOR, mv):
+
+def eval_quies(COLOR, mv, hit_piece):
     NCOLOR = BLACK if COLOR == WHITE else WHITE
 
-    quies = 30
-    eval = 0
+    quies = 25
 
     if ((mv[0] > mv[2]) if COLOR == WHITE else (mv[0] < mv[2])):
-        quies *= .6
-    if ((mv[0] < mv[2]) if COLOR == WHITE else (mv[0] > mv[2])):
-        quies *= 1.4
+        quies *= .8
+    # if ((mv[0] < mv[2]) if COLOR == WHITE else (mv[0] > mv[2])):
+    #     quies *= 1.2
 
-    if board[mv[2]][mv[3]] or len(mv) == 5:
+    if hit_piece or len(mv) == 5 and mv[4] != 'c':
         quies *= 0
         # we can't let that happen: else it calculates n-1 moves and then captures
         #   since it doesn't see the opponent's recapture, it evals it favorably
 
-    hit_piece, c_rights = make_move(mv)
+    # XXX  also 0-rate reactions to checks --> maybe in def quiescence?
     if not king_not_in_check(NCOLOR) or board[mv[0]][mv[1]] & KING:
-        quies *= .3
+        quies *= 0
 
-    return hit_piece, c_rights, quies, eval
+    return quies
+
+
+
+
+
+def killer_order(mvs):
+    return sorted(mvs, key=lambda x: KILLERHEURISTIC[x], reverse=True)
 
 
 def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=45, depth=0):
 
-    if quies <= 0:   return Evaluation(turochamp(), [])
+    global TRANSPOSITIONS
+
+    if quies <= 0 or depth > 7:     return Evaluation(turochamp(), [])
+    if depth == 0:
+        print(len(TRANSPOSITIONS))
+        TRANSPOSITIONS = collections.defaultdict(int)  # print: bursts the pipe lol
 
     best = Evaluation(-inf if COLOR == WHITE else inf, None)
 
-    for mv in genlegals(COLOR):
-        hit_piece, c_rights, mv_quies, mv_eval = eval_quies(COLOR, mv)
+    hashable_board = tuple(tuple(row) for row in board)
+    if hashable_board in TRANSPOSITIONS:
+        return TRANSPOSITIONS[hashable_board]
 
-        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - mv_quies, depth + 1)
+    for mv in killer_order(genlegals(COLOR)):
+        hit_piece, c_rights = make_move(mv)
+
+        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - eval_quies(COLOR, mv, hit_piece), depth + 1)
 
         if ((rec > best) if COLOR == WHITE else (rec < best)):
             best = Evaluation(rec.value, [mv] + rec.moves)
@@ -256,9 +284,13 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
         # if board[mv[2]][mv[3]] & QUEEN or board[mv[2]][mv[3]] & KNIGHT or True:
         #     print('   '*depth, mv, rec, alpha.value, beta.value)
 
+        # save eval if we come across it from another move order
+
         if COLOR == WHITE and (best > alpha):   alpha = best
         if COLOR == BLACK and (best < beta) :   beta  = best
-        if beta <= alpha:   break
+        if beta <= alpha:
+            KILLERHEURISTIC[mv] += depth ** 2
+            break
 
     # genlegals was empty
     if best.moves == None:
@@ -266,6 +298,7 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
             return Evaluation(0, [])
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
+    TRANSPOSITIONS[hashable_board] = best
 
     if depth == 0:
         print('BBBB ', best)
@@ -324,7 +357,7 @@ def king_not_in_check(COLOR):
 
     return True
 
-def genlegals(COLOR):
+def genlegals(COLOR, ignore_king_capture=False):
     NCOLOR = BLACK if COLOR == WHITE else WHITE
     ADD = -1 if COLOR == WHITE else 1
     STARTRANK = 6 if COLOR == WHITE else 1
@@ -333,6 +366,7 @@ def genlegals(COLOR):
     CASTLERANK = 7 if COLOR == WHITE else 0
 
     ret = []
+    num_allowed_moves = collections.defaultdict(int)
 
     for i, j in gentuples():
         bij = board[i][j]
@@ -396,7 +430,7 @@ def genlegals(COLOR):
 
     for mv in ret:
         hit_piece, c_rights = make_move(mv)
-        assert not hit_piece & KING
+        assert ((not hit_piece & KING) if ignore_king_capture == False else True)
 
         if king_not_in_check(COLOR):
             ret2.append(mv)
@@ -435,7 +469,6 @@ def make_move(mv):
                 board[CASTLERANK][7] = 0
             board[CASTLERANK][4] = 0
             pprint()
-            print("TRANSACTION DONE")
         else:
             board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
 
@@ -478,9 +511,9 @@ def make_move_str(mv):
     print('recv move ' + mv)
 
     a = 8 - int(mv[1])
-    b = LETTERMAPINV[mv[0]]
+    b = ord(mv[0]) - ord('a')
     c = 8 - int(mv[3])
-    d = LETTERMAPINV[mv[2]]
+    d = ord(mv[2]) - ord('a')
     if len(mv) == 5:
         to_mv = (a, b, c, d, mv[4])
     elif b != d and board[a][b] & PAWN and not board[c][d]:  # en passant
@@ -509,8 +542,8 @@ def calc_move():
 
     else:
         ans = quiescence(WHITE if IM_WHITE else BLACK)
-        if ans:
-            return ans.moves[0]
+        if ans and ans.moves:
+            mv = ans.moves[0]
         else:
             print('out of moves')
             pprint()
@@ -520,7 +553,7 @@ def calc_move():
     LASTMOVE = mv
 
     # [print(row) for row in board]
-    return LETTERMAP[mv[1]] + str(8 - mv[0]) + LETTERMAP[mv[3]] + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
+    return chr(ord('a') + mv[1]) + str(8 - mv[0]) + chr(ord('a') + mv[3]) + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
 
 
 
@@ -531,177 +564,7 @@ def calc_move():
 
 
 if args.test:
-
-    t0 = [
-        [BLACK + KING, 0, 0, 0, WHITE + QUEEN, 0, 0, 0],
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-    ]
-
-    board = t0
-    assert not king_not_in_check(BLACK)
-
-    t1 = [
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0] * 8,
-        [0, 0, 0, 0, 0, 0, 0, BLACK + QUEEN],
-        [0] * 8,
-        [0] * 8,
-        [0, 0, 0, 0, WHITE + KING, 0, 0, 0],
-    ]
-
-    board = t1
-    assert not king_not_in_check(WHITE)
-
-
-
-
-    g0 =  [
-        [0, BLACK + ROOK, BLACK + BISHOP, BLACK + QUEEN,
-            BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK],
-        [BLACK + PAWN] * 4 + [0] + [BLACK + PAWN] * 3,
-        [0] * 4 + [WHITE + PAWN] + [0] * 3,
-        [0] * 8,
-        [0, BLACK + KNIGHT, 0, 0, WHITE + PAWN] + [0] * 3,
-        [0] * 8,
-        [WHITE + PAWN] * 3 + [WHITE + BISHOP, 0] + [WHITE + PAWN] * 3,
-        [WHITE + ROOK, WHITE + KNIGHT, 0, WHITE + QUEEN,
-            WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
-    ]
-
-    board = g0
-    # find good enough move
-    # assert (1, 5, 2, 4) in quiescence(BLACK)
-
-
-
-    m0 =  [
-        [0, BLACK + ROOK, BLACK + BISHOP, 0, BLACK + KING, 0, 0, BLACK + ROOK],
-        [BLACK + PAWN] * 4 + [BLACK + QUEEN] + [BLACK + PAWN] * 3,
-        [0] * 2 + [WHITE + PAWN] + [0] * 2 + [BLACK + KNIGHT] + [0] * 2,
-        [0] * 8,
-        [0, BLACK + BISHOP] + [0] * 6,
-        [0, 0, WHITE + PAWN] + [0] * 6,
-        [WHITE + PAWN] * 2 + [0] * 2 + [WHITE + QUEEN] + [WHITE + PAWN] * 3,
-        [WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, 0,
-            WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK],
-    ]
-
-    board = m0
-
-    # bestmove = quiescence(BLACK).moves[0]
-    # print('bestmove', bestmove)
-
-    # assert bestmove[0] == 5 and bestmove[1] == 2
-    # with depth=3 this will be 'wrong' as it thinks pulling back
-    #   the bishop will result in the loss of the Q
-
-    # log_to_board("""INFO:root:>>> BR       BQ BK BB BN BR
-    #     INFO:root:>>> BP BP BP    BP BP BP BP
-    #     INFO:root:>>>
-    #     INFO:root:>>>          WP
-    #     INFO:root:>>>    BN             BB
-    #     INFO:root:>>> WP    WN    WP
-    #     INFO:root:>>>    WP WP WQ       WP WP
-    #     INFO:root:>>> WR    WB    WK WB WN WR """)
-
-
-    # bestmove = quiescence(BLACK).moves[0]
-    # print('bestmove', bestmove)
-    # assert bestmove == (4, 1, 2, 0)
-
-
-
-    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
-    #     INFO:root:>>> BP BP BP BP    BP BP BP
-    #     INFO:root:>>>       BN    BP
-    #     INFO:root:>>>
-    #     INFO:root:>>>          WP WP
-    #     INFO:root:>>>                WN
-    #     INFO:root:>>> WP WP WP       WP WP WP
-    #     INFO:root:>>> WR WN WB WQ WK WB    WR""")
-
-    # bestmove = quiescence(BLACK).moves[0]
-    # print('bestmove', bestmove)
-    # assert bestmove != (2, 2, 3, 4)
-
-
-
-    #     log_to_board("""INFO:root:>>> BR    BB BQ BK BB    BR
-    # INFO:root:>>> BP    BP    BP BP BP BP
-    # INFO:root:>>> BN BP    BP          BN
-    # INFO:root:>>>
-    # INFO:root:>>>       WB WP WP
-    # INFO:root:>>>                WN
-    # INFO:root:>>> WP WP WP       WP WP WP
-    # INFO:root:>>> WR WN WB WQ       WK WR""")
-
-    #     # for mv in genlegals(BLACK):
-    #     #     hp = make_move(mv)
-    #     #     for mv2 in genlegals(WHITE):
-    #     #         hp2 = make_move(mv2)
-    #     #         print(mv, mv2, turochamp())
-    #     #         unmake_move(mv2, hp2)
-    #     #     unmake_move(mv, hp)
-
-    #     bestmove = quiescence(BLACK).moves[0]
-    #     print('bestmove', bestmove)
-    #     assert bestmove != (0, 2, 4, 6)
-
-    # make_move((0, 2, 4, 6))
-
-    # bestmove = quiescence(WHITE).moves[0]
-    # print('bestmove', bestmove)
-    # assert bestmove == (4, 2, 2, 0) or bestmove == (7, 2, 2, 7)
-
-    # y u no see white's  (4,2,2,0)
-
-
-
-    # make_move((0, 2, 4, 6))
-    # make_move((4, 2, 5, 3))  # XXX
-    # print(turochamp())
-
-
-
-
-    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
-    #     INFO:root:>>> BP BP BP BP BP BP BP BP
-    #     INFO:root:>>>       BN
-    #     INFO:root:>>>          WP
-    #     INFO:root:>>>
-    #     INFO:root:>>>
-    #     INFO:root:>>> WP WP WP    WP WP WP WP
-    #     INFO:root:>>> WR WN WB WQ WK WB WN WR""")
-
-    # bestmove = quiescence(BLACK).moves[0]
-    # print('bestmove', bestmove)
-
-
-    # log_to_board("""INFO:root:>>> BR    BB BQ BK BB BN BR
-    #     INFO:root:>>> BP    BP BP BP BP BP BP
-    #     INFO:root:>>> BP
-    #     INFO:root:>>>
-    #     INFO:root:>>>             WP
-    #     INFO:root:>>>                WN
-    #     INFO:root:>>> WP WP WP WP    WP WP WP
-    #     INFO:root:>>> WR WN WB WQ WK       WR""")
-
-    # bestmove = quiescence(BLACK).moves[0]
-    # print('bestmove', bestmove)
-
-
-    exit()
-
-
-
+    import logic_tests
 
 while True:
     i = input()
@@ -723,6 +586,7 @@ while True:
     elif i == 'new':
         IM_WHITE = False
         board = new_board()
+        KILLERHEURISTIC = collections.defaultdict(int)
 
     elif input_is_move(i) and not started:
         BUF = i
@@ -739,6 +603,7 @@ while True:
             make_move_str(BUF)
             BUF = ''
         mv = calc_move()
+        print(mv)
         if mv:  print('move ' + mv)
 
     elif i.startswith('time'):
@@ -750,9 +615,10 @@ while True:
         print(i.replace('i', 'o'))
 
     elif i == 'quit' or i == 'q':
+        print('quitted')
         pprint()
         logging.shutdown()
-        exit()
+        exit()  # xboard waits for us on exit
 
 
 

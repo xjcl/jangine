@@ -1,0 +1,1229 @@
+jan@trusty:~/Dropbox/py/janchess$ ./sunfish.py
+
+
+   r n b q k b n r
+   p p p p p p p p
+   . . . . . . . .
+   . . . . . . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R N B Q K B N R
+
+
+Your move: b2a3
+Your move: b1a3
+
+
+   r n b q k b n r
+   p p p p p p p p
+   . . . . . . . .
+   . . . . . . . .
+   . . . . . . . .
+   N . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+a3My move: g8f6
+
+
+   r n b q k b . r
+   p p p p p p p p
+   . . . . . n . .
+   . . . . . . . .
+   . . . . . . . .
+   N . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+Your move: b1
+
+
+   r n b q k b . r
+   p p p p p p p p
+   . . . . . n . .
+   . . . . . . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R N B Q K B N R
+
+
+My move: b8c6
+
+
+   r . b q k b . r
+   p p p p p p p p
+   . . n . . n . .
+   . . . . . . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R N B Q K B N R
+
+
+Your move: b3a1
+Your move: b1a3
+
+
+   r . b q k b . r
+   p p p p p p p p
+   . . n . . n . .
+   . . . . . . . .
+   . . . . . . . .
+   N . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+My move: e7e5
+
+
+   r . b q k b . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . . . . . . . .
+   N . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+Your move: a3b1
+
+
+   r . b q k b . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R N B Q K B N R
+
+
+My move: f8b4
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . b . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R N B Q K B N R
+
+
+Your move: b1a3
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . b . . . . . .
+   N . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+My move: b4a3
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . . . . . . . .
+   b . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+Your move: a1a2
+Your move: a1b1
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . . . p . . .
+   . . . . . . . .
+   b . . . . . . .
+   P P P P P P P P
+   . R B Q K B N R
+
+
+My move: a3c5
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . b . p . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   . R B Q K B N R
+
+
+Your move: b1a1
+
+
+   r . b q k . . r
+   p p p p . p p p
+   . . n . . n . .
+   . . b . p . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+My move: e8g8
+
+
+   r . b q . r k .
+   p p p p . p p p
+   . . n . . n . .
+   . . b . p . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   R . B Q K B N R
+
+
+Your move: a1b1
+
+
+   r . b q . r k .
+   p p p p . p p p
+   . . n . . n . .
+   . . b . p . . .
+   . . . . . . . .
+   . . . . . . . .
+   P P P P P P P P
+   . R B Q K B N R
+
+
+My move: f6e4
+
+
+   r . b q . r k .
+   p p p p . p p p
+   . . n . . . . .
+   . . b . p . . .
+   . . . . n . . .
+   . . . . . . . .
+   P P P P P P P P
+   . R B Q K B N R
+
+
+Your move: e2e3
+
+
+   r . b q . r k .
+   p p p p . p p p
+   . . n . . . . .
+   . . b . p . . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+My move: d7d5
+
+
+   r . b q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p . . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+Your move: b1a1
+
+
+   r . b q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p . . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+My move: c8f5
+
+
+   r . . q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p b . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+Your move: a1b1
+
+
+   r . . q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p b . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+My move: a8c8
+
+
+   . . r q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p b . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+Your move: b1a1
+
+
+   . . r q . r k .
+   p p p . . p p p
+   . . n . . . . .
+   . . b p p b . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+My move: f5g6
+
+
+   . . r q . r k .
+   p p p . . p p p
+   . . n . . . b .
+   . . b p p . . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+Your move: a1b1
+
+
+   . . r q . r k .
+   p p p . . p p p
+   . . n . . . b .
+   . . b p p . . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+My move: f7f5
+
+
+   . . r q . r k .
+   p p p . . . p p
+   . . n . . . b .
+   . . b p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+Your move: b1a1
+
+
+   . . r q . r k .
+   p p p . . . p p
+   . . n . . . b .
+   . . b p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+My move: c5b6
+
+
+   . . r q . r k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+Your move: a1b1
+
+
+   . . r q . r k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+My move: f8e8
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   . R B Q K B N R
+
+
+Your move: b1a1
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+My move: c6b4
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b . . . . b .
+   . . . p p p . .
+   . n . . n . . .
+   . . . . P . . .
+   P P P P . P P P
+   R . B Q K B N R
+
+
+Your move: a2a3
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b . . . . b .
+   . . . p p p . .
+   . n . . n . . .
+   P . . . P . . .
+   . P P P . P P P
+   R . B Q K B N R
+
+
+My move: b4c6
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   P . . . P . . .
+   . P P P . P P P
+   R . B Q K B N R
+
+
+Your move: a1b1
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . b n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   P . . . P . . .
+   . P P P . P P P
+   . R B Q K B N R
+
+
+My move: b6e3
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   P . . . b . . .
+   . P P P . P P P
+   . R B Q K B N R
+
+
+Your move: d2e3
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . n . . . b .
+   . . . p p p . .
+   . . . . n . . .
+   P . . . P . . .
+   . P P . . P P P
+   . R B Q K B N R
+
+
+My move: e4f2
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . n . . . b .
+   . . . p p p . .
+   . . . . . . . .
+   P . . . P . . .
+   . P P . . n P P
+   . R B Q K B N R
+
+
+Your move: e1f2
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . n . . . b .
+   . . . p p p . .
+   . . . . . . . .
+   P . . . P . . .
+   . P P . . K P P
+   . R B Q . B N R
+
+
+My move: c6d4
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . n . . . .
+   P . . . P . . .
+   . P P . . K P P
+   . R B Q . B N R
+
+
+Your move: e2d3
+Your move: e3d4
+
+
+   . . r q r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . P . . . .
+   P . . . . . . .
+   . P P . . K P P
+   . R B Q . B N R
+
+
+My move: d8h4
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . P . . . q
+   P . . . . . . .
+   . P P . . K P P
+   . R B Q . B N R
+
+
+Your move: g2g3
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . P . . . q
+   P . . . . . P .
+   . P P . . K . P
+   . R B Q . B N R
+
+
+My move: h4d4
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . q . . . .
+   P . . . . . P .
+   . P P . . K . P
+   . R B Q . B N R
+
+
+Your move: d1d4
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p p p . .
+   . . . Q . . . .
+   P . . . . . P .
+   . P P . . K . P
+   . R B . . B N R
+
+
+My move: e5d4
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p . p . .
+   . . . p . . . .
+   P . . . . . P .
+   . P P . . K . P
+   . R B . . B N R
+
+
+Your move: g1f3
+
+
+   . . r . r . k .
+   p p p . . . p p
+   . . . . . . b .
+   . . . p . p . .
+   . . . p . . . .
+   P . . . . N P .
+   . P P . . K . P
+   . R B . . B . R
+
+
+My move: c7c5
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . b .
+   . . p p . p . .
+   . . . p . . . .
+   P . . . . N P .
+   . P P . . K . P
+   . R B . . B . R
+
+
+Your move: a3f4
+Your move: c1f4
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . b .
+   . . p p . p . .
+   . . . p . B . .
+   P . . . . N P .
+   . P P . . K . P
+   . R . . . B . R
+
+
+My move: g6h5
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . b
+   . . . p . B . .
+   P . . . . N P .
+   . P P . . K . P
+   . R . . . B . R
+
+
+Your move: f1d3
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . b
+   . . . p . B . .
+   P . . B . N P .
+   . P P . . K . P
+   . R . . . . . R
+
+
+My move: h5f3
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . .
+   . . . p . B . .
+   P . . B . b P .
+   . P P . . K . P
+   . R . . . . . R
+
+
+Your move: f2f3
+
+
+   . . r . r . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . .
+   . . . p . B . .
+   P . . B . K P .
+   . P P . . . . P
+   . R . . . . . R
+
+
+My move: e8f8
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . .
+   . . . p . B . .
+   P . . B . K P .
+   . P P . . . . P
+   . R . . . . . R
+
+
+Your move: b1e1
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . p p . p . .
+   . . . p . B . .
+   P . . B . K P .
+   . P P . . . . P
+   . . . . R . . R
+
+
+My move: c5c4
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . p p . B . .
+   P . . B . K P .
+   . P P . . . . P
+   . . . . R . . R
+
+
+Your move: d3f1
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . p p . B . .
+   P . . . . K P .
+   . P P . . . . P
+   . . . . R B . R
+
+
+My move: c4c3
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . p . . K P .
+   . P P . . . . P
+   . . . . R B . R
+
+
+Your move: b2c3
+
+
+   . . r . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . P . . K P .
+   . . P . . . . P
+   . . . . R B . R
+
+
+My move: c8c3
+
+
+   . . . . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . r . . K P .
+   . . P . . . . P
+   . . . . R B . R
+
+
+Your move: f3g2
+
+
+   . . . . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . r . . . P .
+   . . P . . . K P
+   . . . . R B . R
+
+
+My move: c3c2
+
+
+   . . . . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . . . . . P .
+   . . r . . . K P
+   . . . . R B . R
+
+
+Your move: g2h3
+
+
+   . . . . . r k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . . . . . P K
+   . . r . . . . P
+   . . . . R B . R
+
+
+My move: f8d8
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . . . . . P K
+   . . r . . . . P
+   . . . . R B . R
+
+
+Your move: f1d3
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . . B . . P K
+   . . r . . . . P
+   . . . . R . . R
+
+
+My move: c2c3
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . p . .
+   . . . p . B . .
+   P . r B . . P K
+   . . . . . . . P
+   . . . . R . . R
+
+
+Your move: d3f5
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   P . r . . . P K
+   . . . . . . . P
+   . . . . R . . R
+
+
+My move: c3a3
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   r . . . . . P K
+   . . . . . . . P
+   . . . . R . . R
+
+
+Your move: e1b1
+
+
+   . . . r . . k .
+   p p . . . . p p
+   . . . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   r . . . . . P K
+   . . . . . . . P
+   . R . . . . . R
+
+
+My move: b7b6
+
+
+   . . . r . . k .
+   p . . . . . p p
+   . p . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   r . . . . . P K
+   . . . . . . . P
+   . R . . . . . R
+
+
+Your move: b1a1
+
+
+   . . . r . . k .
+   p . . . . . p p
+   . p . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   r . . . . . P K
+   . . . . . . . P
+   R . . . . . . R
+
+
+My move: a3a1
+
+
+   . . . r . . k .
+   p . . . . . p p
+   . p . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   r . . . . . . R
+
+
+Your move: h1a1
+
+
+   . . . r . . k .
+   p . . . . . p p
+   . p . . . . . .
+   . . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   R . . . . . . .
+
+
+My move: a7a5
+
+
+   . . . r . . k .
+   . . . . . . p p
+   . p . . . . . .
+   p . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   R . . . . . . .
+
+
+Your move: a1b1
+
+
+   . . . r . . k .
+   . . . . . . p p
+   . p . . . . . .
+   p . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   . R . . . . . .
+
+
+My move: d8e8
+
+
+   . . . . r . k .
+   . . . . . . p p
+   . p . . . . . .
+   p . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   . R . . . . . .
+
+
+Your move: b1b6
+
+
+   . . . . r . k .
+   . . . . . . p p
+   . R . . . . . .
+   p . . p . B . .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: g7g5
+
+
+   . . . . r . k .
+   . . . . . . . p
+   . R . . . . . .
+   p . . p . B p .
+   . . . p . B . .
+   . . . . . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: f4c7
+
+
+   . . . . r . k .
+   . . B . . . . p
+   . R . . . . . .
+   p . . p . B p .
+   . . . p . . . .
+   . . . . . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: g5g4
+
+
+   . . . . r . k .
+   . . B . . . . p
+   . R . . . . . .
+   p . . p . B . .
+   . . . p . . p .
+   . . . . . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: f5g4
+
+
+   . . . . r . k .
+   . . B . . . . p
+   . R . . . . . .
+   p . . p . . . .
+   . . . p . . B .
+   . . . . . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: e8e3
+
+
+   . . . . . . k .
+   . . B . . . . p
+   . R . . . . . .
+   p . . p . . . .
+   . . . p . . B .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: b6d6
+
+
+   . . . . . . k .
+   . . B . . . . p
+   . . . R . . . .
+   p . . p . . . .
+   . . . p . . B .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: a5a4
+
+
+   . . . . . . k .
+   . . B . . . . p
+   . . . R . . . .
+   . . . p . . . .
+   p . . p . . B .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: d6d5
+
+
+   . . . . . . k .
+   . . B . . . . p
+   . . . . . . . .
+   . . . R . . . .
+   p . . p . . B .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: e3d3
+
+
+   . . . . . . k .
+   . . B . . . . p
+   . . . . . . . .
+   . . . R . . . .
+   p . . p . . B .
+   . . . r . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: c7e5
+
+
+   . . . . . . k .
+   . . . . . . . p
+   . . . . . . . .
+   . . . R B . . .
+   p . . p . . B .
+   . . . r . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: h7h5
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R B . . p
+   p . . p . . B .
+   . . . r . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: g4h5
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R B . . B
+   p . . p . . . .
+   . . . r . . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: d3e3
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R B . . B
+   p . . p . . . .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: e5d4
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R . . . B
+   p . . B . . . .
+   . . . . r . P K
+   . . . . . . . P
+   . . . . . . . .
+
+
+My move: e3g3
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R . . . B
+   p . . B . . . .
+   . . . . . . r K
+   . . . . . . . P
+   . . . . . . . .
+
+
+Your move: h2g3
+
+
+   . . . . . . k .
+   . . . . . . . .
+   . . . . . . . .
+   . . . R . . . B
+   p . . B . . . .
+   . . . . . . P K
+   . . . . . . . .
+   . . . . . . . .
+
+
+You won
+jan@trusty:~/Dropbox/py/janchess$

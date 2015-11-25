@@ -45,15 +45,12 @@ def input(*args, **kwargs):
 
 PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, WHITE, BLACK = 1, 2, 4, 8, 16, 32, 64, 128
 
-LETTERMAP = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h'}
-LETTERMAPINV = {v:k for k,v in LETTERMAP.items()}
+PIECECHARS = {PAWN:'p', KNIGHT:'n', BISHOP:'b', ROOK:'r', QUEEN:'q'}
+PIECECHARSINV = {v:k for k,v in PIECECHARS.items()}
 
-PIECEMAP = {PAWN:'p', KNIGHT:'n', BISHOP:'b', ROOK:'r', QUEEN:'q'}
-PIECEMAPINV = {v:k for k,v in PIECEMAP.items()}
+inf = 33000
+PIECEVALS = {PAWN: 100, KNIGHT: 300, BISHOP: 300, ROOK: 500, QUEEN: 900, KING: inf, 0: 0}
 
-PIECEVALS = {PAWN: 100, KNIGHT: 300, BISHOP: 300, ROOK: 500, QUEEN: 900, KING: 33000, 0: 0}
-
-# castling
 CASTLINGWHITE = (True, True, True)
 CASTLINGBLACK = (True, True, True)
 
@@ -64,6 +61,7 @@ board = None
 IM_WHITE = False
 started = True
 BUF = ''
+
 
 # XXX instead use lru-cache?
 KILLERHEURISTIC = collections.defaultdict(int)
@@ -76,11 +74,6 @@ TRANSPOSITIONS = collections.defaultdict(int)
 
 def is_inside(i, j):
     return 0 <= i <= 7 and 0 <= j <= 7
-
-# DON'T NEGATE
-def is_empty(i, j):
-    return is_inside(i, j) and not board[i][j]
-
 
 def new_board():
     return [
@@ -97,14 +90,7 @@ def new_board():
     ]
 
 
-def gentuples():
-    return itertools.product(range(8), range(8))
-
-# def genpieces():
-#     return (KNIGHT, BISHOP, ROOK, QUEEN)
-
-def genpieces():
-    return ('n', 'b', 'r', 'q')
+gentuples = list(itertools.product(range(8), range(8)))
 
 def input_is_move(i):
     return len(i) >= 4 and i[0] in 'abcdefgh' and i[1] in '12345678' \
@@ -116,12 +102,8 @@ def sq_to_str1(sq):
     return ' '
 
 def sq_to_str2(sq):
-    if sq & PAWN: return 'P'
-    if sq & KNIGHT: return 'N'
-    if sq & BISHOP: return 'B'
-    if sq & ROOK: return 'R'
-    if sq & QUEEN: return 'Q'
-    if sq & KING: return 'K'
+    for k, v in [(PAWN, 'P'), (KNIGHT, 'N'), (BISHOP, 'B'), (ROOK, 'R'), (QUEEN, 'Q'), (KING, 'K')]:
+        if sq & k: return v
     return ' '
 
 def str_to_sq1(sq):
@@ -161,15 +143,13 @@ Evaluation.__gt__ = lambda self, other: self.value > other.value
 Evaluation.__le__ = lambda self, other: self < other or self == other
 Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
 
-_verbosity = 1  # depth of search to print
-inf = 33000
 
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 def turochamp():
 
     eval = 0
 
-    for i,j in gentuples():
+    for i,j in gentuples:
         # material counting
         bijp = board[i][j] & ~WHITE & ~BLACK
         bij = board[i][j]
@@ -178,11 +158,14 @@ def turochamp():
 
         # king safety
         if bijp == KING:
+            i = 0
             for a,b in PIECEDIRS[QUEEN]:
                 for k in PIECERANGE[QUEEN]:
                     if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
                         break
-                    eval -= MUL * 10
+                    # eval -= MUL * 8
+                    i += 1
+            eval -= MUL * 15 * round(i**.5)
 
         # pawn advancement
         if bij & PAWN:
@@ -194,7 +177,7 @@ def turochamp():
     eval += 15 * len([x for x in center if x & WHITE])
     eval -= 15 * len([x for x in center if x & BLACK])
 
-    # mobility (possible moves) + king in check
+    # mobility (possible moves) + (implicitly) king in check
     for COLOR, MUL in [(WHITE, 1), (BLACK, -1)]:
         gl = genlegals(COLOR, ignore_king_capture=True)  # XXX maybe calc it directly and dont use gl
         if not gl:
@@ -205,18 +188,96 @@ def turochamp():
         while j < len(gl):
             ref_mv = gl[j]
             i = 0
-            while j < len(gl) and gl[j][0:2] == ref_mv[0:2]:
-                i += 1
-                j += 1
-            eval += MUL * 20 * round(i**.5)
+            if not board[ref_mv[0]][ref_mv[1]] & QUEEN:
+                while j < len(gl) and gl[j][0:2] == ref_mv[0:2]:
+                    i += 1
+                    if board[gl[j][2]][gl[j][3]]:  # captures count double
+                        i += 1
+                    j += 1
+            eval += MUL * 13 * round(i**.5)
             j += 1
 
-    # king safety
+
+    # XXX didn't consider EP once
+
+    # XXX maybe mobility thru friendly piece (/= pawn) counts half or so
+    # XXX
+    #   INFO:root:>>> BBBB  Evaluation(value=-162, moves=[(0, 4, 7, 4), (7, 4, 7, 6), (2, 2, 1, 2), (0, 3, 0, 4)])
+    # INFO:root:>>>       BB BK BR
+    # INFO:root:>>>       BP       BQ
+    # INFO:root:>>>       WQ       WP
+    # INFO:root:>>>       BP       BR
+    # INFO:root:>>>    BP WP             WB
+    # INFO:root:>>> BP WP    WP          WP
+    # INFO:root:>>> WP    WK             WR
+    # INFO:root:>>>                   WR
 
 
+
+    # INFO:root:>>>
+    # INFO:root:>>>       BK
+    # INFO:root:>>>       BP
+    # INFO:root:>>>
+    # INFO:root:>>>
+    # INFO:root:>>>    WB WP             WP
+    # INFO:root:>>>          WP    WK
+    # INFO:root:>>>
+    # INFO:root:>>> BQ
+    # INFO:root:>>>
+    # INFO:root:>>> 1131
+    # INFO:root:>>> (0, 2, 1, 3) Evaluation(value=-306, moves=[(5, 5, 5, 6), (7, 0, 4, 3)])
+    # INFO:root:>>> (7, 0, 7, 3) Evaluation(value=-367, moves=[(5, 5, 5, 4), (7, 3, 7, 2), (4, 1, 6, 3), (0, 2, 0, 3)])
+    # INFO:root:>>> (1, 2, 2, 2) Evaluation(value=-365, moves=[(5, 5, 4, 4), (7, 0, 7, 7), (4, 4, 3, 5)])
+    # INFO:root:>>> (0, 2, 1, 1) Evaluation(value=-356, moves=[(4, 1, 3, 2), (7, 0, 3, 4)])
+    # INFO:root:>>> (7, 0, 6, 0) Evaluation(value=-361, moves=[(5, 5, 4, 6), (6, 0, 0, 0)])
+    # INFO:root:>>> (7, 0, 7, 7) Evaluation(value=-301, moves=[(5, 5, 5, 4), (5, 4, 6, 3)])
+    # INFO:root:>>> (7, 0, 7, 4) Evaluation(value=-637, moves=[(7, 4, 4, 1), (5, 5, 5, 6)])
+    # INFO:root:>>> (7, 0, 0, 0) Evaluation(value=-581, moves=[(5, 5, 5, 4), (0, 0, 4, 4), (5, 4, 6, 5), (4, 4, 5, 3), (5, 3, 4, 2), (4, 1, 6, 3)])
+    # INFO:root:>>> (7, 0, 7, 1) Evaluation(value=-301, moves=[(5, 5, 5, 4), (5, 4, 6, 3)])
+    # INFO:root:>>> (7, 0, 3, 4) Evaluation(value=-499, moves=[(5, 3, 4, 3), (3, 4, 4, 3), (5, 5, 6, 4)])
+    # INFO:root:>>> (7, 0, 7, 2) Evaluation(value=-394, moves=[(0, 2, 1, 1)])
+    # INFO:root:>>> (7, 0, 7, 6) Evaluation(value=-406, moves=[(5, 5, 4, 4), (7, 6, 4, 3), (4, 4, 3, 5)])
+    # INFO:root:>>> (1, 2, 3, 2) Evaluation(value=-627, moves=[(5, 5, 5, 4), (3, 2, 4, 1), (5, 4, 6, 3)])
+    # INFO:root:>>> (0, 2, 0, 3) Evaluation(value=-386, moves=[(5, 5, 5, 4), (7, 0, 3, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 7, 5) Evaluation(value=-324, moves=[(5, 5, 5, 6)])
+    # INFO:root:>>> (7, 0, 4, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 4, 3) Evaluation(value=-504, moves=[(5, 5, 6, 4), (4, 3, 5, 3), (6, 4, 6, 5)])
+    # INFO:root:>>> (0, 2, 0, 1) Evaluation(value=-416, moves=[(5, 5, 5, 4), (7, 0, 3, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 2, 0) Evaluation(value=-368, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 1, 6) Evaluation(value=-411, moves=[(5, 5, 5, 4), (1, 6, 1, 3)])
+    # INFO:root:>>> (7, 0, 5, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 5, 2) Evaluation(value=-637, moves=[(4, 1, 5, 0), (5, 2, 5, 0), (5, 5, 5, 6)])
+    # INFO:root:>>> (7, 0, 0, 7) Evaluation(value=-431, moves=[(5, 5, 5, 4), (0, 7, 4, 7), (5, 4, 6, 3)])
+    # INFO:root:>>> (7, 0, 3, 0) Evaluation(value=-358, moves=[(5, 5, 5, 4), (5, 4, 6, 5)])
+    # INFO:root:>>> (7, 0, 2, 5) Evaluation(value=-511, moves=[(5, 5, 4, 6), (2, 5, 5, 5), (4, 6, 3, 6), (5, 5, 5, 3), (3, 6, 2, 5)])
+    # INFO:root:>>> (7, 0, 6, 1) Evaluation(value=-328, moves=[(5, 5, 5, 4), (5, 4, 4, 5)])
+    # INFO:root:>>> (7, 0, 1, 0) Evaluation(value=-406, moves=[(5, 5, 4, 4), (1, 0, 4, 3), (4, 4, 3, 5)])
+    # INFO:root:>>> BBBB  Evaluation(value=-637, moves=[(7, 0, 7, 4), (7, 4, 4, 1), (5, 5, 5, 6)])
+    # INFO:root:>>> move a1e1
     # castling (will be weighed with king safety)
-    eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] or CASTLINGWHITE[2])) else 0
-    eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] or CASTLINGBLACK[2])) else 0
+
+
+    # WE NEED THREE FOLD REP RULE!!!
+
+    # INFO:root:>>>
+    # INFO:root:>>> WK    BK
+    # INFO:root:>>>
+    # INFO:root:>>>          BQ
+    # INFO:root:>>>
+    # INFO:root:>>>
+    # INFO:root:>>>
+    # INFO:root:>>>
+    # INFO:root:>>>
+    # INFO:root:>>> 6
+    # INFO:root:>>> (3, 3, 0, 0) Evaluation(value=0, moves=[(1, 0, 0, 0), (1, 2, 0, 2), (0, 0, 1, 0), (0, 2, 0, 3)])
+    # INFO:root:>>> (3, 3, 2, 2) Evaluation(value=0, moves=[])
+    # INFO:root:>>> (1, 2, 2, 2) Evaluation(value=-918, moves=[(1, 0, 0, 0), (2, 2, 1, 3), (0, 0, 1, 0)])
+    # INFO:root:>>> (1, 2, 2, 3) Evaluation(value=-958, moves=[(1, 0, 0, 1), (2, 3, 1, 3)])
+    # INFO:root:>>> (3, 3, 4, 4) Evaluation(value=-32999, moves=[(1, 0, 2, 0), (4, 4, 4, 0)])
+    eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] and not board[7][1] and not board[7][2] \
+        and not board[7][3] or CASTLINGWHITE[2] and not board[7][5] and not board[7][6])) else 0
+    eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] and not board[0][1] and not board[0][2] \
+        and not board[0][3] or CASTLINGBLACK[2] and not board[0][5] and not board[0][6])) else 0
 
     return eval
 
@@ -228,7 +289,7 @@ def turochamp():
 def eval_quies(COLOR, mv, hit_piece):
     NCOLOR = BLACK if COLOR == WHITE else WHITE
 
-    quies = 25
+    quies = 20
 
     if ((mv[0] > mv[2]) if COLOR == WHITE else (mv[0] < mv[2])):
         quies *= .8
@@ -254,7 +315,7 @@ def killer_order(mvs):
     return sorted(mvs, key=lambda x: KILLERHEURISTIC[x], reverse=True)
 
 
-def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=45, depth=0):
+def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=41, depth=0):
 
     global TRANSPOSITIONS
 
@@ -334,7 +395,7 @@ def king_not_in_check(COLOR):
     ADD = -1 if COLOR == WHITE else 1
     myking = KING + COLOR
 
-    for i, j in gentuples():
+    for i, j in gentuples:
         bij = board[i][j]
         bijpiece = bij & ~WHITE & ~BLACK
         if not bij & NCOLOR:
@@ -368,25 +429,25 @@ def genlegals(COLOR, ignore_king_capture=False):
     ret = []
     num_allowed_moves = collections.defaultdict(int)
 
-    for i, j in gentuples():
+    for i, j in gentuples:
         bij = board[i][j]
         bijpiece = bij & ~WHITE & ~BLACK
         if not bij & COLOR:
             continue
-        if bij & PAWN:
+        if bij & PAWN:  # we can forego most is_inside checks here (promotion etc)
             lr = len(ret)
-            if is_empty(i+ADD, j):
+            if not board[i+ADD][j]:
                 ret.append((i,j,i+ADD,j))
-                if is_empty(i+ADD+ADD, j) and i == STARTRANK:
+                if i == STARTRANK and not board[i+ADD+ADD][j]:
                     ret.append((i,j,i+ADD+ADD,j))
-            if is_inside(i+ADD, j+1) and board[i+ADD][j+1] & NCOLOR:
+            if j < 7 and board[i+ADD][j+1] & NCOLOR:
                 ret.append((i,j,i+ADD,j+1))
-            if is_inside(i+ADD, j-1) and board[i+ADD][j-1] & NCOLOR:
+            if j > 0 and board[i+ADD][j-1] & NCOLOR:
                 ret.append((i,j,i+ADD,j-1))
             if i == PROMRANK:  # promotion
                 temp = []
                 while lr < len(ret):
-                    for p in genpieces():
+                    for p in ('n', 'b', 'r', 'q'):
                         temp.append(ret[lr] + (p,))
                     del ret[lr]
                 ret += temp
@@ -470,7 +531,7 @@ def make_move(mv):
             board[CASTLERANK][4] = 0
             pprint()
         else:
-            board[mv[2]][mv[3]] = PIECEMAPINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
+            board[mv[2]][mv[3]] = PIECECHARSINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
 
     old_cr = CASTLINGWHITE, CASTLINGBLACK
     cr = (CASTLINGWHITE if piece & WHITE else CASTLINGBLACK)
@@ -552,7 +613,6 @@ def calc_move():
     make_move(mv)
     LASTMOVE = mv
 
-    # [print(row) for row in board]
     return chr(ord('a') + mv[1]) + str(8 - mv[0]) + chr(ord('a') + mv[3]) + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
 
 

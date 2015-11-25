@@ -1,0 +1,24 @@
+[Event "Computer Chess Game"]
+[Site "trusty"]
+[Date "2015.11.25"]
+[Round "-"]
+[White "jan"]
+[Black "janchess"]
+[Result "1/2-1/2"]
+[TimeControl "60"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. O-O a6 5. Ba4 b5 6. Bb3 a5 7. Re1 a4 8.
+Bd5 Ng4 9. h3 Nxf2 10. Kxf2 Qf6 11. d3 Bc5+ 12. Be3 Bb4 13. c3 Bf8 14. Nd2
+h5 15. b3 a3 16. c4 b4 17. Rh1 Be7 18. Nf1 h4 19. g4 g6 20. Bg5 Bc5+ 21.
+Ne3 Bxe3+ 22. Kxe3 Qg7 23. Bxc6 dxc6 24. Bxh4 Ra5 25. Rh2 f5 26. gxf5 gxf5
+27. exf5 Qf7 28. f6 Rg8 29. Nxe5 Rxe5+ 30. Kd2 c5 31. Kc2 Kd8 32. Qf3 Rge8
+33. Rg1 Rf5 34. Qc6 Re1 35. Rxe1 Qd7 36. Rf2 Rxf2+ 37. Bxf2 Qxc6 38. f7 Qf6
+39. Re8+ Kd7 40. f8=Q Qa1 41. Rxc8 Qxa2+ 42. Kd1 Qxb3+ 43. Ke2 Qc2+ 44. Ke3
+Qc1+ 45. Ke4 Qh1+ 46. Qf3 Qxf3+ 47. Kxf3 Kxc8 48. Bxc5 a2 49. Bxb4 a1=Q 50.
+h4 Qe1 51. h5 Qxb4 52. h6 Qf8+ 53. Ke4 Qf6 54. h7 Qh8 55. d4 c6 56. d5
+Qxh7+ 57. Kd4 cxd5 58. cxd5 Qe7 59. d6 Qe6 60. Kc5 Kd7 61. Kb6 Kxd6 62. Kb7
+Kd7 63. Ka7 Kc8 64. Ka8 Kc7 65. Ka7 Qd7 66. Ka8 Qd5+ 67. Ka7 Qe4 68. Ka6
+Qd5 69. Ka7 Qe4 70. Ka6 Qd5 71. Ka7 Qe4 72. Ka6 Qd5 73. Ka7 Qe4 74. Ka6 Qd5
+75. Ka7 Qe4 76. Ka6 Qd5 77. Ka7
+{XBoard adjudication: repetition draw} 1/2-1/2
+

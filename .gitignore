@@ -3,3 +3,5 @@
 gnuchess-6.2.2/
 sunfish.py
 __pycache__/
+*.o
+jangine

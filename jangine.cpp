@@ -8,29 +8,33 @@
 
 #include <unistd.h>
 
-#include <iostream>
-#include <tuple>
-#include <string>
 #include <map>
+
 
 
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
 bool in(char a, char const* list, size_t listlen) {
-    for (int i = 0; i < listlen; ++i)
+    for (size_t i = 0; i < listlen; ++i)
         if (a == list[i])
             return true;
     return false;
 }
 
-#define is_inside(i, j) (0 <= i <= 7 and 0 <= j <= 7)
+#define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define input_is_move(i) (strlen(i) >= 4 and in(i[0], "abcdefgh", 8) and in(i[2], "abcdefgh", 8) and in(i[1], "12345678", 8) and in(i[3], "12345678", 8))
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
+#define store(a, b, c, d, e) \
+    { Move x = {a, b, c, d, e}; \
+    memcpy(*mvsend, &x, sizeof(Move)); \
+    mvsend++; }
 
 FILE *f = NULL;
 
 void tee(char const *fmt, ...) {
+    // f = fopen("jangine.log", "a");
+
     va_list ap;
     va_start(ap, fmt);
     vprintf(fmt, ap);
@@ -38,6 +42,8 @@ void tee(char const *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(f, fmt, ap);
     va_end(ap);
+
+    // fclose(f);
 }
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
@@ -57,18 +63,26 @@ typedef struct Move {
     num prom;
 } Move;
 
+typedef struct PiecePlusCatling {
+    num hit_piece;
+    CASTLINGRIGHTS c_rights_w;
+    CASTLINGRIGHTS c_rights_b;
+} PiecePlusCatling;
+
 // typedef int_fast16_t[64] Board;
 
 CASTLINGRIGHTS CASTLINGWHITE = {true, true, true};
 CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
+
+Move LASTMOVE = {0};
 
 struct Pair {
     num a;
     num b;
 };
 
-std::map<num, num*> PIECERANGE;
-std::map<num, Pair*> PIECEDIRS;
+Pair** PIECEDIRS = NULL;
+num* PIECERANGE = NULL;
 
 num board[64] = {0};   // malloc 64 or even 100
 bool IM_WHITE = false;
@@ -81,6 +95,7 @@ void pprint() {
             tee("%3d ", board[8*i+j]);
         tee(" \n");
     }
+    tee(" \n");
 }
 
 bool startswith(const char *pre, const char *str) {
@@ -109,6 +124,12 @@ void new_board() {
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
 }
+
+typedef struct ValuePlusMoves {
+    num value;
+    Move** moves;
+    Move** movesend;
+} ValuePlusMoves;
 
 // gentuples = list(itertools.product(range(8), range(8)))
 
@@ -148,6 +169,113 @@ void new_board() {
 
 
 
+PiecePlusCatling make_move(Move* mv) {
+
+    num piece = board[8*mv->f0+mv->f1];
+    num hit_piece = board[8*mv->t0+mv->t1];
+    board[8*mv->f0+mv->f1] = 0;
+    board[8*mv->t0+mv->t1] = piece;
+
+    num CASTLERANK = piece & WHITE ? 7 : 0;
+
+    // tee("start");
+
+    if (mv->prom) {
+        if (mv->prom == 'e') {
+            board[8*mv->f0+mv->t1] = 0;
+        } else if (mv->prom == 'c') {
+            if (mv->t1 == 2) {
+                board[8*CASTLERANK+3] = board[8*CASTLERANK];
+                board[8*CASTLERANK] = 0;
+            } else {
+                board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
+                board[8*CASTLERANK+7] = 0;
+            }
+            board[8*CASTLERANK+4] = 0;
+        } else {
+            num p;
+            switch (mv->prom) {
+                case 'q':  p = QUEEN;   break;
+                case 'r':  p = ROOK;    break;
+                case 'b':  p = BISHOP;  break;
+                case 'n':  p = KNIGHT;  break;
+            }
+            board[8*mv->t0+mv->t1] = p + (mv->t0 == 0 ? WHITE : BLACK);
+        }
+    }
+
+    // tee("promotion done");
+
+    CASTLINGRIGHTS old_cr_w = CASTLINGWHITE;
+    CASTLINGRIGHTS old_cr_b = CASTLINGBLACK;
+
+    CASTLINGRIGHTS cr = (piece & WHITE ? CASTLINGWHITE : CASTLINGBLACK);
+
+    if (mv->f0 == CASTLERANK) {
+        cr = {mv->f1 != 0 and cr.lr, mv->f1 != 4 and cr.k,  mv->f1 != 7 and cr.rr};
+        if (piece & WHITE)  CASTLINGWHITE = cr;
+        else                CASTLINGBLACK = cr;
+    }
+
+    // XXX len-5-moves
+    return {hit_piece, old_cr_w, old_cr_b};
+}
+
+
+
+void unmake_move(Move* mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b) {
+
+    num piece = board[8*(mv->t0)+mv->t1];
+    board[8*(mv->t0)+mv->t1] = hit_piece;
+    board[8*(mv->f0)+mv->f1] = piece;
+
+    if (mv->prom)
+    {
+        if (mv->prom == 'e') {
+            board[8*mv->f0+mv->t1] = PAWN + (mv->t0 == 5 ? WHITE : BLACK);
+        } else if (mv->prom == 'c') {
+            if (mv->t1 == 2) {
+                board[8*mv->f0] = board[8*mv->f0+3];
+                board[8*mv->f0+3] = 0;
+            }
+            else {
+                board[8*mv->f0+7] = board[8*mv->f0+5];
+                board[8*mv->f0+5] = 0;
+            }
+        } else {
+            board[8*mv->f0+mv->f1] = PAWN + (mv->t0 == 2 ? WHITE : BLACK);
+        }
+    }
+
+    CASTLINGWHITE = c_rights_w;
+    CASTLINGBLACK = c_rights_b;
+}
+
+
+
+void make_move_str(char* mv) {
+
+    num a = 8 - (mv[1] - '0');
+    num b = (num)(mv[0] - 'a');
+    num c = 8 - (mv[3] - '0');
+    num d = (num)(mv[2] - 'a');
+
+    char e = mv[4];
+    if (abs(d - b) > 1 and board[8*a+b] & KING)  // castling
+        e = 'c';
+    if (b != d and board[8*a+b] & PAWN and not board[8*c+d])  // en passant
+        e = 'e';
+    if (e == '\n')
+        e = '\0';
+
+    Move to_mv = {a, b, c, d, e};
+    Move* to_mv_ptr = (Move*)malloc(sizeof(Move));
+    memcpy(to_mv_ptr, &to_mv, sizeof(Move));
+    // XXX print move
+
+    make_move(to_mv_ptr);
+    LASTMOVE = to_mv;  // copies the struct(?)
+}
 
 
 
@@ -161,17 +289,46 @@ void new_board() {
 
 
 
-struct Returner {
-    num value;
-    num move;
-};
+
+bool king_not_in_check(num COLOR) {
+    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
+    num ADD = COLOR == WHITE ? -1 : 1;
+    num myking = KING + COLOR;
+
+    gentuples {
+        num bij = board[8*i+j];
+        num bijpiece = bij & ~WHITE & ~BLACK;
+        if (not (bij & NCOLOR))
+            continue;
+        if (bij & PAWN) {
+            if (is_inside(i-ADD, j+1) and board[8*(i-ADD)+j+1] == myking)
+                return false;
+            if (is_inside(i-ADD, j-1) and board[8*(i-ADD)+j-1] == myking)
+                return false;
+        } else {
+            for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
+                num a = PIECEDIRS[bijpiece][l].a;
+                num b = PIECEDIRS[bijpiece][l].b;
+                for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
+                {
+                    if (is_inside(i+a*k, j+b*k)) {
+                        // tee("%d %d %d %d\n", (i+a*k), j+b*k, board[8*(i+a*k)+j+b*k], myking);
+                        if (board[8*(i+a*k)+j+b*k] == myking)
+                            return false;
+                        if (board[8*(i+a*k)+j+b*k])
+                            break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
 
 
-
-
-
-
-bool king_not_in_check(num COLOR) {}
 
 
 num eval_quies(num COLOR, Move mv, num hit_piece) {
@@ -195,29 +352,203 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
 
 
 
-int killer_cmp(const void* a, const void* b) {
-    // XXX
-    return true;
+// int killer_cmp(const void* a, const void* b) {
+//     // XXX
+//     return true;
+// }
+
+// void killer_order(Move* mvs, size_t mvs_len) {
+//     qsort(mvs, mvs_len, sizeof(Move), killer_cmp);
+// }
+
+
+
+
+
+
+
+
+
+ValuePlusMoves* genlegals(num COLOR) {
+
+    Move** mvs = (Move**)malloc(1024 * sizeof(num*));  // 9 Qs have a lot of moves...
+    for (int i = 0; i < 1024; ++i)
+        mvs[i] = (Move*)malloc(sizeof(Move));
+    Move** mvsend = mvs;
+
+    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
+    num ADD = COLOR == WHITE ? -1 : 1;
+    num STARTRANK = COLOR == WHITE ? 6 : 1;
+    num PROMRANK = COLOR == WHITE ? 1 : 6;
+    num EPRANK = COLOR == WHITE ? 3 : 4;
+    num CASTLERANK = COLOR == WHITE ? 7 : 0;
+
+    gentuples {
+        num bij = board[8*i+j];
+        num bijpiece = bij & ~WHITE & ~BLACK;
+        if (not (bij & COLOR))
+            continue;
+        if (bij & PAWN) {
+            // lr = len(ret)
+            Move** badmvs = mvsend;
+
+            if (not board[8*(i+ADD)+j]) {
+                Move x = {i, j, i+ADD, j, '\0'};
+                memcpy(*mvsend, &x, sizeof(Move));
+                mvsend++;
+                if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {
+                    Move x = {i, j, i+ADD+ADD, j, '\0'};
+                    memcpy(*mvsend, &x, sizeof(Move));
+                    mvsend++;
+                }
+            }
+            if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
+                store(i, j, i+ADD, j+1, '\0');
+            if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
+                store(i, j, i+ADD, j-1, '\0');
+
+            if (i == PROMRANK) {
+                Move** mvsendcpy = mvsend;
+                while (mvsendcpy > badmvs) {
+                    mvsendcpy--;
+                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'n');
+                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'b');
+                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'r');
+                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'n';  mvsend++;
+                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'b';  mvsend++;
+                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'r';  mvsend++;
+                    (*mvsendcpy)->prom = 'q';
+                }
+            }
+
+            if (i == EPRANK) {
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1) {
+                    store(i, j, i+ADD, j-1, '\0');
+                }
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1) {
+                    store(i, j, i+ADD, j+1, '\0');
+                }
+            }
+        }
+        else {
+            for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
+                num a = PIECEDIRS[bijpiece][l].a;
+                num b = PIECEDIRS[bijpiece][l].b;
+                for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
+                {
+                    if (is_inside(i+a*k, j+b*k)) {
+                        if (not board[8*(i+a*k)+j+b*k]) {
+                            // tee("%d%d%d%d %d%d\n", i, j, i+a*k, j+b*k, a, b);
+                            store(i, j, i+a*k, j+b*k, '\0');
+                        } else if (board[8*(i+a*k)+j+b*k] & NCOLOR) {
+                            // tee("%d%d%d%d %d%d\n", i, j, i+a*k, j+b*k, a, b);
+                            store(i, j, i+a*k, j+b*k, '\0');
+                            break;
+                        } else if (board[8*(i+a*k)+j+b*k] & COLOR) {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // XXX castling
+
+
+    // if ((CASTLINGWHITE[0] and CASTLINGWHITE[1]) if COLOR == WHITE
+    // else (CASTLINGBLACK[0] and CASTLINGBLACK[1])):
+    //     if not board[CASTLERANK][3] and not board[CASTLERANK][2] and not board[CASTLERANK][1]:
+    //         board[CASTLERANK][2:4] = [COLOR + KING]*2
+    //         if king_not_in_check(COLOR):
+    //             ret.append((CASTLERANK, 4, CASTLERANK, 2, 'c'))
+    //         board[CASTLERANK][2:4] = [0]*2
+    // if ((CASTLINGWHITE[2] and CASTLINGWHITE[1]) if COLOR == WHITE
+    // else (CASTLINGBLACK[2] and CASTLINGBLACK[1])):
+    //     if not board[CASTLERANK][5] and not board[CASTLERANK][6]:
+    //         board[CASTLERANK][5:7] = [COLOR + KING]*2
+    //         if king_not_in_check(COLOR):
+    //             ret.append((CASTLERANK, 4, CASTLERANK, 6, 'c'))
+    //         board[CASTLERANK][5:7] = [0]*2
+
+
+
+    Move** mvscpy = mvs;
+    while (mvscpy != mvsend) {
+        PiecePlusCatling ppc = make_move(*mvscpy);
+        bool illegal = !king_not_in_check(COLOR);
+        unmake_move(*mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+
+        if (illegal) {
+            *mvscpy = NULL;
+        }
+
+        mvscpy++;
+    }
+
+    // remove trailing NULLs
+    mvsend--;
+    while (!(*mvsend) and mvsend >= mvs) {
+        mvsend--;
+    }
+    mvsend++;
+
+    ValuePlusMoves* ret = (ValuePlusMoves*)malloc(sizeof(ValuePlusMoves));
+    ret->value = 0;
+    ret->moves = mvs;
+    ret->movesend = mvsend;
+
+    return ret;
 }
 
-void killer_order(Move* mvs, size_t mvs_len) {
-    qsort(mvs, mvs_len, sizeof(Move), killer_cmp);
-}
 
 
 
 
 
-Move calc_move(void) {
+
+
+
+
+
+
+char* calc_move(void) {
     // if args.mode == 'random':
-    legals = genlegals(IM_WHITE ? WHITE : BLACK)
-    if not legals:
-        print('out of moves');
+    ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
+    if (legals->moves == legals->movesend) {
+        tee("out of moves");
         pprint();
         return NULL;
+    }
 
-    i = rand() % ...;
-    mv = random.choice(legals);
+    num i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
+    while ( !(legals->moves[i]) ) {
+        i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
+    }
+
+    Move mv = {0};
+    memcpy(&mv, legals->moves[i], sizeof(Move));
+    LASTMOVE = mv;
+    make_move(legals->moves[i]);
+
+    while (legals->moves != legals->movesend) {
+        free(*legals->moves);
+        legals->moves++;
+    }
+    free(legals);
+
+
+    char* ret = (char*) malloc(6);
+    ret[0] = 'a' + (char)(mv.f1);
+    ret[1] = '0' + (char)(8 - mv.f0);
+    ret[2] = 'a' + (char)(mv.t1);
+    ret[3] = '0' + (char)(8 - mv.t0);
+    ret[4] = mv.prom;
+    ret[5] = '\0';
+
+    return ret;
 
     // else:
     //     ans = quiescence(WHITE if IM_WHITE else BLACK)
@@ -229,9 +560,6 @@ Move calc_move(void) {
     //         return  # either stalemate or checkmate
 
     // make_move(mv)
-    // LASTMOVE = mv
-
-    // return chr(ord('a') + mv[1]) + str(8 - mv[0]) + chr(ord('a') + mv[3]) + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
 }
 
 
@@ -241,31 +569,30 @@ Move calc_move(void) {
 
 
 
-
-
-num* range2(size_t count) {
-    num* p = (num*)malloc(count * sizeof(num));
-    for (int i = 0; i < count; ++i)
-        p[i] = i+1;
-    return p;
-}
 
 void init_data(void) {
     new_board();
 
-    PIECEDIRS[ROOK] = (Pair*)malloc(4 * sizeof(Pair));
+    BUF = (char*)calloc(1024, sizeof(char));
+
+    PIECEDIRS = (Pair**)malloc(65 * sizeof(Pair*));
+    PIECERANGE = (num*)malloc(65 * sizeof(num));
+
+    PIECEDIRS[ROOK] = (Pair*)malloc(5 * sizeof(Pair));
     PIECEDIRS[ROOK][0] = {0, 1};
     PIECEDIRS[ROOK][1] = {1, 0};
     PIECEDIRS[ROOK][2] = {0, -1};
     PIECEDIRS[ROOK][3] = {-1, 0};
+    PIECEDIRS[ROOK][4] = {0, 0};
 
-    PIECEDIRS[BISHOP] = (Pair*)malloc(4 * sizeof(Pair));
+    PIECEDIRS[BISHOP] = (Pair*)malloc(5 * sizeof(Pair));
     PIECEDIRS[BISHOP][0] = {1, 1};
     PIECEDIRS[BISHOP][1] = {1, -1};
     PIECEDIRS[BISHOP][2] = {-1, 1};
     PIECEDIRS[BISHOP][3] = {-1, -1};
+    PIECEDIRS[BISHOP][4] = {0, 0};
 
-    PIECEDIRS[KNIGHT] = (Pair*)malloc(8 * sizeof(Pair));
+    PIECEDIRS[KNIGHT] = (Pair*)malloc(9 * sizeof(Pair));
     PIECEDIRS[KNIGHT][0] = {1, 2};
     PIECEDIRS[KNIGHT][1] = {2, 1};
     PIECEDIRS[KNIGHT][2] = {-1, 2};
@@ -274,8 +601,9 @@ void init_data(void) {
     PIECEDIRS[KNIGHT][5] = {-2, -1};
     PIECEDIRS[KNIGHT][6] = {1, -2};
     PIECEDIRS[KNIGHT][7] = {-2, 1};
+    PIECEDIRS[KNIGHT][8] = {0, 0};
 
-    PIECEDIRS[QUEEN] = (Pair*)malloc(8 * sizeof(Pair));
+    PIECEDIRS[QUEEN] = (Pair*)malloc(9 * sizeof(Pair));
     PIECEDIRS[QUEEN][0] = {0, 1};
     PIECEDIRS[QUEEN][1] = {1, 0};
     PIECEDIRS[QUEEN][2] = {0, -1};
@@ -284,14 +612,15 @@ void init_data(void) {
     PIECEDIRS[QUEEN][5] = {1, -1};
     PIECEDIRS[QUEEN][6] = {-1, 1};
     PIECEDIRS[QUEEN][7] = {-1, -1};
+    PIECEDIRS[QUEEN][8] = {0, 0};
 
     PIECEDIRS[KING] = PIECEDIRS[QUEEN];
 
-    PIECERANGE[KNIGHT] = range2(1);
-    PIECERANGE[BISHOP] = range2(7);
-    PIECERANGE[ROOK] = range2(7);
-    PIECERANGE[QUEEN] = range2(7);
-    PIECERANGE[KING] = range2(1);
+    PIECERANGE[KNIGHT] = 1;
+    PIECERANGE[BISHOP] = 7;
+    PIECERANGE[ROOK] = 7;
+    PIECERANGE[QUEEN] = 7;
+    PIECERANGE[KING] = 1;
 }
 
 
@@ -301,6 +630,7 @@ int main(int argc, char const *argv[])
     f = fopen("jangine.log", "w");
 
     setbuf(stdout, NULL);
+    setbuf(f, NULL);
     init_data();
 
     char* line = (char*)calloc(1024, 1);
@@ -310,22 +640,59 @@ int main(int argc, char const *argv[])
 
         fgets(line, 1023, stdin);
 
+        tee("INPUT: %s", line);
+
         if (strcmp(line, "xboard\n") == 0) {
             tee("feature myname=\"jangine\"\n");
             tee("feature sigint=0 sigterm=0\n");
             tee("feature done=1\n");
         }
 
-        // if (strcmp(line, "force\n") == 0) {
-        //     started = false;
-        // }
-
-        if (input_is_move(line) and started) {
-            // make_move_str(line);
-            // Move mv = calc_move();
-            tee("move e7e5\n");
+        if (strcmp(line, "force\n") == 0 or startswith("result", line)) {
+            started = false;
         }
 
+        if (strcmp(line, "white\n") == 0) {
+            IM_WHITE = true;
+            new_board();
+        }
+
+        if (strcmp(line, "new\n") == 0) {
+            IM_WHITE = false;
+            new_board();
+            // XXX reset KILLERHEURISTIC
+        }
+
+        if (input_is_move(line) and not started) {
+            pprint();
+            tee("unstarted bs\n");
+            if (BUF) {
+                memcpy(BUF, line, 1023);
+                BUF[1023] = '\0';
+            }
+        }
+
+        if (input_is_move(line) and started) {
+            pprint();
+            make_move_str(line);
+            pprint();
+            char* mv = calc_move();
+            pprint();
+            if (mv)
+                tee("move %s\n", mv);
+        }
+
+        if (strcmp(line, "go\n") == 0) {
+            started = true;
+            if (BUF) {
+                make_move_str(BUF);
+                BUF = NULL;
+            }
+            char* mv = calc_move();
+            pprint();
+            if (mv)
+                tee("move %s\n", mv);
+        }
 
         if (startswith("ping", line)) {
             line[1] = 'o';
@@ -343,45 +710,6 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-// while __name__ == '__main__' and True:
-//     i = input()
-//     ins = i.split(' ')[1:]
-
-//     elif i == 'force' or i.startswith('result'):
-//         started = False
-
-//     elif i == 'white':
-//         IM_WHITE = True
-//         board = new_board()
-
-//     elif i == 'new':
-//         IM_WHITE = False
-//         board = new_board()
-//         KILLERHEURISTIC = collections.defaultdict(int)
-
-//     elif input_is_move(i) and not started:
-//         BUF = i
-
-//     elif input_is_move(i) and started:
-//         make_move_str(i)
-//         mv = calc_move()
-//         if mv:  print('move ' + mv)
-
-//     # go/force stuff needed, else xboard skips second move
-//     elif i == 'go':
-//         started = True
-//         if BUF:
-//             make_move_str(BUF)
-//             BUF = ''
-//         mv = calc_move()
-//         print(mv)
-//         if mv:  print('move ' + mv)
-
-//     elif i.startswith('time'):
-//         total_time = int(ins[0])
-//         time_per_move = total_time / 100
-
-
 
 
 
@@ -389,13 +717,6 @@ int main(int argc, char const *argv[])
 
 
 /*
-
-Evaluation = collections.namedtuple('Evaluation', 'value moves')
-Evaluation.__eq__ = lambda self, other: self.value == other.value
-Evaluation.__lt__ = lambda self, other: self.value < other.value
-Evaluation.__gt__ = lambda self, other: self.value > other.value
-Evaluation.__le__ = lambda self, other: self < other or self == other
-Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
 
 
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
@@ -550,242 +871,4 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
     # deeply explored moves are better
     # DON'T ADD ANYTHING HERE! ab is based on the minmax-assumption
     #   so defying the max and sneaking in rogue unexplored moves
-
-
-
-
-
-
-def king_not_in_check(COLOR):
-    NCOLOR = BLACK if COLOR == WHITE else WHITE
-    ADD = -1 if COLOR == WHITE else 1
-    myking = KING + COLOR
-
-    for i, j in gentuples:
-        bij = board[i][j]
-        bijpiece = bij & ~WHITE & ~BLACK
-        if not bij & NCOLOR:
-            continue
-        if bij & PAWN:
-            if is_inside(i-ADD, j+1) and board[i-ADD][j+1] == myking:
-                return False
-            if is_inside(i-ADD, j-1) and board[i-ADD][j-1] == myking:
-                return False
-        else:
-            for a,b in PIECEDIRS[bijpiece]:
-                for k in PIECERANGE[bijpiece]:
-                    if is_inside(i+a*k, j+b*k):
-                        if board[i+a*k][j+b*k] == myking:
-                            return False
-                        elif board[i+a*k][j+b*k]:
-                            break  # important
-                    else:
-                        break
-
-    return True
-
-def genlegals(COLOR, ignore_king_capture=False):
-    NCOLOR = BLACK if COLOR == WHITE else WHITE
-    ADD = -1 if COLOR == WHITE else 1
-    STARTRANK = 6 if COLOR == WHITE else 1
-    PROMRANK = 1 if COLOR == WHITE else 6
-    EPRANK = 3 if COLOR == WHITE else 4
-    CASTLERANK = 7 if COLOR == WHITE else 0
-
-    ret = []
-    num_allowed_moves = collections.defaultdict(int)
-
-    for i, j in gentuples:
-        bij = board[i][j]
-        bijpiece = bij & ~WHITE & ~BLACK
-        if not bij & COLOR:
-            continue
-        if bij & PAWN:  # we can forego most is_inside checks here (promotion etc)
-            lr = len(ret)
-            if not board[i+ADD][j]:
-                ret.append((i,j,i+ADD,j))
-                if i == STARTRANK and not board[i+ADD+ADD][j]:
-                    ret.append((i,j,i+ADD+ADD,j))
-            if j < 7 and board[i+ADD][j+1] & NCOLOR:
-                ret.append((i,j,i+ADD,j+1))
-            if j > 0 and board[i+ADD][j-1] & NCOLOR:
-                ret.append((i,j,i+ADD,j-1))
-            if i == PROMRANK:  # promotion
-                temp = []
-                while lr < len(ret):
-                    for p in ('n', 'b', 'r', 'q'):
-                        temp.append(ret[lr] + (p,))
-                    del ret[lr]
-                ret += temp
-            if i == EPRANK:  # en passant
-                if LASTMOVE == (i+ADD+ADD, j-1, i, j-1):
-                    print('epadd')
-                    ret.append((i, j, i+ADD, j-1, 'e'))
-                if LASTMOVE == (i+ADD+ADD, j+1, i, j+1):
-                    print('epadd')
-                    ret.append((i, j, i+ADD, j+1, 'e'))
-        else:
-            for a,b in PIECEDIRS[bijpiece]:
-                for k in PIECERANGE[bijpiece]:
-                    if is_inside(i+a*k, j+b*k):
-                        if not board[i+a*k][j+b*k]:
-                            ret.append((i,j,i+a*k,j+b*k))
-                        elif board[i+a*k][j+b*k] & NCOLOR:
-                            ret.append((i,j,i+a*k,j+b*k))
-                            break  # important
-                        elif board[i+a*k][j+b*k] & COLOR:
-                            break  # important
-                    else:
-                        break
-
-    if ((CASTLINGWHITE[0] and CASTLINGWHITE[1]) if COLOR == WHITE
-    else (CASTLINGBLACK[0] and CASTLINGBLACK[1])):
-        if not board[CASTLERANK][3] and not board[CASTLERANK][2] and not board[CASTLERANK][1]:
-            board[CASTLERANK][2:4] = [COLOR + KING]*2
-            if king_not_in_check(COLOR):
-                ret.append((CASTLERANK, 4, CASTLERANK, 2, 'c'))
-            board[CASTLERANK][2:4] = [0]*2
-    if ((CASTLINGWHITE[2] and CASTLINGWHITE[1]) if COLOR == WHITE
-    else (CASTLINGBLACK[2] and CASTLINGBLACK[1])):
-        if not board[CASTLERANK][5] and not board[CASTLERANK][6]:
-            board[CASTLERANK][5:7] = [COLOR + KING]*2
-            if king_not_in_check(COLOR):
-                ret.append((CASTLERANK, 4, CASTLERANK, 6, 'c'))
-            board[CASTLERANK][5:7] = [0]*2
-
-    ret2 = []
-
-    for mv in ret:
-        hit_piece, c_rights = make_move(mv)
-        assert ((not hit_piece & KING) if ignore_king_capture == False else True)
-
-        if king_not_in_check(COLOR):
-            ret2.append(mv)
-
-        unmake_move(mv, hit_piece, c_rights)
-
-
-    return ret2
-
-
-
-def make_move(mv):
-
-    global CASTLINGWHITE
-    global CASTLINGBLACK
-
-    piece = board[mv[0]][mv[1]]
-    hit_piece = board[mv[2]][mv[3]]
-    board[mv[0]][mv[1]] = 0
-    board[mv[2]][mv[3]] = piece
-
-    CASTLERANK = 7 if piece & WHITE else 0
-    if len(mv) == 5:
-        if mv[4] == 'e':
-            board[mv[0]][mv[3]] = 0  # en passant
-        elif mv[4] == 'c':
-            assert mv[0:2] == (CASTLERANK, 4)
-            if mv[3] == 2:
-                board[CASTLERANK][3] = board[CASTLERANK][0]
-                board[CASTLERANK][0] = 0
-            else:
-                assert mv[3] == 6
-                board[CASTLERANK][5] = board[CASTLERANK][7]
-                board[CASTLERANK][7] = 0
-            board[CASTLERANK][4] = 0
-        else:
-            board[mv[2]][mv[3]] = PIECECHARSINV[mv[4]] + (WHITE if mv[2] == 0 else BLACK)
-
-    old_cr = CASTLINGWHITE, CASTLINGBLACK
-    cr = (CASTLINGWHITE if piece & WHITE else CASTLINGBLACK)
-    if mv[0] == CASTLERANK:
-        cr = (mv[1] != 0 and cr[0],  mv[1] != 4 and cr[1],  mv[1] != 7 and cr[2])
-        if piece & WHITE:   CASTLINGWHITE = cr
-        else:               CASTLINGBLACK = cr
-
-    return hit_piece, old_cr
-
-
-def unmake_move(mv, hit_piece, c_rights):
-
-    global CASTLINGWHITE
-    global CASTLINGBLACK
-
-    piece = board[mv[2]][mv[3]]
-    board[mv[2]][mv[3]] = hit_piece
-    board[mv[0]][mv[1]] = piece
-
-    if len(mv) == 5:
-        if mv[4] == 'e':
-            board[mv[0]][mv[3]] = PAWN + (WHITE if mv[2] == 5 else BLACK)
-        elif mv[4] == 'c':
-            if mv[3] == 2:
-                board[mv[0]][0] = board[mv[0]][3]
-                board[mv[0]][3] = 0
-            else:
-                assert mv[3] == 6
-                board[mv[0]][7] = board[mv[0]][5]
-                board[mv[0]][5] = 0
-        else:
-            board[mv[0]][mv[1]] = PAWN + (WHITE if mv[2] == 0 else BLACK)
-
-    CASTLINGWHITE = c_rights[0]
-    CASTLINGBLACK = c_rights[1]
-
-
-
-def make_move_str(mv):
-    #XXX receiv castling
-    print('recv move ' + mv)
-
-    a = 8 - int(mv[1])
-    b = ord(mv[0]) - ord('a')
-    c = 8 - int(mv[3])
-    d = ord(mv[2]) - ord('a')
-    if len(mv) == 5:
-        to_mv = (a, b, c, d, mv[4])
-    elif b != d and board[a][b] & PAWN and not board[c][d]:  # en passant
-        to_mv = (a, b, c, d, 'e')
-    elif board[a][b] & KING and abs(d - b) > 1:
-        to_mv = (a, b, c, d, 'c')
-    else:
-        to_mv = (a, b, c, d)
-
-    print('parsed input as', to_mv)
-
-    make_move(to_mv)
-    print(to_mv)
-    pprint()
-    LASTMOVE = to_mv
-
-
-def calc_move():
-    if args.mode == 'random':
-        legals = genlegals(WHITE if IM_WHITE else BLACK)
-        if not legals:
-            print('out of moves')
-            pprint()
-            return  # either stalemate or checkmate
-        mv = random.choice(legals)
-
-    else:
-        ans = quiescence(WHITE if IM_WHITE else BLACK)
-        if ans and ans.moves:
-            mv = ans.moves[0]
-        else:
-            print('out of moves')
-            pprint()
-            return  # either stalemate or checkmate
-
-    make_move(mv)
-    LASTMOVE = mv
-
-    return chr(ord('a') + mv[1]) + str(8 - mv[0]) + chr(ord('a') + mv[3]) + str(8 - mv[2]) + (mv[4] if len(mv) == 5 else '')
-
-
-
-
-
-
-
 */

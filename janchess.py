@@ -158,27 +158,6 @@ def turochamp(loud=False):
         eval += MUL * PIECEVALS[bijp]
 
         # king safety
-        # if bijp == KING:
-        #     i = 0
-        #     for a,b in PIECEDIRS[QUEEN]:
-        #         for k in PIECERANGE[QUEEN]:
-        #             if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
-        #                 break
-        #             # eval -= MUL * 8
-        #             i += 1
-        #     eval -= MUL * 350 * round(i**.5)
-
-        # pawn advancement
-        # if bij & PAWN:
-        #     eval += 8 * (6-i if bij & WHITE else 1-i)
-
-    if loud:
-        print('pieces and pawns', eval)
-
-    for i,j in gentuples:
-        bijp = board[i][j] & ~WHITE & ~BLACK
-        bij = board[i][j]
-        MUL = 1 if bij & WHITE else -1
         if bijp == KING:
             c = 0
             for a,b in PIECEDIRS[QUEEN]:
@@ -188,6 +167,27 @@ def turochamp(loud=False):
                     # eval -= MUL * 8
                     c += 1
             eval -= MUL * 30 * round(c**.5)
+
+        # pawn advancement
+        if bij & PAWN:
+            eval += 8 * (6-i if bij & WHITE else 1-i)
+
+    if loud:
+        print('pieces and pawns', eval)
+
+    # for i,j in gentuples:
+    #     bijp = board[i][j] & ~WHITE & ~BLACK
+    #     bij = board[i][j]
+    #     MUL = 1 if bij & WHITE else -1
+    #     if bijp == KING:
+    #         c = 0
+    #         for a,b in PIECEDIRS[QUEEN]:
+    #             for k in PIECERANGE[QUEEN]:
+    #                 if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
+    #                     break
+    #                 # eval -= MUL * 8
+    #                 c += 1
+    #         eval -= MUL * 30 * round(c**.5)
 
     if loud:
         print('king safety', eval)

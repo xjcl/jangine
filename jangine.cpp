@@ -5,6 +5,7 @@
 #include <cstdbool>
 #include <cstdint>
 #include <cinttypes>
+#include <cmath>
 
 #include <unistd.h>
 
@@ -26,7 +27,8 @@ bool in(char a, char const* list, size_t listlen) {
 #define input_is_move(i) (strlen(i) >= 4 and in(i[0], "abcdefgh", 8) and in(i[2], "abcdefgh", 8) and in(i[1], "12345678", 8) and in(i[3], "12345678", 8))
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 #define store(a, b, c, d, e) \
-    { Move x = {a, b, c, d, e}; \
+    { *mvsend = (Move*)malloc(sizeof(Move)); \
+    Move x = {a, b, c, d, e}; \
     memcpy(*mvsend, &x, sizeof(Move)); \
     mvsend++; }
 
@@ -61,6 +63,11 @@ typedef struct Move {
     num t0;
     num t1;
     num prom;
+
+    // wtf do i need this, std::map??
+    bool operator<( const Move & that ) const {
+        return 8*this->f0 + this->f1 < 8*that.f0 + that.f1;
+    }
 } Move;
 
 typedef struct PiecePlusCatling {
@@ -83,6 +90,7 @@ struct Pair {
 
 Pair** PIECEDIRS = NULL;
 num* PIECERANGE = NULL;
+num* PIECEVALS = NULL;
 
 num board[64] = {0};   // malloc 64 or even 100
 bool IM_WHITE = false;
@@ -103,7 +111,7 @@ bool startswith(const char *pre, const char *str) {
     return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }
 
-std::map<Move, num> KILLERHEURISTIC;
+std::map<Move, int_fast32_t> KILLERHEURISTIC;
 
 num default_board[64] = {
     BLACK + ROOK, BLACK + KNIGHT, BLACK + BISHOP, BLACK + QUEEN,
@@ -130,6 +138,11 @@ typedef struct ValuePlusMoves {
     Move** moves;
     Move** movesend;
 } ValuePlusMoves;
+
+typedef struct ValuePlusMove {
+    num value;
+    Move move;
+} ValuePlusMove;
 
 // gentuples = list(itertools.product(range(8), range(8)))
 
@@ -169,22 +182,25 @@ typedef struct ValuePlusMoves {
 
 
 
-PiecePlusCatling make_move(Move* mv) {
+PiecePlusCatling make_move(Move mv) {
 
-    num piece = board[8*mv->f0+mv->f1];
-    num hit_piece = board[8*mv->t0+mv->t1];
-    board[8*mv->f0+mv->f1] = 0;
-    board[8*mv->t0+mv->t1] = piece;
+    if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0)
+        tee("XXX DANGEROUS! NULL MOVE");
+
+    num piece = board[8*mv.f0+mv.f1];
+    num hit_piece = board[8*mv.t0+mv.t1];
+    board[8*mv.f0+mv.f1] = 0;
+    board[8*mv.t0+mv.t1] = piece;
 
     num CASTLERANK = piece & WHITE ? 7 : 0;
 
     // tee("start");
 
-    if (mv->prom) {
-        if (mv->prom == 'e') {
-            board[8*mv->f0+mv->t1] = 0;
-        } else if (mv->prom == 'c') {
-            if (mv->t1 == 2) {
+    if (mv.prom) {
+        if (mv.prom == 'e') {
+            board[8*mv.f0+mv.t1] = 0;
+        } else if (mv.prom == 'c') {
+            if (mv.t1 == 2) {
                 board[8*CASTLERANK+3] = board[8*CASTLERANK];
                 board[8*CASTLERANK] = 0;
             } else {
@@ -194,13 +210,13 @@ PiecePlusCatling make_move(Move* mv) {
             board[8*CASTLERANK+4] = 0;
         } else {
             num p;
-            switch (mv->prom) {
+            switch (mv.prom) {
                 case 'q':  p = QUEEN;   break;
                 case 'r':  p = ROOK;    break;
                 case 'b':  p = BISHOP;  break;
                 case 'n':  p = KNIGHT;  break;
             }
-            board[8*mv->t0+mv->t1] = p + (mv->t0 == 0 ? WHITE : BLACK);
+            board[8*mv.t0+mv.t1] = p + (mv.t0 == 0 ? WHITE : BLACK);
         }
     }
 
@@ -211,8 +227,8 @@ PiecePlusCatling make_move(Move* mv) {
 
     CASTLINGRIGHTS cr = (piece & WHITE ? CASTLINGWHITE : CASTLINGBLACK);
 
-    if (mv->f0 == CASTLERANK) {
-        cr = {mv->f1 != 0 and cr.lr, mv->f1 != 4 and cr.k,  mv->f1 != 7 and cr.rr};
+    if (mv.f0 == CASTLERANK) {
+        cr = {mv.f1 != 0 and cr.lr, mv.f1 != 4 and cr.k,  mv.f1 != 7 and cr.rr};
         if (piece & WHITE)  CASTLINGWHITE = cr;
         else                CASTLINGBLACK = cr;
     }
@@ -223,27 +239,27 @@ PiecePlusCatling make_move(Move* mv) {
 
 
 
-void unmake_move(Move* mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b) {
+void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b) {
 
-    num piece = board[8*(mv->t0)+mv->t1];
-    board[8*(mv->t0)+mv->t1] = hit_piece;
-    board[8*(mv->f0)+mv->f1] = piece;
+    num piece = board[8*(mv.t0)+mv.t1];
+    board[8*(mv.t0)+mv.t1] = hit_piece;
+    board[8*(mv.f0)+mv.f1] = piece;
 
-    if (mv->prom)
+    if (mv.prom)
     {
-        if (mv->prom == 'e') {
-            board[8*mv->f0+mv->t1] = PAWN + (mv->t0 == 5 ? WHITE : BLACK);
-        } else if (mv->prom == 'c') {
-            if (mv->t1 == 2) {
-                board[8*mv->f0] = board[8*mv->f0+3];
-                board[8*mv->f0+3] = 0;
+        if (mv.prom == 'e') {
+            board[8*mv.f0+mv.t1] = PAWN + (mv.t0 == 5 ? WHITE : BLACK);
+        } else if (mv.prom == 'c') {
+            if (mv.t1 == 2) {
+                board[8*mv.f0] = board[8*mv.f0+3];
+                board[8*mv.f0+3] = 0;
             }
             else {
-                board[8*mv->f0+7] = board[8*mv->f0+5];
-                board[8*mv->f0+5] = 0;
+                board[8*mv.f0+7] = board[8*mv.f0+5];
+                board[8*mv.f0+5] = 0;
             }
         } else {
-            board[8*mv->f0+mv->f1] = PAWN + (mv->t0 == 2 ? WHITE : BLACK);
+            board[8*mv.f0+mv.f1] = PAWN + (mv.t0 == 0 ? WHITE : BLACK);
         }
     }
 
@@ -269,11 +285,7 @@ void make_move_str(char* mv) {
         e = '\0';
 
     Move to_mv = {a, b, c, d, e};
-    Move* to_mv_ptr = (Move*)malloc(sizeof(Move));
-    memcpy(to_mv_ptr, &to_mv, sizeof(Move));
-    // XXX print move
-
-    make_move(to_mv_ptr);
+    make_move(to_mv);
     LASTMOVE = to_mv;  // copies the struct(?)
 }
 
@@ -331,49 +343,14 @@ bool king_not_in_check(num COLOR) {
 
 
 
-num eval_quies(num COLOR, Move mv, num hit_piece) {
-    num NCOLOR = (COLOR == WHITE ? BLACK : WHITE);
-
-    num quies = 20;
-
-    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)
-        quies *= .8;
-    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)
-        quies *= 1.2;
-
-    if (hit_piece or mv.prom != '\0' and mv.prom != 'c')
-        quies *= 0;
-
-    if (not king_not_in_check(NCOLOR) or board[8*mv.f0+mv.f1] & KING)
-        quies *= 0;
-
-    return quies;
-}
-
-
-
-// int killer_cmp(const void* a, const void* b) {
-//     // XXX
-//     return true;
-// }
-
-// void killer_order(Move* mvs, size_t mvs_len) {
-//     qsort(mvs, mvs_len, sizeof(Move), killer_cmp);
-// }
 
 
 
 
+ValuePlusMoves genlegals(num COLOR) {
 
-
-
-
-
-ValuePlusMoves* genlegals(num COLOR) {
-
-    Move** mvs = (Move**)malloc(1024 * sizeof(num*));  // 9 Qs have a lot of moves...
-    for (int i = 0; i < 1024; ++i)
-        mvs[i] = (Move*)malloc(sizeof(Move));
+    Move** mvs = (Move**)calloc(128, sizeof(Move*));  // 9 Qs have a lot of moves...
+        // also inits to NULLptrs
     Move** mvsend = mvs;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
@@ -393,13 +370,9 @@ ValuePlusMoves* genlegals(num COLOR) {
             Move** badmvs = mvsend;
 
             if (not board[8*(i+ADD)+j]) {
-                Move x = {i, j, i+ADD, j, '\0'};
-                memcpy(*mvsend, &x, sizeof(Move));
-                mvsend++;
+                store(i, j, i+ADD, j, '\0');
                 if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {
-                    Move x = {i, j, i+ADD+ADD, j, '\0'};
-                    memcpy(*mvsend, &x, sizeof(Move));
-                    mvsend++;
+                    store(i, j, i+ADD+ADD, j, '\0');
                 }
             }
             if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
@@ -414,9 +387,9 @@ ValuePlusMoves* genlegals(num COLOR) {
                     // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'n');
                     // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'b');
                     // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'r');
-                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'n';  mvsend++;
-                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'b';  mvsend++;
-                    memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'r';  mvsend++;
+                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'n';  mvsend++;
+                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'b';  mvsend++;
+                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'r';  mvsend++;
                     (*mvsendcpy)->prom = 'q';
                 }
             }
@@ -477,9 +450,9 @@ ValuePlusMoves* genlegals(num COLOR) {
 
     Move** mvscpy = mvs;
     while (mvscpy != mvsend) {
-        PiecePlusCatling ppc = make_move(*mvscpy);
+        PiecePlusCatling ppc = make_move(**mvscpy);
         bool illegal = !king_not_in_check(COLOR);
-        unmake_move(*mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+        unmake_move(**mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
         if (illegal) {
             *mvscpy = NULL;
@@ -490,17 +463,308 @@ ValuePlusMoves* genlegals(num COLOR) {
 
     // remove trailing NULLs
     mvsend--;
-    while (!(*mvsend) and mvsend >= mvs) {
+    while (!(*mvsend) and mvsend > mvs) {
         mvsend--;
     }
+
+    // we can't -1 if size is 0
+    if (!(*mvsend))
+        return {0, mvs, mvs};
+
     mvsend++;
 
-    ValuePlusMoves* ret = (ValuePlusMoves*)malloc(sizeof(ValuePlusMoves));
-    ret->value = 0;
-    ret->moves = mvs;
-    ret->movesend = mvsend;
+    return {0, mvs, mvsend};
+}
 
-    return ret;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+num eval_quies(num COLOR, Move mv, num hit_piece) {
+    num NCOLOR = (COLOR == WHITE ? BLACK : WHITE);
+
+    num quies = 20;
+
+    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)
+        quies *= .8;
+    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)
+        quies *= 1.2;
+
+    if (hit_piece or mv.prom != '\0' and mv.prom != 'c')
+        quies *= 0;
+
+    if (not king_not_in_check(NCOLOR) or board[8*mv.f0+mv.f1] & KING)
+        quies *= 0;
+
+    return quies;
+}
+
+
+
+void tee_move(Move mv) {
+
+            num kh;
+            auto it = KILLERHEURISTIC.find(mv);
+            if (it == KILLERHEURISTIC.end()) {
+                kh = 0;
+            }
+            else {
+                kh = KILLERHEURISTIC[mv];
+            }
+
+    tee("MOVE %d %d %d %d %c (%d)\n", mv.f0, mv.f1, mv.t0, mv.t1, mv.prom, kh);
+
+}
+
+void tee_moves(Move** mvs, num count) {
+    for (int i = 0; i < count; ++i)
+    {
+        if (mvs[i] != NULL) {
+            tee("%d ", i);
+            tee_move(*(mvs[i]));
+        }
+        else{
+            tee("MISSING\n");
+        }
+    }
+}
+
+num turochamp(void) {
+
+    num eval = 0;
+
+    gentuples {
+        // material counting
+        num bijp = board[8*i+j] & ~WHITE & ~BLACK;
+        num bij = board[8*i+j];
+        num MUL = bij & WHITE ? 1 : -1;
+
+        eval += MUL * PIECEVALS[bijp];
+
+        // king safety
+        if (bijp == KING) {
+            num c = 0;
+            for (num l = 0; PIECEDIRS[QUEEN][l].a != 0 or PIECEDIRS[QUEEN][l].b != 0; ++l) {
+                num a = PIECEDIRS[QUEEN][l].a;
+                num b = PIECEDIRS[QUEEN][l].b;
+                for (num k = 1; k <= PIECERANGE[QUEEN]; ++k)
+                {
+                    if (not is_inside(i+a*k, j+b*k) or board[8*(i+a*k)+j+b*k])
+                        break;
+                    ++c;
+                }
+            }
+            eval -= MUL * 30 * round(sqrt(c));
+        }
+
+        // pawn advancement
+        if (bij & PAWN)
+            eval += 8 * (bij & WHITE ? 6-i : 1-i);
+    }
+
+    // center control
+    // for (int i = 3; i < 5; ++i)
+    //     for (int j = 3; j < 5; ++j)
+    //     {
+    //         num bij = board[8*i+j];
+    //         if (bij and not(bij & ROOK) and not(bij & QUEEN))
+    //             eval += 8 * (bij & WHITE ? 1 : -1);
+    //     }
+
+    // mobility
+    for (num MUL = -1; MUL < 2; MUL += 2)
+    {
+        num COLOR = (MUL == 1 ? WHITE : BLACK);
+
+        ValuePlusMoves gl = genlegals(COLOR);
+
+        num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
+        if (!mvs_len) {
+            if (king_not_in_check(COLOR))
+                return 0;
+            return MUL * (-inf+1);
+        }
+
+        for (num j = 0; j < mvs_len; ++j)
+        {
+            if (gl.moves[j] == NULL)
+                continue;
+            // tee("%p ", gl.moves[j]);
+            Move ref_mv = *(gl.moves[j]);
+            num i = 0;
+            if (not (board[8*ref_mv.f0+ref_mv.f1] & QUEEN)) {
+                while (true) {
+                    if (gl.moves[j] == NULL) {
+                        ++j;
+                        continue;
+                    }
+                    if (not(j < mvs_len and (*(gl.moves[j])).f0 == ref_mv.f0 and (*(gl.moves[j])).f1 == ref_mv.f1))
+                        break;
+                    ++i;
+                    if (board[8* (*(gl.moves[j])).t0 + (*(gl.moves[j])).t1])
+                        ++i;
+                    ++j;
+                }
+            }
+            eval += MUL * 13 * round(sqrt(i));
+        }
+
+
+        for (int i = 0; i < 128; ++i)
+            if (gl.moves[i])
+                free(gl.moves[i]);
+        free(gl.moves);
+    }
+
+    return eval;
+}
+
+
+
+// better move is smaller (since lists are sorted small->large)
+
+int killer_cmp(const void* a, const void* b) {
+    // we don't care
+
+    // XXX what wastes more time
+    //  swapping NULLs  or
+    //  not getting advantages in quiescence from branch predicting
+
+    Move **a_fuck_cpp = (Move **)a;
+    Move **b_fuck_cpp = (Move **)b;
+    if (!*b_fuck_cpp) {
+        return -1;
+    }
+    if (!*a_fuck_cpp) {
+        return 1;
+    }
+
+    Move mva = **(a_fuck_cpp);
+    Move mvb = **(b_fuck_cpp);
+
+    auto ita = KILLERHEURISTIC.find(mva);
+    auto itb = KILLERHEURISTIC.find(mvb);
+    if (ita == KILLERHEURISTIC.end()) {
+        if (itb == KILLERHEURISTIC.end())
+            return 0;
+        return 1;
+    }
+    if (itb == KILLERHEURISTIC.end())
+        return -1;
+    return KILLERHEURISTIC[mvb] - KILLERHEURISTIC[mva];
+}
+// int killer_cmp(const void* a, const void* b) {
+//     // we don't care
+//     if (*a == NULL || *b == NULL)
+//         return 0;
+
+//     Move mva = **((Move*)a);
+//     Move mvb = **((Move*)b);
+
+//     auto ita = KILLERHEURISTIC.find(mva);
+//     auto itb = KILLERHEURISTIC.find(mvb);
+//     if (ita == KILLERHEURISTIC.end()) {
+//         if (itb == KILLERHEURISTIC.end())
+//             return 0;
+//         return -1;
+//     }
+//     if (itb == KILLERHEURISTIC.end())
+//         return 1;
+//     return KILLERHEURISTIC[mvb] - KILLERHEURISTIC[mva];
+// }
+
+
+
+ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
+
+
+    if (quies <= 0 or depth > 7)
+        return {turochamp(), {0}};
+
+    // tee("Q");
+
+    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
+
+    ValuePlusMoves gl = genlegals(COLOR);
+    Move** gl_moves_backup = gl.moves;
+
+    num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
+
+    if (!mvs_len) {
+        if (king_not_in_check(COLOR))
+            return {0, {0}};
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+1), {0}};
+    }
+
+    // tee("BEFORE ALL\n");
+    // tee(" mvs_len: %d\n", mvs_len);
+    // tee_moves(gl.moves, mvs_len);
+    qsort(gl.moves, mvs_len, sizeof(Move*), killer_cmp);
+    // tee_moves(gl.moves, mvs_len);
+    // tee("AFTER QSORT\n");
+
+    while (gl.moves != gl.movesend) {
+
+        if (!*(gl.moves)) {
+            gl.moves++;
+            continue;
+        }
+
+        Move mv = **(gl.moves);
+
+        PiecePlusCatling ppc = make_move(mv);
+
+        ValuePlusMove rec = quiescence(COLOR == WHITE ? BLACK : WHITE, alpha, beta,
+            quies - eval_quies(COLOR, mv, ppc.hit_piece), depth + 1);
+
+        unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+
+        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
+            best = {rec.value, mv};
+
+
+        if (depth == 0) {
+            tee("EVAL %d FOR", rec.value);
+            tee_move(mv);
+        }
+
+
+        if (COLOR == WHITE and best.value > alpha)
+            alpha = best.value;
+        if (COLOR == BLACK and best.value < beta)
+            beta = best.value;
+        if (beta <= alpha) {
+            // XXX KILLER
+            auto it = KILLERHEURISTIC.find(mv);
+            if (it == KILLERHEURISTIC.end()) {
+                KILLERHEURISTIC[mv] = 0;
+            }
+            KILLERHEURISTIC[mv] += depth * depth;
+            break;
+        }
+
+        gl.moves++;
+    }
+
+
+    for (int i = 0; i < 128; ++i)
+        if (gl_moves_backup[i])
+            free(gl_moves_backup[i]);
+    free(gl_moves_backup);
+
+    return best;
 }
 
 
@@ -516,28 +780,47 @@ ValuePlusMoves* genlegals(num COLOR) {
 
 char* calc_move(void) {
     // if args.mode == 'random':
-    ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
-    if (legals->moves == legals->movesend) {
-        tee("out of moves");
-        pprint();
-        return NULL;
-    }
+    // ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
+    // if (legals->moves == legals->movesend) {
+    //     tee("out of moves");
+    //     pprint();
+    //     return NULL;
+    // }
 
-    num i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
-    while ( !(legals->moves[i]) ) {
-        i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
-    }
+    // num i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
+    // while ( !(legals->moves[i]) ) {
+    //     i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
+    // }
 
-    Move mv = {0};
-    memcpy(&mv, legals->moves[i], sizeof(Move));
-    LASTMOVE = mv;
-    make_move(legals->moves[i]);
+    // Move mv = {0};
+    // memcpy(&mv, legals->moves[i], sizeof(Move));
+    // LASTMOVE = mv;
+    // make_move(legals->moves[i]);
 
-    while (legals->moves != legals->movesend) {
-        free(*legals->moves);
-        legals->moves++;
-    }
-    free(legals);
+    // while (legals->moves != legals->movesend) {
+    //     free(*legals->moves);
+    //     legals->moves++;
+    // }
+    // free(legals);
+
+
+    // char* ret = (char*) malloc(6);
+    // ret[0] = 'a' + (char)(mv.f1);
+    // ret[1] = '0' + (char)(8 - mv.f0);
+    // ret[2] = 'a' + (char)(mv.t1);
+    // ret[3] = '0' + (char)(8 - mv.t0);
+    // ret[4] = mv.prom;
+    // ret[5] = '\0';
+
+    // return ret;
+
+
+
+    // quiescence
+    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0);
+    Move mv = bestmv.move;
+    tee_move(mv);
+    make_move(mv);
 
 
     char* ret = (char*) malloc(6);
@@ -549,6 +832,7 @@ char* calc_move(void) {
     ret[5] = '\0';
 
     return ret;
+
 
     // else:
     //     ans = quiescence(WHITE if IM_WHITE else BLACK)
@@ -575,8 +859,9 @@ void init_data(void) {
 
     BUF = (char*)calloc(1024, sizeof(char));
 
-    PIECEDIRS = (Pair**)malloc(65 * sizeof(Pair*));
-    PIECERANGE = (num*)malloc(65 * sizeof(num));
+    PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
+    PIECERANGE = (num*)calloc(65, sizeof(num));
+    PIECEVALS = (num*)calloc(65, sizeof(num));
 
     PIECEDIRS[ROOK] = (Pair*)malloc(5 * sizeof(Pair));
     PIECEDIRS[ROOK][0] = {0, 1};
@@ -621,6 +906,14 @@ void init_data(void) {
     PIECERANGE[ROOK] = 7;
     PIECERANGE[QUEEN] = 7;
     PIECERANGE[KING] = 1;
+
+    PIECEVALS[0] = 0;
+    PIECEVALS[PAWN] = 100;
+    PIECEVALS[KNIGHT] = 300;
+    PIECEVALS[BISHOP] = 300;
+    PIECEVALS[ROOK] = 500;
+    PIECEVALS[QUEEN] = 900;
+    PIECEVALS[KING] = 32000;
 }
 
 

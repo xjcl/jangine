@@ -5,3 +5,4 @@ sunfish.py
 __pycache__/
 *.o
 jangine
+stockfish-3.0.0+git20130508/

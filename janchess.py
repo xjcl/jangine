@@ -62,13 +62,14 @@ IM_WHITE = False
 started = True
 BUF = ''
 
+NODES = 0
 
 # XXX instead use lru-cache?
 KILLERHEURISTIC = collections.defaultdict(int)
 
 # XXX currently castling-rights-agnostic!!
 # XXX currently draw-by-rep-agnostic!!
-TRANSPOSITIONS = collections.defaultdict(int)
+# TRANSPOSITIONS = collections.defaultdict(int)
 
 
 
@@ -135,13 +136,6 @@ def log_to_board(s):
 
 
 
-
-Evaluation = collections.namedtuple('Evaluation', 'value moves')
-Evaluation.__eq__ = lambda self, other: self.value == other.value
-Evaluation.__lt__ = lambda self, other: self.value < other.value
-Evaluation.__gt__ = lambda self, other: self.value > other.value
-Evaluation.__le__ = lambda self, other: self < other or self == other
-Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
 
 
 # https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
@@ -266,36 +260,44 @@ def killer_order(mvs):
     return sorted(mvs, key=lambda x: KILLERHEURISTIC[x], reverse=True)
 
 
+Evaluation = collections.namedtuple('Evaluation', 'value moves')
+Evaluation.__eq__ = lambda self, other: self.value == other.value
+Evaluation.__lt__ = lambda self, other: self.value < other.value
+Evaluation.__gt__ = lambda self, other: self.value > other.value
+Evaluation.__le__ = lambda self, other: self < other or self == other
+Evaluation.__add__ = lambda self, other: Evaluation(self.value + other, self.moves)
+Evaluation.__neg__ = lambda self: Evaluation(-self.value, self.moves)
+
+
 def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=41, depth=0, lastmv=()):
 
     global TRANSPOSITIONS
+    global NODES
+
+    NODES += 1
 
     # hashable_board = tuple(tuple(row) for row in board) + (COLOR,)  # COLOR! else it might 'go twice'
     # if hashable_board in TRANSPOSITIONS:
     #     return TRANSPOSITIONS[hashable_board]
 
-    if quies <= 0 or depth > 7:     return Evaluation(turochamp(), [])
-    if depth == 0:
-        print(len(TRANSPOSITIONS))
-        print(CASTLINGWHITE)
-        TRANSPOSITIONS = dict()  # print: bursts the pipe lol
+    if quies <= 0 or depth > 7:     return Evaluation((1 if COLOR == WHITE else -1) * turochamp(), [])
 
-    best = Evaluation(-inf if COLOR == WHITE else inf, None)
+    best = Evaluation(-inf, None)
 
-    if depth == 0:
-        print(genlegals(BLACK))
-        print(genlegals(COLOR))
-        print(killer_order(genlegals(COLOR)))
+    # if depth == 0:
+    #     print(genlegals(BLACK))
+    #     print(genlegals(COLOR))
+    #     print(killer_order(genlegals(COLOR)))
 
     for mv in killer_order(genlegals(COLOR)):
 
         hit_piece, c_rights = make_move(mv)
 
-        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - eval_quies(COLOR, mv, hit_piece), depth + 1, mv)
+        rec = - quiescence(BLACK if COLOR == WHITE else WHITE, -beta, -alpha, quies - eval_quies(COLOR, mv, hit_piece), depth + 1, mv)
 
         unmake_move(mv, hit_piece, c_rights)
 
-        if ((rec > best) if COLOR == WHITE else (rec < best)):
+        if rec > best:
             best = Evaluation(rec.value, [mv] + rec.moves)
 
         if depth == 0:
@@ -305,8 +307,8 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
 
         # save eval if we come across it from another move order
 
-        if COLOR == WHITE and (best > alpha):   alpha = best
-        if COLOR == BLACK and (best < beta) :   beta  = best
+        if best > alpha:
+            alpha = best
         if beta <= alpha:
             KILLERHEURISTIC[mv] += depth ** 2
             break
@@ -318,9 +320,6 @@ def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []),
         return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
 
     # TRANSPOSITIONS[hashable_board] = best
-
-    if depth == 0:
-        print('BBBB ', best)
 
     return best
     # deeply explored moves are better
@@ -561,13 +560,20 @@ def calc_move():
         mv = random.choice(legals)
 
     else:
+        global NODES
+        NODES += 1
         ans = quiescence(WHITE if IM_WHITE else BLACK)
+
+        print('BEST: ', ans)
+        print('SEARCHED', NODES, 'NODES')
+
         if ans and ans.moves:
             mv = ans.moves[0]
         else:
             print('out of moves')
             pprint()
             return  # either stalemate or checkmate
+
 
     make_move(mv)
     LASTMOVE = mv
@@ -582,29 +588,41 @@ def calc_move():
 
 
 if args.test:
-    CASTLINGWHITE = (False, False, False)
-    CASTLINGBLACK = (False, False, False)
 
-    ...
+    board = new_board()
 
-    log_to_board("""\
-    INFO:root:>>> BR       BQ BK BB BN BR
-    INFO:root:>>> BP BP BP    BP       BP
-    INFO:root:>>>       BN       BP
-    INFO:root:>>>          BP    BB BP
-    INFO:root:>>>          BP    WB
-    INFO:root:>>>                WN
-    INFO:root:>>> WP WP BP WN WP WP WP WP
-    INFO:root:>>> WR       WQ WK WB    WR\
-    """)
+    print("EMPTY BOARD EVAL: ", turochamp(loud=True))
 
-    pprint()
-    make_move((3,6,4,5))
-    pprint()
-    genlegals(WHITE)
-    pprint()
-    quiescence(WHITE)
-    pprint()
+    make_move_str("e2e4")
+    print("1. e4 EVAL: ", turochamp(loud=True))
+
+    print("LIST OF MOVES IN RESPONSE TO 1. e4")
+    quiescence(BLACK)
+
+    # CASTLINGWHITE = (False, False, False)
+    # CASTLINGBLACK = (False, False, False)
+
+    # ...
+
+    # log_to_board("""\
+    # INFO:root:>>> BR       BQ BK BB BN BR
+    # INFO:root:>>> BP BP BP    BP       BP
+    # INFO:root:>>>       BN       BP
+    # INFO:root:>>>          BP    BB BP
+    # INFO:root:>>>          BP    WB
+    # INFO:root:>>>                WN
+    # INFO:root:>>> WP WP BP WN WP WP WP WP
+    # INFO:root:>>> WR       WQ WK WB    WR\
+    # """)
+
+    # pprint()
+    # make_move((3,6,4,5))
+    # pprint()
+    # genlegals(WHITE)
+    # pprint()
+    # quiescence(WHITE)
+    # pprint()
+
 
 
 
@@ -613,6 +631,8 @@ if args.test:
 while __name__ == '__main__' and True:
     i = input()
     ins = i.split(' ')[1:]
+
+    board = new_board()
 
     # work both interactively AND with xboard
     if i == 'xboard':

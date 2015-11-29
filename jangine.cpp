@@ -97,6 +97,8 @@ bool IM_WHITE = false;
 bool started = true;
 char* BUF = NULL;
 
+int64_t NODES = 0;
+
 void pprint() {
     for (num i = 0; i < 8; ++i) {
         for (num j = 0; j < 8; ++j)
@@ -524,8 +526,7 @@ void tee_move(Move mv) {
                 kh = KILLERHEURISTIC[mv];
             }
 
-    tee("MOVE %d %d %d %d %c (%d)\n", mv.f0, mv.f1, mv.t0, mv.t1, mv.prom, kh);
-
+    tee("MOVE %d %d %d %d %c (%d)", mv.f0, mv.f1, mv.t0, mv.t1, mv.prom, kh);
 }
 
 void tee_moves(Move** mvs, num count) {
@@ -534,6 +535,7 @@ void tee_moves(Move** mvs, num count) {
         if (mvs[i] != NULL) {
             tee("%d ", i);
             tee_move(*(mvs[i]));
+            tee("\n");
         }
         else{
             tee("MISSING\n");
@@ -575,13 +577,13 @@ num turochamp(void) {
     }
 
     // center control
-    // for (int i = 3; i < 5; ++i)
-    //     for (int j = 3; j < 5; ++j)
-    //     {
-    //         num bij = board[8*i+j];
-    //         if (bij and not(bij & ROOK) and not(bij & QUEEN))
-    //             eval += 8 * (bij & WHITE ? 1 : -1);
-    //     }
+    for (int i = 3; i < 5; ++i)
+        for (int j = 3; j < 5; ++j)
+        {
+            num bij = board[8*i+j];
+            if (bij and not(bij & ROOK) and not(bij & QUEEN))
+                eval += 8 * (bij & WHITE ? 1 : -1);
+        }
 
     // mobility
     for (num MUL = -1; MUL < 2; MUL += 2)
@@ -689,6 +691,7 @@ int killer_cmp(const void* a, const void* b) {
 
 ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
 
+    NODES += 1;
 
     if (quies <= 0 or depth > 7)
         return {turochamp(), {0}};
@@ -736,8 +739,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
 
 
         if (depth == 0) {
-            tee("EVAL %d FOR", rec.value);
             tee_move(mv);
+            tee(" EVAL %d\n", rec.value);
         }
 
 
@@ -819,8 +822,11 @@ char* calc_move(void) {
     // quiescence
     ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0);
     Move mv = bestmv.move;
+    tee("BEST ");
     tee_move(mv);
+    tee("\n");
     make_move(mv);
+    tee("SEARCHED %d NODES", NODES);
 
 
     char* ret = (char*) malloc(6);
@@ -918,6 +924,20 @@ void init_data(void) {
 
 
 
+
+
+
+void test() {
+    tee("EMPTY BOARD EVAL: %d\n", turochamp());
+
+    make_move_str("e2e4");
+    tee("1. e4 EVAL: %d\n", turochamp());
+
+    tee("LIST OF MOVES IN RESPONSE TO 1. e4\n");
+    quiescence(BLACK, -inf+1, inf-1, 41, 0);
+}
+
+
 int main(int argc, char const *argv[])
 {
     f = fopen("jangine.log", "w");
@@ -928,6 +948,9 @@ int main(int argc, char const *argv[])
 
     char* line = (char*)calloc(1024, 1);
     tee(line);
+
+    if (argc >= 2 and strcmp(argv[1], "-t") == 0)
+        test();
 
     while (true) {
 

@@ -941,6 +941,7 @@ void test() {
 int main(int argc, char const *argv[])
 {
     f = fopen("jangine.log", "w");
+    int num_moves = 0;
 
     setbuf(stdout, NULL);
     setbuf(f, NULL);
@@ -960,7 +961,9 @@ int main(int argc, char const *argv[])
 
         if (strcmp(line, "xboard\n") == 0) {
             tee("feature myname=\"jangine\"\n");
-            tee("feature sigint=0 sigterm=0\n");
+            // tee("feature sigint=0 sigterm=0\n");
+            tee("feature ping=1\n");
+            tee("feature setboard=1\n");
             tee("feature done=1\n");
         }
 
@@ -980,32 +983,43 @@ int main(int argc, char const *argv[])
             // XXX reset KILLERHEURISTIC
         }
 
+        // TODO: "protover 2" -> reset board
+        // engine not started -> make moves anyway
         if (input_is_move(line) and not started) {
             pprint();
             tee("unstarted bs\n");
-            if (BUF) {
-                memcpy(BUF, line, 1023);
-                BUF[1023] = '\0';
-            }
+            pprint();
+            make_move_str(line);
+            num_moves++;
+            pprint();
+            // if (BUF) {
+            //     memcpy(BUF, line, 1023);
+            //     BUF[1023] = '\0';
+            // }
         }
 
         if (input_is_move(line) and started) {
             pprint();
+            IM_WHITE = (num_moves + 1) % 2;
             make_move_str(line);
+            num_moves++;
             pprint();
             char* mv = calc_move();
+            num_moves++;
             pprint();
             if (mv)
                 tee("move %s\n", mv);
         }
 
         if (strcmp(line, "go\n") == 0) {
+            IM_WHITE = (num_moves + 1) % 2;
             started = true;
-            if (BUF) {
-                make_move_str(BUF);
-                BUF = NULL;
-            }
+            // if (BUF) {
+            //     make_move_str(BUF);
+            //     BUF = NULL;
+            // }
             char* mv = calc_move();
+            num_moves++;
             pprint();
             if (mv)
                 tee("move %s\n", mv);

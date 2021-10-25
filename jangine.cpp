@@ -975,6 +975,7 @@ int main(int argc, char const *argv[])
 
         if (strcmp(line, "new\n") == 0) {
             IM_WHITE = false;
+            started = true;  // TODO this line needed to fix xboard for white
             new_board();
             // XXX reset KILLERHEURISTIC
         }

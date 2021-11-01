@@ -1,6 +1,9 @@
 # jangine -- Jan's Basic C++ chess engine
 
 Chess engine I wrote in 2015 that can beat a competent beginner.
+- Algorithms used:
+    - Search: alpha-beta search, quiescence search, killer heuristic
+    - Evaluation: turochamp
 - Strength should be around **1200 Lichess**. It's good at taking free material and giving checkmate, but bad at avoiding pins and endgames.
 - This was my first C++ project which is why the code is poorly written and **leaks memory**. That's why a script to periodically restart the engine is included.
 - No adjustment to time controls. 30+ minute matches recommended.

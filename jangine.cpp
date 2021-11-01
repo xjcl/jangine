@@ -543,7 +543,7 @@ void tee_moves(Move** mvs, num count) {
     }
 }
 
-num turochamp(void) {
+num turochamp(num depth) {
 
     num eval = 0;
 
@@ -596,7 +596,7 @@ num turochamp(void) {
         if (!mvs_len) {
             if (king_not_in_check(COLOR))
                 return 0;
-            return MUL * (-inf+1);
+            return MUL * (-inf+20+depth);
         }
 
         for (num j = 0; j < mvs_len; ++j)
@@ -693,8 +693,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
 
     NODES += 1;
 
-    if (quies <= 0 or depth > 7)
-        return {turochamp(), {0}};
+    if (quies <= 0 or depth > 5)
+        return {turochamp(depth), {0}};
 
     // tee("Q");
 
@@ -708,7 +708,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
     if (!mvs_len) {
         if (king_not_in_check(COLOR))
             return {0, {0}};
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+1), {0}};
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+20+depth), {0}};
     }
 
     // tee("BEFORE ALL\n");

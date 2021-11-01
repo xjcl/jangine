@@ -6,10 +6,12 @@
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
+//#include <ctime>
 
 #include <unistd.h>
 
 #include <map>
+//#include <random>
 
 
 
@@ -513,20 +515,31 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     return quies;
 }
 
+char* move_to_str(Move mv) {
+    char* ret = (char*) malloc(6);
+    ret[0] = 'a' + (char)(mv.f1);
+    ret[1] = '0' + (char)(8 - mv.f0);
+    ret[2] = 'a' + (char)(mv.t1);
+    ret[3] = '0' + (char)(8 - mv.t0);
+    ret[4] = mv.prom;
+    ret[5] = '\0';
 
+    return ret;
+}
 
 void tee_move(Move mv) {
 
-            num kh;
-            auto it = KILLERHEURISTIC.find(mv);
-            if (it == KILLERHEURISTIC.end()) {
-                kh = 0;
-            }
-            else {
-                kh = KILLERHEURISTIC[mv];
-            }
+    num kh;
+    auto it = KILLERHEURISTIC.find(mv);
+    if (it == KILLERHEURISTIC.end()) {
+        kh = 0;
+    }
+    else {
+        kh = KILLERHEURISTIC[mv];
+    }
 
-    tee("MOVE %d %d %d %d %c (%d)", mv.f0, mv.f1, mv.t0, mv.t1, mv.prom, kh);
+    char* move_str = move_to_str(mv);
+    tee("MOVE %5s (KH %8d)", move_str, kh);
 }
 
 void tee_moves(Move** mvs, num count) {
@@ -689,7 +702,7 @@ int killer_cmp(const void* a, const void* b) {
 
 
 
-ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
+ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, num noise) {
 
     NODES += 1;
 
@@ -729,8 +742,18 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
 
         PiecePlusCatling ppc = make_move(mv);
 
-        ValuePlusMove rec = quiescence(COLOR == WHITE ? BLACK : WHITE, alpha, beta,
-            quies - eval_quies(COLOR, mv, ppc.hit_piece), depth + 1);
+        ValuePlusMove rec_ = quiescence(
+            COLOR == WHITE ? BLACK : WHITE,
+            alpha,
+            beta,
+            quies - eval_quies(COLOR, mv, ppc.hit_piece), depth + 1,
+            false
+        );
+        // ** adding randomness seems to mess with the alphabeta or killerheurstic :/
+        // if (noise)
+        //     tee("\n%d\n", (num)(noise ? 25 * ((double) rand() / (RAND_MAX)) : 0));
+        // ValuePlusMove rec = {rec_.value + (num)(noise ? 25 * ((double) rand() / (RAND_MAX)) : 0), rec_.move};
+        ValuePlusMove rec = rec_;
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
@@ -740,7 +763,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth) {
 
         if (depth == 0) {
             tee_move(mv);
-            tee(" EVAL %d\n", rec.value);
+            tee(" EVAL %5d\n", rec.value);
         }
 
 
@@ -820,7 +843,8 @@ char* calc_move(void) {
 
 
     // quiescence
-    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0);
+    tee("Starting quiescence with depth 5\n");
+    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, true);
     Move mv = bestmv.move;
     tee("BEST ");
     tee_move(mv);
@@ -828,16 +852,7 @@ char* calc_move(void) {
     make_move(mv);
     tee("SEARCHED %d NODES", NODES);
 
-
-    char* ret = (char*) malloc(6);
-    ret[0] = 'a' + (char)(mv.f1);
-    ret[1] = '0' + (char)(8 - mv.f0);
-    ret[2] = 'a' + (char)(mv.t1);
-    ret[3] = '0' + (char)(8 - mv.t0);
-    ret[4] = mv.prom;
-    ret[5] = '\0';
-
-    return ret;
+    return move_to_str(mv);
 
 
     // else:
@@ -928,18 +943,44 @@ void init_data(void) {
 
 
 void test() {
-    tee("EMPTY BOARD EVAL: %d\n", turochamp());
+    tee("EMPTY BOARD EVAL: %d\n", turochamp(0));
 
     make_move_str("e2e4");
-    tee("1. e4 EVAL: %d\n", turochamp());
+    tee("1. e4 EVAL: %d\n", turochamp(0));
 
     tee("LIST OF MOVES IN RESPONSE TO 1. e4\n");
-    quiescence(BLACK, -inf+1, inf-1, 41, 0);
+    quiescence(BLACK, -inf+1, inf-1, 41, 0, true);
+}
+
+void test_botez() {
+    tee("EMPTY BOARD EVAL: %d\n", turochamp(0));
+
+    IM_WHITE = true;
+    make_move_str("h2h4");
+    make_move_str("b7b6");
+    make_move_str("g1f3");
+    make_move_str("c8a6");
+    make_move_str("d2d4");
+    make_move_str("e7e6");
+    make_move_str("b1d2");
+    make_move_str("d8e7");
+    make_move_str("c2c4");
+    make_move_str("a6b7");
+    make_move_str("d1b3");
+    make_move_str("e7f6");
+    make_move_str("b3b5");
+    make_move_str("b7c6");
+    make_move_str("b5h5");
+    make_move_str("f8b4");
+
+    tee("LIST OF MOVES IN RESPONSE TO QUEEN\n");
+    quiescence(WHITE, -inf+1, inf-1, 41, 0, true);
 }
 
 
 int main(int argc, char const *argv[])
 {
+    //srand(time(NULL)); // random seed
     f = fopen("jangine.log", "w");
     int num_moves = 0;
 
@@ -952,6 +993,8 @@ int main(int argc, char const *argv[])
 
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
+    if (argc >= 2 and strcmp(argv[1], "-b") == 0)
+        test_botez();
 
     while (true) {
 

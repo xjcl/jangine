@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -61,7 +62,7 @@ typedef struct Move {
     num t1;
     num prom;
 
-    // wtf do i need this, std::map??
+    // needed for std::map
     bool operator<( const Move & that ) const {
         return 8*this->f0 + this->f1 < 8*that.f0 + that.f1;
     }
@@ -92,7 +93,6 @@ num* PIECEVALS = NULL;
 num board[64] = {0};   // malloc 64 or even 100
 bool IM_WHITE = false;
 bool started = true;
-char* BUF = NULL;
 
 int64_t NODES = 0;
 
@@ -231,7 +231,7 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
 
 
 
-void make_move_str(char* mv) {
+void make_move_str(const char* mv) {
 
     num a = 8 - (mv[1] - '0');
     num b = (num)(mv[0] - 'a');
@@ -443,15 +443,13 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     return quies;
 }
 
-char* move_to_str(Move mv) {
-    char* ret = (char*) malloc(6);
-    ret[0] = 'a' + (char)(mv.f1);
-    ret[1] = '0' + (char)(8 - mv.f0);
-    ret[2] = 'a' + (char)(mv.t1);
-    ret[3] = '0' + (char)(8 - mv.t0);
-    ret[4] = mv.prom;
-    ret[5] = '\0';
-
+std::string move_to_str(Move mv) {
+    char c0 = 'a' + (char) (mv.f1);
+    char c1 = '0' + (char) (8 - mv.f0);
+    char c2 = 'a' + (char) (mv.t1);
+    char c3 = '0' + (char) (8 - mv.t0);
+    char c4 = (char)mv.prom;
+    std::string ret{c0, c1, c2, c3, c4, '\0'};
     return ret;
 }
 
@@ -466,8 +464,8 @@ void tee_move(Move mv) {
         kh = KILLERHEURISTIC[mv];
     }
 
-    char* move_str = move_to_str(mv);
-    tee("MOVE %5s (KH %8d)", move_str, kh);
+    std::string move_str = move_to_str(mv);
+    tee("MOVE %5s (KH %8d)", move_str.c_str(), kh);
 }
 
 void tee_moves(Move** mvs, num count) {
@@ -618,8 +616,6 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
     if (quies <= 0 or depth > 5)
         return {turochamp(depth), {0}};
 
-    // tee("Q");
-
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
 
     ValuePlusMoves gl = genlegals(COLOR);
@@ -651,18 +647,13 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         PiecePlusCatling ppc = make_move(mv);
 
-        ValuePlusMove rec_ = quiescence(
+        ValuePlusMove rec = quiescence(
             COLOR == WHITE ? BLACK : WHITE,
             alpha,
             beta,
             quies - eval_quies(COLOR, mv, ppc.hit_piece), depth + 1,
             false
         );
-        // ** adding randomness seems to mess with the alphabeta or killerheurstic :/
-        // if (noise)
-        //     tee("\n%d\n", (num)(noise ? 25 * ((double) rand() / (RAND_MAX)) : 0));
-        // ValuePlusMove rec = {rec_.value + (num)(noise ? 25 * ((double) rand() / (RAND_MAX)) : 0), rec_.move};
-        ValuePlusMove rec = rec_;
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
@@ -704,7 +695,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
 
 
-char* calc_move(void) {
+std::string calc_move(void) {
     // if args.mode == 'random':
     // ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
     // if (legals->moves == legals->movesend) {
@@ -730,18 +721,6 @@ char* calc_move(void) {
     // free(legals);
 
 
-    // char* ret = (char*) malloc(6);
-    // ret[0] = 'a' + (char)(mv.f1);
-    // ret[1] = '0' + (char)(8 - mv.f0);
-    // ret[2] = 'a' + (char)(mv.t1);
-    // ret[3] = '0' + (char)(8 - mv.t0);
-    // ret[4] = mv.prom;
-    // ret[5] = '\0';
-
-    // return ret;
-
-
-
     // quiescence
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
     tee("Starting quiescence with depth 5\n");
@@ -760,8 +739,6 @@ char* calc_move(void) {
 
 void init_data(void) {
     new_board();
-
-    BUF = (char*)calloc(1024, sizeof(char));
 
     PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
     PIECERANGE = (num*)calloc(65, sizeof(num));
@@ -868,8 +845,7 @@ int main(int argc, char const *argv[])
     setbuf(f, NULL);
     init_data();
 
-    char* line = (char*)calloc(1024, 1);
-    tee(line);
+    std::string line_cpp;
 
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
@@ -877,8 +853,9 @@ int main(int argc, char const *argv[])
         test_botez();
 
     while (true) {
-
-        fgets(line, 1023, stdin);
+        std::getline(std::cin, line_cpp);
+        line_cpp.append(1, '\n');
+        const char* line = line_cpp.c_str();
 
         tee("INPUT: %s", line);
 
@@ -915,10 +892,6 @@ int main(int argc, char const *argv[])
             make_move_str(line);
             num_moves++;
             pprint();
-            // if (BUF) {
-            //     memcpy(BUF, line, 1023);
-            //     BUF[1023] = '\0';
-            // }
         }
 
         if (input_is_move(line) and started) {
@@ -927,30 +900,23 @@ int main(int argc, char const *argv[])
             make_move_str(line);
             num_moves++;
             pprint();
-            char* mv = calc_move();
+            std::string mv = calc_move();
             num_moves++;
             pprint();
-            if (mv)
-                tee("move %s\n", mv);
+            tee("move %s\n", mv.c_str());
         }
 
         if (strcmp(line, "go\n") == 0) {
             IM_WHITE = (num_moves + 1) % 2;
             started = true;
-            // if (BUF) {
-            //     make_move_str(BUF);
-            //     BUF = NULL;
-            // }
-            char* mv = calc_move();
+            std::string mv = calc_move();
             num_moves++;
             pprint();
-            if (mv)
-                tee("move %s\n", mv);
+            tee("move %s\n", mv.c_str());
         }
 
         if (startswith("ping", line)) {
-            line[1] = 'o';
-            tee(line);
+            tee("pong");
         }
 
 

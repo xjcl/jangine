@@ -7,3 +7,5 @@ __pycache__/
 jangine
 stockfish-3.0.0+git20130508/
 XXX_debug
+.idea/
+cmake-build-debug/

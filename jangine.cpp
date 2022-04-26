@@ -14,16 +14,18 @@
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
-bool in(char a, char const* list, size_t listlen) {
-    for (size_t i = 0; i < listlen; ++i)
-        if (a == list[i])
-            return true;
-    return false;
+#define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
+#define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
+
+bool input_is_move(const char* s) {
+    if (strlen(s) < 5 || strlen(s) > 6)  // newline character
+        return false;
+
+    return 'a' <= s[0] and s[0] <= 'h' and 'a' <= s[2] && s[2] <= 'h' and
+            '1' <= s[1] && s[1] <= '8' and '1' <= s[3] && s[3] <= '8';
 }
 
-#define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
-#define input_is_move(i) (strlen(i) >= 4 and in(i[0], "abcdefgh", 8) and in(i[2], "abcdefgh", 8) and in(i[1], "12345678", 8) and in(i[3], "12345678", 8))
-#define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
+// TODO TODO TODO replace with vector push_back
 #define store(a, b, c, d, e) \
     { *mvsend = (Move*)malloc(sizeof(Move)); \
     Move x = {a, b, c, d, e}; \
@@ -48,19 +50,20 @@ void tee(char const *fmt, ...) {
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num inf = 32000;
+std::map<num, char> piece_to_letter = {{1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 
 typedef struct CASTLINGRIGHTS {
-    bool lr;
-    bool k;
-    bool rr;
+    bool lr;  // left rook has been moved
+    bool k;   // king has been moved
+    bool rr;  // right rook has been moved
 } CASTLINGRIGHTS;
 
 typedef struct Move {
-    num f0;
+    num f0;  // from
     num f1;
-    num t0;
+    num t0;  // to
     num t1;
-    num prom;
+    num prom;  // promote to piece
 
     // needed for std::map
     bool operator<( const Move & that ) const {
@@ -68,13 +71,12 @@ typedef struct Move {
     }
 } Move;
 
+// Store captured piece and new castling rights so move can be undone
 typedef struct PiecePlusCatling {
     num hit_piece;
     CASTLINGRIGHTS c_rights_w;
     CASTLINGRIGHTS c_rights_b;
 } PiecePlusCatling;
-
-// typedef int_fast16_t[64] Board;
 
 CASTLINGRIGHTS CASTLINGWHITE = {true, true, true};
 CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
@@ -156,16 +158,14 @@ PiecePlusCatling make_move(Move mv) {
 
     num CASTLERANK = piece & WHITE ? 7 : 0;
 
-    // tee("start");
-
     if (mv.prom) {
-        if (mv.prom == 'e') {
+        if (mv.prom == 'e') {  // en passant
             board[8*mv.f0+mv.t1] = 0;
-        } else if (mv.prom == 'c') {
-            if (mv.t1 == 2) {
+        } else if (mv.prom == 'c') {  // castling
+            if (mv.t1 == 2) {  // long
                 board[8*CASTLERANK+3] = board[8*CASTLERANK];
                 board[8*CASTLERANK] = 0;
-            } else {
+            } else {  // short
                 board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
                 board[8*CASTLERANK+7] = 0;
             }
@@ -182,8 +182,6 @@ PiecePlusCatling make_move(Move mv) {
         }
     }
 
-    // tee("promotion done");
-
     CASTLINGRIGHTS old_cr_w = CASTLINGWHITE;
     CASTLINGRIGHTS old_cr_b = CASTLINGBLACK;
 
@@ -195,11 +193,8 @@ PiecePlusCatling make_move(Move mv) {
         else                CASTLINGBLACK = cr;
     }
 
-    // XXX len-5-moves
     return {hit_piece, old_cr_w, old_cr_b};
 }
-
-
 
 void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b) {
 
@@ -443,13 +438,25 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     return quies;
 }
 
-std::string move_to_str(Move mv) {
+std::string move_to_str(Move mv, bool algebraic = false) {
     char c0 = 'a' + (char) (mv.f1);
     char c1 = '0' + (char) (8 - mv.f0);
     char c2 = 'a' + (char) (mv.t1);
     char c3 = '0' + (char) (8 - mv.t0);
-    char c4 = (char)mv.prom;
-    std::string ret{c0, c1, c2, c3, c4, '\0'};
+    char c4 = (char)(mv.prom ? mv.prom : ' ');
+
+    if (!algebraic) {
+        std::string ret{c0, c1, c2, c3, c4};
+        return ret;
+    }
+
+    num piece = board[8*mv.f0+mv.f1];
+    num hit_piece = board[8*mv.t0+mv.t1];
+
+    char alg0 = piece_to_letter[piece & 127];
+    char alg1 = hit_piece ? 'x' : ' ';
+
+    std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
     return ret;
 }
 
@@ -464,8 +471,9 @@ void tee_move(Move mv) {
         kh = KILLERHEURISTIC[mv];
     }
 
-    std::string move_str = move_to_str(mv);
-    tee("MOVE %5s (KH %8d)", move_str.c_str(), kh);
+    std::string move_str = move_to_str(mv, true);
+    const char* cstr = move_str.c_str();
+    tee("MOVE %15s | KH %8d |", cstr, kh);
 }
 
 void tee_moves(Move** mvs, num count) {
@@ -663,7 +671,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         if (depth == 0) {
             tee_move(mv);
-            tee(" EVAL %5d\n", rec.value);
+            tee(" EVAL %6.2f\n", (float)(rec.value) / 100);
         }
 
 

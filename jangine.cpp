@@ -51,6 +51,11 @@ void tee(char const *fmt, ...) {
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num inf = 32000;
 std::map<num, char> piece_to_letter = {{1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
+std::map<num, std::string> id_to_unicode = {
+        {  0, " "},
+        { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
+        {129, "♟"}, {130, "♞"}, {132, "♝"}, {136, "♜"}, {144, "♛"}, {160, "♚"},
+};
 
 typedef struct CASTLINGRIGHTS {
     bool lr;  // left rook has been moved
@@ -100,8 +105,10 @@ int64_t NODES = 0;
 
 void pprint() {
     for (num i = 0; i < 8; ++i) {
-        for (num j = 0; j < 8; ++j)
-            tee("%3d ", board[8*i+j]);
+        for (num j = 0; j < 8; ++j) {
+            std::string s = id_to_unicode[board[8 * i + j]];
+            tee("%s ", s.c_str());
+        }
         tee(" \n");
     }
     tee(" \n");
@@ -453,7 +460,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     num piece = board[8*mv.f0+mv.f1];
     num hit_piece = board[8*mv.t0+mv.t1];
 
-    char alg0 = piece_to_letter[piece & 127];
+    char alg0 = piece_to_letter[piece & ~WHITE & ~BLACK];
     char alg1 = hit_piece ? 'x' : ' ';
 
     std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
@@ -461,15 +468,8 @@ std::string move_to_str(Move mv, bool algebraic = false) {
 }
 
 void tee_move(Move mv) {
-
-    num kh;
     auto it = KILLERHEURISTIC.find(mv);
-    if (it == KILLERHEURISTIC.end()) {
-        kh = 0;
-    }
-    else {
-        kh = KILLERHEURISTIC[mv];
-    }
+    num kh = it == KILLERHEURISTIC.end() ? 0 : it->second;
 
     std::string move_str = move_to_str(mv, true);
     const char* cstr = move_str.c_str();
@@ -584,25 +584,18 @@ num turochamp(num depth) {
 
 
 // better move is smaller (since lists are sorted small->large)
-
 int killer_cmp(const void* a, const void* b) {
-    // we don't care
-
-    // XXX what wastes more time
-    //  swapping NULLs  or
-    //  not getting advantages in quiescence from branch predicting
-
-    Move **a_fuck_cpp = (Move **)a;
-    Move **b_fuck_cpp = (Move **)b;
-    if (!*b_fuck_cpp) {
+    Move **move_a = (Move **)a;
+    Move **move_b = (Move **)b;
+    if (!*move_b) {
         return -1;
     }
-    if (!*a_fuck_cpp) {
+    if (!*move_a) {
         return 1;
     }
 
-    Move mva = **(a_fuck_cpp);
-    Move mvb = **(b_fuck_cpp);
+    Move mva = **(move_a);
+    Move mvb = **(move_b);
 
     auto ita = KILLERHEURISTIC.find(mva);
     auto itb = KILLERHEURISTIC.find(mvb);
@@ -659,7 +652,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             COLOR == WHITE ? BLACK : WHITE,
             alpha,
             beta,
-            quies - eval_quies(COLOR, mv, ppc.hit_piece), depth + 1,
+            quies - eval_quies(COLOR, mv, ppc.hit_piece),
+            depth + 1,
             false
         );
 
@@ -668,21 +662,18 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
             best = {rec.value, mv};
 
-
         if (depth == 0) {
             tee_move(mv);
+            // due to alpha-beta pruning and killer heuristic, this isn't the "true" eval for suboptimal moves
             tee(" EVAL %6.2f\n", (float)(rec.value) / 100);
         }
-
 
         if (COLOR == WHITE and best.value > alpha)
             alpha = best.value;
         if (COLOR == BLACK and best.value < beta)
             beta = best.value;
         if (beta <= alpha) {
-            // XXX KILLER
-            auto it = KILLERHEURISTIC.find(mv);
-            if (it == KILLERHEURISTIC.end()) {
+            if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end()) {
                 KILLERHEURISTIC[mv] = 0;
             }
             KILLERHEURISTIC[mv] += depth * depth;
@@ -691,7 +682,6 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         gl.moves++;
     }
-
 
     for (int i = 0; i < 128; ++i)
         if (gl_moves_backup[i])
@@ -702,47 +692,21 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 }
 
 
-
 std::string calc_move(void) {
-    // if args.mode == 'random':
-    // ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
-    // if (legals->moves == legals->movesend) {
-    //     tee("out of moves");
-    //     pprint();
-    //     return NULL;
-    // }
-
-    // num i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
-    // while ( !(legals->moves[i]) ) {
-    //     i = rand() % (((num)legals->movesend - (num)legals->moves)/sizeof(num*));
-    // }
-
-    // Move mv = {0};
-    // memcpy(&mv, legals->moves[i], sizeof(Move));
-    // LASTMOVE = mv;
-    // make_move(legals->moves[i]);
-
-    // while (legals->moves != legals->movesend) {
-    //     free(*legals->moves);
-    //     legals->moves++;
-    // }
-    // free(legals);
-
-
-    // quiescence
+    // TODO: mode where a random move gets picked?
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
     tee("Starting quiescence with depth 5\n");
+    NODES = 0;
     ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, true);
     Move mv = bestmv.move;
-    tee("BEST ");
+    tee("--> BEST ");
     tee_move(mv);
     tee("\n");
     make_move(mv);
-    tee("SEARCHED %d NODES", NODES);
+    tee("SEARCHED %d NODES\n", NODES);
 
     return move_to_str(mv);
 }
-
 
 
 void init_data(void) {
@@ -926,7 +890,6 @@ int main(int argc, char const *argv[])
         if (startswith("ping", line)) {
             tee("pong");
         }
-
 
         if (strcmp(line, "quit\n") == 0 or strcmp(line, "q\n") == 0) {
             pprint();

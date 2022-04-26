@@ -791,7 +791,7 @@ void init_data(void) {
     PIECEVALS[0] = 0;
     PIECEVALS[PAWN] = 100;
     PIECEVALS[KNIGHT] = 300;
-    PIECEVALS[BISHOP] = 300;
+    PIECEVALS[BISHOP] = 325;  // Fischer
     PIECEVALS[ROOK] = 500;
     PIECEVALS[QUEEN] = 900;
     PIECEVALS[KING] = 32000;

@@ -32,22 +32,6 @@ bool input_is_move(const char* s) {
     memcpy(*mvsend, &x, sizeof(Move)); \
     mvsend++; }
 
-FILE *f = NULL;
-
-void tee(char const *fmt, ...) {
-    // f = fopen("jangine.log", "a");
-
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-    va_start(ap, fmt);
-    vfprintf(f, fmt, ap);
-    va_end(ap);
-
-    // fclose(f);
-}
-
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num inf = 32000;
 std::map<num, char> piece_to_letter = {{1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
@@ -107,11 +91,11 @@ void pprint() {
     for (num i = 0; i < 8; ++i) {
         for (num j = 0; j < 8; ++j) {
             std::string s = id_to_unicode[board[8 * i + j]];
-            tee("%s ", s.c_str());
+            printf("%s ", s.c_str());
         }
-        tee(" \n");
+        printf(" \n");
     }
-    tee(" \n");
+    printf(" \n");
 }
 
 bool startswith(const char *pre, const char *str) {
@@ -156,7 +140,7 @@ typedef struct ValuePlusMove {
 PiecePlusCatling make_move(Move mv) {
 
     if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0)
-        tee("XXX DANGEROUS! NULL MOVE");
+        printf("XXX DANGEROUS! NULL MOVE");
 
     num piece = board[8*mv.f0+mv.f1];
     num hit_piece = board[8*mv.t0+mv.t1];
@@ -277,7 +261,7 @@ bool king_not_in_check(num COLOR) {
                 for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
                 {
                     if (is_inside(i+a*k, j+b*k)) {
-                        // tee("%d %d %d %d\n", (i+a*k), j+b*k, board[8*(i+a*k)+j+b*k], myking);
+                        // printf("%ld %ld %ld %ld\n", (i+a*k), j+b*k, board[8*(i+a*k)+j+b*k], myking);
                         if (board[8*(i+a*k)+j+b*k] == myking)
                             return false;
                         if (board[8*(i+a*k)+j+b*k])
@@ -359,10 +343,10 @@ ValuePlusMoves genlegals(num COLOR) {
                 {
                     if (is_inside(i+a*k, j+b*k)) {
                         if (not board[8*(i+a*k)+j+b*k]) {
-                            // tee("%d%d%d%d %d%d\n", i, j, i+a*k, j+b*k, a, b);
+                            // printf("%ld%ld%ld%ld %ld%ld\n", i, j, i+a*k, j+b*k, a, b);
                             store(i, j, i+a*k, j+b*k, '\0');
                         } else if (board[8*(i+a*k)+j+b*k] & NCOLOR) {
-                            // tee("%d%d%d%d %d%d\n", i, j, i+a*k, j+b*k, a, b);
+                            // printf("%ld%ld%ld%ld %ld%ld\n", i, j, i+a*k, j+b*k, a, b);
                             store(i, j, i+a*k, j+b*k, '\0');
                             break;
                         } else if (board[8*(i+a*k)+j+b*k] & COLOR) {
@@ -467,25 +451,25 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     return ret;
 }
 
-void tee_move(Move mv) {
+void printf_move(Move mv) {
     auto it = KILLERHEURISTIC.find(mv);
     num kh = it == KILLERHEURISTIC.end() ? 0 : it->second;
 
     std::string move_str = move_to_str(mv, true);
     const char* cstr = move_str.c_str();
-    tee("MOVE %15s | KH %8d |", cstr, kh);
+    printf("MOVE %15s | KH %8ld |", cstr, kh);
 }
 
-void tee_moves(Move** mvs, num count) {
-    for (int i = 0; i < count; ++i)
+void printf_moves(Move** mvs, num count) {
+    for (long int i = 0; i < count; ++i)
     {
         if (mvs[i] != NULL) {
-            tee("%d ", i);
-            tee_move(*(mvs[i]));
-            tee("\n");
+            printf("%ld ", i);
+            printf_move(*(mvs[i]));
+            printf("\n");
         }
         else{
-            tee("MISSING\n");
+            printf("MISSING\n");
         }
     }
 }
@@ -551,7 +535,7 @@ num turochamp(num depth) {
         {
             if (gl.moves[j] == NULL)
                 continue;
-            // tee("%p ", gl.moves[j]);
+            // printf("%p ", gl.moves[j]);
             Move ref_mv = *(gl.moves[j]);
             num i = 0;
             if (not (board[8*ref_mv.f0+ref_mv.f1] & QUEEN)) {
@@ -630,12 +614,12 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         return {(COLOR == WHITE ? 1 : -1) * (-inf+20+depth), {0}};
     }
 
-    // tee("BEFORE ALL\n");
-    // tee(" mvs_len: %d\n", mvs_len);
-    // tee_moves(gl.moves, mvs_len);
+    // printf("BEFORE ALL\n");
+    // printf(" mvs_len: %ld\n", mvs_len);
+    // printf_moves(gl.moves, mvs_len);
     qsort(gl.moves, mvs_len, sizeof(Move*), killer_cmp);
-    // tee_moves(gl.moves, mvs_len);
-    // tee("AFTER QSORT\n");
+    // printf_moves(gl.moves, mvs_len);
+    // printf("AFTER QSORT\n");
 
     while (gl.moves != gl.movesend) {
 
@@ -663,9 +647,9 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             best = {rec.value, mv};
 
         if (depth == 0) {
-            tee_move(mv);
+            printf_move(mv);
             // due to alpha-beta pruning and killer heuristic, this isn't the "true" eval for suboptimal moves
-            tee(" EVAL %6.2f\n", (float)(rec.value) / 100);
+            printf(" EVAL %6.2f\n", (float)(rec.value) / 100);
         }
 
         if (COLOR == WHITE and best.value > alpha)
@@ -695,15 +679,15 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 std::string calc_move(void) {
     // TODO: mode where a random move gets picked?
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
-    tee("Starting quiescence with depth 5\n");
+    printf("Starting quiescence with depth 5\n");
     NODES = 0;
     ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, true);
     Move mv = bestmv.move;
-    tee("--> BEST ");
-    tee_move(mv);
-    tee("\n");
+    printf("--> BEST ");
+    printf_move(mv);
+    printf("\n");
     make_move(mv);
-    tee("SEARCHED %d NODES\n", NODES);
+    printf("SEARCHED %ld NODES\n", NODES);
 
     return move_to_str(mv);
 }
@@ -772,17 +756,17 @@ void init_data(void) {
 
 
 void test() {
-    tee("EMPTY BOARD EVAL: %d\n", turochamp(0));
+    printf("EMPTY BOARD EVAL: %ld\n", turochamp(0));
 
     make_move_str("e2e4");
-    tee("1. e4 EVAL: %d\n", turochamp(0));
+    printf("1. e4 EVAL: %ld\n", turochamp(0));
 
-    tee("LIST OF MOVES IN RESPONSE TO 1. e4\n");
+    printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
     quiescence(BLACK, -inf+1, inf-1, 41, 0, true);
 }
 
 void test_botez() {
-    tee("EMPTY BOARD EVAL: %d\n", turochamp(0));
+    printf("EMPTY BOARD EVAL: %ld\n", turochamp(0));
 
     IM_WHITE = true;
     make_move_str("h2h4");
@@ -802,41 +786,37 @@ void test_botez() {
     make_move_str("b5h5");
     make_move_str("f8b4");
 
-    tee("LIST OF MOVES IN RESPONSE TO QUEEN\n");
+    printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");
     quiescence(WHITE, -inf+1, inf-1, 41, 0, true);
 }
 
 
 int main(int argc, char const *argv[])
 {
-    //srand(time(NULL)); // random seed
-    f = fopen("jangine.log", "w");
-    int num_moves = 0;
-
     setbuf(stdout, NULL);
-    setbuf(f, NULL);
     init_data();
-
-    std::string line_cpp;
 
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
     if (argc >= 2 and strcmp(argv[1], "-b") == 0)
         test_botez();
 
+    std::string line_cpp;
+    int num_moves = 0;
+
     while (true) {
         std::getline(std::cin, line_cpp);
         line_cpp.append(1, '\n');
         const char* line = line_cpp.c_str();
 
-        tee("INPUT: %s", line);
+        printf("INPUT: %s", line);
 
         if (strcmp(line, "xboard\n") == 0) {
-            tee("feature myname=\"jangine\"\n");
-            // tee("feature sigint=0 sigterm=0\n");
-            tee("feature ping=1\n");
-            tee("feature setboard=1\n");
-            tee("feature done=1\n");
+            printf("feature myname=\"jangine\"\n");
+            // printf("feature sigint=0 sigterm=0\n");
+            printf("feature ping=1\n");
+            printf("feature setboard=1\n");
+            printf("feature done=1\n");
         }
 
         if (strcmp(line, "force\n") == 0 or startswith("result", line)) {
@@ -859,7 +839,7 @@ int main(int argc, char const *argv[])
         // engine not started -> make moves anyway
         if (input_is_move(line) and not started) {
             pprint();
-            tee("unstarted bs\n");
+            printf("unstarted bs\n");
             pprint();
             make_move_str(line);
             num_moves++;
@@ -875,7 +855,7 @@ int main(int argc, char const *argv[])
             std::string mv = calc_move();
             num_moves++;
             pprint();
-            tee("move %s\n", mv.c_str());
+            printf("move %s\n", mv.c_str());
         }
 
         if (strcmp(line, "go\n") == 0) {
@@ -884,16 +864,15 @@ int main(int argc, char const *argv[])
             std::string mv = calc_move();
             num_moves++;
             pprint();
-            tee("move %s\n", mv.c_str());
+            printf("move %s\n", mv.c_str());
         }
 
         if (startswith("ping", line)) {
-            tee("pong");
+            printf("pong");
         }
 
         if (strcmp(line, "quit\n") == 0 or strcmp(line, "q\n") == 0) {
             pprint();
-            fclose(f);
             return 0;
         }
     }

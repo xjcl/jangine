@@ -627,12 +627,11 @@ if args.test:
 
 
 
+board = new_board()
 
 while __name__ == '__main__' and True:
     i = input()
     ins = i.split(' ')[1:]
-
-    board = new_board()
 
     # work both interactively AND with xboard
     if i == 'xboard':

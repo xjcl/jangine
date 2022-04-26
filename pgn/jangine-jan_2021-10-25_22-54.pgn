@@ -1,0 +1,19 @@
+[Event "Computer Chess Game"]
+[Site "ssd"]
+[Date "2021.10.25"]
+[Round "-"]
+[White "jangine"]
+[Black "jan"]
+[Result "0-1"]
+[TimeControl "40/300"]
+[Annotator "1. +0,66"]
+
+1. d4 {+0,66/72} Nf6 2. Bf4 {+0,66/72 0,1} g6 3. Be5 {+0,66/72 0,2} Bg7 4.
+Nd2 {+0,00/72 0,5} O-O 5. a4 {+0,00/72 0,8} d6 6. Bxf6 {+0,00/72 4} Bxf6 7.
+Ngf3 {+0,00/72 0,3} Bg7 8. h4 {+0,00/72 0,5} Nd7 9. Ra3 Nf6 10. c4 Bg4 11.
+Ng5 c5 12. d5 h6 13. Nh3 Qa5 14. Nf4 a6 15. f3 Bd7 16. g4 Kh7 17. g5 Nh5
+18. Nxh5 gxh5 19. b3 Bc3 20. Ra2 Bf5 21. e4 Bg6 22. Rh2 f6 23. gxh6 Kxh6
+24. Ke2 f5 25. exf5 Rxf5 26. Ne4 Raf8 27. Qc1+ Rf4 28. Nxc3 Kh7 29. Qe3
+Rxf3 30. Qxe7+ R8f7 31. Qxd6 Qxc3 32. Rg2 Re3+ 33. Kd1 Rxf1#
+{Xboard adjudication: Checkmate} 0-1
+

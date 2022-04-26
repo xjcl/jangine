@@ -6,13 +6,8 @@
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
-//#include <ctime>
-
 #include <unistd.h>
-
 #include <map>
-//#include <random>
-
 
 
 // typedef int_fast8_t int;
@@ -148,43 +143,6 @@ typedef struct ValuePlusMove {
     Move move;
 } ValuePlusMove;
 
-// gentuples = list(itertools.product(range(8), range(8)))
-
-// def sq_to_str1(sq):
-//     if sq & BLACK: return 'B'
-//     if sq & WHITE: return 'W'
-//     return ' '
-
-// def sq_to_str2(sq):
-//     for k, v in [(PAWN, 'P'), (KNIGHT, 'N'), (BISHOP, 'B'), (ROOK, 'R'), (QUEEN, 'Q'), (KING, 'K')]:
-//         if sq & k: return v
-//     return ' '
-
-// def str_to_sq1(sq):
-//     return {'B':BLACK, 'W':WHITE, ' ':0}[sq]
-
-// def str_to_sq2(sq):
-//     return {'P':PAWN, 'N':KNIGHT, 'B':BISHOP, 'R':ROOK, 'Q':QUEEN, 'K':KING, ' ':0}[sq]
-
-// def pprint():
-//     print()
-//     for row in board:
-//         print(' '.join(sq_to_str1(sq) + sq_to_str2(sq) for sq in row))
-//     print()
-
-// def log_to_board(s):
-//     global board
-//     board = [[], [], [], [], [], [], [], []]
-//     for j, row in enumerate(s.split('\n')):
-//         i = row.find('>>>') + 4
-//         for k in range(8):
-//             if i+3*k+1 >= len(row):  # subl trims trailing whitespace...
-//                 board[j] += [0] * (8 - k)
-//                 break
-//             board[j].append(str_to_sq1(row[i+3*k]) + str_to_sq2(row[i+3*k+1]))
-
-
-
 
 PiecePlusCatling make_move(Move mv) {
 
@@ -295,17 +253,6 @@ void make_move_str(char* mv) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 bool king_not_in_check(num COLOR) {
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
     num ADD = COLOR == WHITE ? -1 : 1;
@@ -343,11 +290,6 @@ bool king_not_in_check(num COLOR) {
 
     return true;
 }
-
-
-
-
-
 
 
 
@@ -482,20 +424,6 @@ ValuePlusMoves genlegals(num COLOR) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 num eval_quies(num COLOR, Move mv, num hit_piece) {
     num NCOLOR = (COLOR == WHITE ? BLACK : WHITE);
 
@@ -556,6 +484,7 @@ void tee_moves(Move** mvs, num count) {
     }
 }
 
+// https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 num turochamp(num depth) {
 
     num eval = 0;
@@ -680,26 +609,6 @@ int killer_cmp(const void* a, const void* b) {
         return -1;
     return KILLERHEURISTIC[mvb] - KILLERHEURISTIC[mva];
 }
-// int killer_cmp(const void* a, const void* b) {
-//     // we don't care
-//     if (*a == NULL || *b == NULL)
-//         return 0;
-
-//     Move mva = **((Move*)a);
-//     Move mvb = **((Move*)b);
-
-//     auto ita = KILLERHEURISTIC.find(mva);
-//     auto itb = KILLERHEURISTIC.find(mvb);
-//     if (ita == KILLERHEURISTIC.end()) {
-//         if (itb == KILLERHEURISTIC.end())
-//             return 0;
-//         return -1;
-//     }
-//     if (itb == KILLERHEURISTIC.end())
-//         return 1;
-//     return KILLERHEURISTIC[mvb] - KILLERHEURISTIC[mva];
-// }
-
 
 
 ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, num noise) {
@@ -795,15 +704,6 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
 
 
-
-
-
-
-
-
-
-
-
 char* calc_move(void) {
     // if args.mode == 'random':
     // ValuePlusMoves* legals = genlegals(IM_WHITE ? WHITE : BLACK);
@@ -843,6 +743,7 @@ char* calc_move(void) {
 
 
     // quiescence
+    // TODO: what happens if no moves (stalemate/checkmate)? Null?
     tee("Starting quiescence with depth 5\n");
     ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, true);
     Move mv = bestmv.move;
@@ -853,25 +754,7 @@ char* calc_move(void) {
     tee("SEARCHED %d NODES", NODES);
 
     return move_to_str(mv);
-
-
-    // else:
-    //     ans = quiescence(WHITE if IM_WHITE else BLACK)
-    //     if ans and ans.moves:
-    //         mv = ans.moves[0]
-    //     else:
-    //         print('out of moves')
-    //         pprint()
-    //         return  # either stalemate or checkmate
-
-    // make_move(mv)
 }
-
-
-
-
-
-
 
 
 
@@ -936,9 +819,6 @@ void init_data(void) {
     PIECEVALS[QUEEN] = 900;
     PIECEVALS[KING] = 32000;
 }
-
-
-
 
 
 
@@ -1080,169 +960,4 @@ int main(int argc, char const *argv[])
             return 0;
         }
     }
-
-    return 0;
 }
-
-
-
-
-
-
-
-/*
-
-
-# https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
-def turochamp(loud=False):
-
-    eval = 0
-
-    for i,j in gentuples:
-        # material counting
-        bijp = board[i][j] & ~WHITE & ~BLACK
-        bij = board[i][j]
-        MUL = 1 if bij & WHITE else -1
-
-        eval += MUL * PIECEVALS[bijp]
-
-        # king safety
-        # if bijp == KING:
-        #     i = 0
-        #     for a,b in PIECEDIRS[QUEEN]:
-        #         for k in PIECERANGE[QUEEN]:
-        #             if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
-        #                 break
-        #             # eval -= MUL * 8
-        #             i += 1
-        #     eval -= MUL * 350 * round(i**.5)
-
-        # pawn advancement
-        # if bij & PAWN:
-        #     eval += 8 * (6-i if bij & WHITE else 1-i)
-
-    if loud:
-        print('pieces and pawns', eval)
-
-    for i,j in gentuples:
-        bijp = board[i][j] & ~WHITE & ~BLACK
-        bij = board[i][j]
-        MUL = 1 if bij & WHITE else -1
-        if bijp == KING:
-            c = 0
-            for a,b in PIECEDIRS[QUEEN]:
-                for k in PIECERANGE[QUEEN]:
-                    if not is_inside(i+a*k, j+b*k) or board[i+a*k][j+b*k]:
-                        break
-                    # eval -= MUL * 8
-                    c += 1
-            eval -= MUL * 30 * round(c**.5)
-
-    if loud:
-        print('king safety', eval)
-
-    # center control
-    center = [board[3][3], board[3][4], board[4][3], board[4][4]]
-    eval += 8 * len([x for x in center if x & WHITE and not x & QUEEN and not x & ROOK])
-    eval -= 8 * len([x for x in center if x & BLACK and not x & QUEEN and not x & ROOK])
-
-    if loud:
-        print('center', eval)
-
-    # mobility (possible moves) + (implicitly) king in check
-    for COLOR, MUL in [(WHITE, 1), (BLACK, -1)]:
-        gl = genlegals(COLOR, ignore_king_capture=True)  # XXX maybe calc it directly and dont use gl
-        if not gl:
-            if king_not_in_check(COLOR):  # stalemate
-                return 0
-            return MUL * (-inf+1)
-        j = 0
-        while j < len(gl):
-            ref_mv = gl[j]
-            i = 0
-            if not board[ref_mv[0]][ref_mv[1]] & QUEEN:
-                while j < len(gl) and gl[j][0:2] == ref_mv[0:2]:
-                    i += 1
-                    if board[gl[j][2]][gl[j][3]]:  # captures count double
-                        i += 1
-                    j += 1
-            eval += MUL * 13 * round(i**.5)
-            j += 1
-
-
-    if loud: print('mobility', eval)
-
-    # eval += 30 if (CASTLINGWHITE[1] and (CASTLINGWHITE[0] and not board[7][1] and not board[7][2] \
-    #     and not board[7][3] or CASTLINGWHITE[2] and not board[7][5] and not board[7][6])) else 0
-    # eval -= 30 if (CASTLINGBLACK[1] and (CASTLINGBLACK[0] and not board[0][1] and not board[0][2] \
-    #     and not board[0][3] or CASTLINGBLACK[2] and not board[0][5] and not board[0][6])) else 0
-
-    if loud: print('castling', eval)
-
-    return eval
-
-
-
-
-
-def quiescence(COLOR, alpha=Evaluation(-inf+1, []), beta=Evaluation(+inf-1, []), quies=41, depth=0, lastmv=()):
-
-    global TRANSPOSITIONS
-
-    # hashable_board = tuple(tuple(row) for row in board) + (COLOR,)  # COLOR! else it might 'go twice'
-    # if hashable_board in TRANSPOSITIONS:
-    #     return TRANSPOSITIONS[hashable_board]
-
-    if quies <= 0 or depth > 7:     return Evaluation(turochamp(), [])
-    if depth == 0:
-        print(len(TRANSPOSITIONS))
-        print(CASTLINGWHITE)
-        TRANSPOSITIONS = dict()  # print: bursts the pipe lol
-
-    best = Evaluation(-inf if COLOR == WHITE else inf, None)
-
-    if depth == 0:
-        print(genlegals(BLACK))
-        print(genlegals(COLOR))
-        print(killer_order(genlegals(COLOR)))
-
-    for mv in killer_order(genlegals(COLOR)):
-
-        hit_piece, c_rights = make_move(mv)
-
-        rec = quiescence(BLACK if COLOR == WHITE else WHITE, alpha, beta, quies - eval_quies(COLOR, mv, hit_piece), depth + 1, mv)
-
-        unmake_move(mv, hit_piece, c_rights)
-
-        if ((rec > best) if COLOR == WHITE else (rec < best)):
-            best = Evaluation(rec.value, [mv] + rec.moves)
-
-        if depth == 0:
-            print(mv, rec)
-        # if board[mv[2]][mv[3]] & QUEEN or board[mv[2]][mv[3]] & KNIGHT or True:
-        #     print('   '*depth, mv, rec, alpha.value, beta.value)
-
-        # save eval if we come across it from another move order
-
-        if COLOR == WHITE and (best > alpha):   alpha = best
-        if COLOR == BLACK and (best < beta) :   beta  = best
-        if beta <= alpha:
-            KILLERHEURISTIC[mv] += depth ** 2
-            break
-
-    # genlegals was empty
-    if best.moves == None:
-        if king_not_in_check(COLOR):  # stalemate
-            return Evaluation(0, [])
-        return Evaluation(-inf+1 if COLOR == WHITE else +inf-1, [])
-
-    # TRANSPOSITIONS[hashable_board] = best
-
-    if depth == 0:
-        print('BBBB ', best)
-
-    return best
-    # deeply explored moves are better
-    # DON'T ADD ANYTHING HERE! ab is based on the minmax-assumption
-    #   so defying the max and sneaking in rogue unexplored moves
-*/

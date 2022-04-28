@@ -36,7 +36,7 @@ num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 6
 num inf = 32000;
 std::map<num, char> piece_to_letter = {{1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 std::map<num, std::string> id_to_unicode = {
-        {  0, " "},
+        {  0, "."},
         { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
         {129, "♟"}, {130, "♞"}, {132, "♝"}, {136, "♜"}, {144, "♛"}, {160, "♚"},
 };
@@ -89,13 +89,14 @@ int64_t NODES = 0;
 
 void pprint() {
     for (num i = 0; i < 8; ++i) {
+        printf("%ld ", (8 - i));
         for (num j = 0; j < 8; ++j) {
             std::string s = id_to_unicode[board[8 * i + j]];
             printf("%s ", s.c_str());
         }
         printf(" \n");
     }
-    printf(" \n");
+    printf("  a b c d e f g h\n\n");
 }
 
 bool startswith(const char *pre, const char *str) {

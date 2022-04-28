@@ -54,7 +54,7 @@ typedef struct Move {
     num f1;
     num t0;  // to
     num t1;
-    num prom;  // promote to piece
+    char prom;  // promote to piece
 
     // needed for std::map
     bool operator<( const Move & that ) const {
@@ -225,6 +225,7 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
 
     CASTLINGWHITE = c_rights_w;
     CASTLINGBLACK = c_rights_b;
+    LASTMOVE = {0};
 }
 
 
@@ -309,11 +310,10 @@ ValuePlusMoves genlegals(num COLOR) {
         num bijpiece = bij & ~WHITE & ~BLACK;
         if (not (bij & COLOR))
             continue;
-        if (bij & PAWN) {
-            // lr = len(ret)
+        if (bij & PAWN) {  // pawn moves
             Move** badmvs = mvsend;
 
-            if (not board[8*(i+ADD)+j]) {
+            if (not board[8*(i+ADD)+j]) {  // promotion
                 store(i, j, i+ADD, j, '\0');
                 if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {
                     store(i, j, i+ADD+ADD, j, '\0');
@@ -338,16 +338,16 @@ ValuePlusMoves genlegals(num COLOR) {
                 }
             }
 
-            if (i == EPRANK) {
+            if (i == EPRANK) {  // en passant
                 if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1) {
-                    store(i, j, i+ADD, j-1, '\0');
+                    store(i, j, i+ADD, j-1, 'e');
                 }
                 if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1) {
-                    store(i, j, i+ADD, j+1, '\0');
+                    store(i, j, i+ADD, j+1, 'e');
                 }
             }
         }
-        else {
+        else {  // non-pawn moves
             for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
                 num a = PIECEDIRS[bijpiece][l].a;
                 num b = PIECEDIRS[bijpiece][l].b;
@@ -458,7 +458,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     num hit_piece = board[8*mv.t0+mv.t1];
 
     char alg0 = piece_to_letter[piece & ~WHITE & ~BLACK];
-    char alg1 = hit_piece ? 'x' : ' ';
+    char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
 
     std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
     return ret;
@@ -488,7 +488,8 @@ void printf_moves(Move** mvs, num count) {
 }
 
 // https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
-num turochamp(num depth) {
+// TODO: breakdown into separate numbers for better testability
+num turochamp(num depth) {  // assign centipawn value to a given board position
 
     num eval = 0;
 
@@ -567,7 +568,6 @@ num turochamp(num depth) {
             }
             eval += MUL * 13 * round(sqrt(i));
         }
-
 
         for (int i = 0; i < 128; ++i)
             if (gl.moves[i])
@@ -829,6 +829,16 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
+    std::cout << "Tests En-Passant" << std::endl;
+
+    board_initial_position();
+    make_move_str("e2e4");
+    make_move_str("a7a6");
+    make_move_str("e4e5");
+    make_move_str("d7d5");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
 
     board_initial_position();
     printf("INITIAL BOARD EVAL: %ld\n", turochamp(0));
@@ -837,14 +847,11 @@ void test() {
     printf("1. e4 EVAL: %ld\n", turochamp(0));
 
     printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
+    pprint();
     quiescence(BLACK, -inf+1, inf-1, 41, 0, true, true);
-    std::exit(0);
-}
-
-void test_botez() {
-    printf("EMPTY BOARD EVAL: %ld\n", turochamp(0));
 
     IM_WHITE = true;
+    board_initial_position();
     make_move_str("h2h4");
     make_move_str("b7b6");
     make_move_str("g1f3");
@@ -861,9 +868,11 @@ void test_botez() {
     make_move_str("b7c6");
     make_move_str("b5h5");
     make_move_str("f8b4");
+    pprint();
 
     printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");
     quiescence(WHITE, -inf+1, inf-1, 41, 0, true, true);
+    std::exit(0);
 }
 
 
@@ -874,8 +883,6 @@ int main(int argc, char const *argv[])
 
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
-    if (argc >= 2 and strcmp(argv[1], "-b") == 0)
-        test_botez();
 
     std::string line_cpp;
     int num_moves = 0;

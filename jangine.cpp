@@ -757,7 +757,36 @@ void init_data(void) {
 
 
 void test() {
-    printf("EMPTY BOARD EVAL: %ld\n", turochamp(0));
+    std::cout << "Tests Mate-in-1 #1" << std::endl;
+
+    IM_WHITE = true;
+    board_clear();
+    board[0] = BLACK + KING;
+    board[2] = WHITE + KING;
+    board[63] = WHITE + ROOK;
+    pprint();
+    std::cout << calc_move() << std::endl;
+
+    std::cout << "Tests Mate-in-2 #1" << std::endl;
+
+    board_clear();
+    board[1] = BLACK + KING;
+    board[7] = BLACK + ROOK;
+    board[8+0] = BLACK + PAWN;
+    board[8+1] = BLACK + PAWN;
+    board[8+2] = BLACK + PAWN;
+    board[5*8+3] = WHITE + QUEEN;
+    board[7*8+3] = WHITE + ROOK;
+    board[7*8+2] = WHITE + KING;
+    pprint();
+    std::cout << calc_move() << std::endl;
+
+
+    std::exit(0);
+
+    board_initial_position();
+
+    printf("NEW BOARD EVAL: %ld\n", turochamp(0));
 
     make_move_str("e2e4");
     printf("1. e4 EVAL: %ld\n", turochamp(0));

@@ -16,6 +16,7 @@ typedef int_fast16_t num;
 
 #define DEBUG 0
 #define SEARCH_DEPTH 5  // how many plies to search
+#define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -27,7 +28,7 @@ bool input_is_move(const char* s) {
             '1' <= s[1] && s[1] <= '8' and '1' <= s[3] && s[3] <= '8';
 }
 
-// TODO TODO TODO replace with vector push_back
+// TODO TODO TODO replace with vector push_back OR AT LEAST fewer indirect mallocs
 #define store(a, b, c, d, e) \
     { *mvsend = (Move*)malloc(sizeof(Move)); \
     Move x = {a, b, c, d, e}; \
@@ -422,22 +423,22 @@ ValuePlusMoves genlegals(num COLOR) {
 }
 
 
-
+// quiescence value of a move AFTER it is already on the board. Low values indicate importance
 num eval_quies(num COLOR, Move mv, num hit_piece) {
     num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
 
     if (hit_piece or mv.prom != '\0' and mv.prom != 'c')  // capture or promotion or en passant
         return 0;
 
-    if (not king_not_in_check(OTHER_COLOR) or board[8*mv.f0+mv.f1] & KING)  // check or king move
+    if (not king_not_in_check(OTHER_COLOR) or board[8*mv.t0+mv.t1] & KING)  // check or was king move
         return 0;
 
     num quies = 20;
 
-    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "retreating" move
-        quies *= .8;
-    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "forward" move
+    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "retreating" move -> quiet + should be searched less
         quies *= 1.2;
+    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "forward" move -> less quiescent
+        quies *= 0.8;
 
     return quies;
 }
@@ -488,8 +489,9 @@ void printf_moves(Move** mvs, num count) {
 }
 
 // https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
-// TODO: breakdown into separate numbers for better testability
-num turochamp(num depth) {  // assign centipawn value to a given board position
+// Returns centipawn value to a given board position, from WHITE's perspective
+// TODO: breakdown into component numbers for better testability
+num turochamp(num depth) {
 
     num eval = 0;
 
@@ -539,6 +541,7 @@ num turochamp(num depth) {  // assign centipawn value to a given board position
         ValuePlusMoves gl = genlegals(COLOR);
 
         num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
+
         if (!mvs_len) {
             if (king_not_in_check(COLOR))
                 return 0;  // stalemate
@@ -635,7 +638,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         if (depth < 2 and DEBUG) {
             for (int i = 0; i < depth; i++) printf("    ");
-            printf_move(mv); printf("\n");
+            printf_move(mv); printf(" QUIES %ld \n", quies);
         }
 
         PiecePlusCatling ppc = make_move(mv);
@@ -696,7 +699,7 @@ std::string calc_move(bool lines = false) {
     printf("Starting quiescence with depth %d\n", SEARCH_DEPTH);
     NODES = 0;
     KILLERHEURISTIC.clear();
-    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, false, lines);
+    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, QUIESCENCE, 0, false, lines);
     Move mv = bestmv.move;
     printf("--> BEST ");
     printf_move(mv);
@@ -828,8 +831,37 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
+    std::cout << "Tests Promotion" << std::endl;
+
+    board_clear();
+    board[0] = BLACK + KING;
+    board[2] = WHITE + KING;
+    board[1*8+6] = WHITE + PAWN;
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Tests Lasker Trap in Albin Countergambit" << std::endl;
 
     board_initial_position();
+    IM_WHITE = false;
+    make_move_str("d2d4");
+    make_move_str("d7d5");
+    make_move_str("c2c4");
+    make_move_str("e7e5");
+    make_move_str("d4e5");
+    make_move_str("d5d4");
+    make_move_str("e2e3");
+    make_move_str("f8b4");
+    make_move_str("c1d2");
+    make_move_str("d4e3");
+    make_move_str("d2b4");
+    make_move_str("e3f2");
+    make_move_str("e1e2");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    board_initial_position();
+    IM_WHITE = true;
     printf("INITIAL BOARD EVAL: %ld\n", turochamp(0));
 
     make_move_str("e2e4");
@@ -860,7 +892,7 @@ void test() {
     pprint();
 
     printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");
-    quiescence(WHITE, -inf+1, inf-1, 41, 0, true, true);
+    std::cout << calc_move(true) << std::endl;
     std::exit(0);
 }
 

@@ -501,7 +501,7 @@ num turochamp(num depth) {  // assign centipawn value to a given board position
 
         eval += MUL * PIECEVALS[bijp];
 
-        // king safety
+        // king safety: how many moves would the king have if it was a queen
         if (bijp == KING) {
             num c = 0;
             for (num l = 0; PIECEDIRS[QUEEN][l].a != 0 or PIECEDIRS[QUEEN][l].b != 0; ++l) {
@@ -552,7 +552,7 @@ num turochamp(num depth) {  // assign centipawn value to a given board position
             // printf("%p ", gl.moves[j]);
             Move ref_mv = *(gl.moves[j]);
             num i = 0;
-            if (not (board[8*ref_mv.f0+ref_mv.f1] & QUEEN)) {
+            if (not (board[8*ref_mv.f0+ref_mv.f1] & KING)) {
                 while (j < mvs_len) {
                     if (gl.moves[j] == NULL) {
                         ++j;

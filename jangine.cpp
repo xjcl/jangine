@@ -121,7 +121,12 @@ num default_board[64] = {
         WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK
 };
 
-void new_board() {
+void board_clear() {
+    for (int i = 0; i < 64; ++i)
+        board[i] = 0;
+}
+
+void board_initial_position() {
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
 }
@@ -282,7 +287,7 @@ bool king_not_in_check(num COLOR) {
 
 ValuePlusMoves genlegals(num COLOR) {
 
-    Move** mvs = (Move**)calloc(128, sizeof(Move*));  // 9 Qs have a lot of moves...
+    Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves
         // also inits to NULLptrs
     Move** mvsend = mvs;
 
@@ -412,20 +417,20 @@ ValuePlusMoves genlegals(num COLOR) {
 
 
 num eval_quies(num COLOR, Move mv, num hit_piece) {
-    num NCOLOR = (COLOR == WHITE ? BLACK : WHITE);
+    num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
+
+    if (hit_piece or mv.prom != '\0' and mv.prom != 'c')  // capture or promotion or en passant
+        return 0;
+
+    if (not king_not_in_check(OTHER_COLOR) or board[8*mv.f0+mv.f1] & KING)  // check or king move
+        return 0;
 
     num quies = 20;
 
-    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)
+    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "retreating" move
         quies *= .8;
-    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)
+    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "forward" move
         quies *= 1.2;
-
-    if (hit_piece or mv.prom != '\0' and mv.prom != 'c')
-        quies *= 0;
-
-    if (not king_not_in_check(NCOLOR) or board[8*mv.f0+mv.f1] & KING)
-        quies *= 0;
 
     return quies;
 }
@@ -529,7 +534,7 @@ num turochamp(num depth) {
         if (!mvs_len) {
             if (king_not_in_check(COLOR))
                 return 0;
-            return MUL * (-inf+20+depth);
+            return MUL * (-inf+2000+100*depth);
         }
 
         for (num j = 0; j < mvs_len; ++j)
@@ -611,8 +616,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
     if (!mvs_len) {
         if (king_not_in_check(COLOR))
-            return {0, {0}};
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+20+depth), {0}};
+            return {0, {0}};  // stalemate
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate
     }
 
     // printf("BEFORE ALL\n");
@@ -695,7 +700,7 @@ std::string calc_move(void) {
 
 
 void init_data(void) {
-    new_board();
+    board_initial_position();
 
     PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
     PIECERANGE = (num*)calloc(65, sizeof(num));
@@ -751,7 +756,7 @@ void init_data(void) {
     PIECEVALS[BISHOP] = 325;  // Fischer
     PIECEVALS[ROOK] = 500;
     PIECEVALS[QUEEN] = 900;
-    PIECEVALS[KING] = 32000;
+    PIECEVALS[KING] = inf;
 }
 
 
@@ -855,13 +860,13 @@ int main(int argc, char const *argv[])
 
         if (strcmp(line, "white\n") == 0) {
             IM_WHITE = true;
-            new_board();
+            board_initial_position();
         }
 
         if (strcmp(line, "new\n") == 0) {
             IM_WHITE = false;
             started = true;  // TODO this line needed to fix xboard for white
-            new_board();
+            board_initial_position();
             // XXX reset KILLERHEURISTIC
         }
 

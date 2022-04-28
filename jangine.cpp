@@ -695,6 +695,7 @@ std::string calc_move(bool lines = false) {
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
     printf("Starting quiescence with depth %d\n", SEARCH_DEPTH);
     NODES = 0;
+    KILLERHEURISTIC.clear();
     ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, false, lines);
     Move mv = bestmv.move;
     printf("--> BEST ");
@@ -903,7 +904,6 @@ int main(int argc, char const *argv[])
             IM_WHITE = false;
             started = true;  // TODO this line needed to fix xboard for white
             board_initial_position();
-            // XXX reset KILLERHEURISTIC
         }
 
         // TODO: "protover 2" -> reset board

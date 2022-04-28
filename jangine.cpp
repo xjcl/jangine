@@ -393,6 +393,7 @@ ValuePlusMoves genlegals(num COLOR) {
         unmake_move(**mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
         if (illegal) {
+            free(*mvscpy);
             *mvscpy = NULL;
         }
 
@@ -545,15 +546,15 @@ num turochamp(num depth) {
             Move ref_mv = *(gl.moves[j]);
             num i = 0;
             if (not (board[8*ref_mv.f0+ref_mv.f1] & QUEEN)) {
-                while (true) {
+                while (j < mvs_len) {
                     if (gl.moves[j] == NULL) {
                         ++j;
                         continue;
                     }
-                    if (not(j < mvs_len and (*(gl.moves[j])).f0 == ref_mv.f0 and (*(gl.moves[j])).f1 == ref_mv.f1))
-                        break;
+                    if ((*(gl.moves[j])).f0 != ref_mv.f0 or (*(gl.moves[j])).f1 != ref_mv.f1)
+                        break;  // next piece
                     ++i;
-                    if (board[8* (*(gl.moves[j])).t0 + (*(gl.moves[j])).t1])
+                    if (board[8* (*(gl.moves[j])).t0 + (*(gl.moves[j])).t1])  // capture counts as 2
                         ++i;
                     ++j;
                 }
@@ -615,6 +616,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
     num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
 
     if (!mvs_len) {
+        free(gl_moves_backup);
+
         if (king_not_in_check(COLOR))
             return {0, {0}};  // stalemate
         return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate

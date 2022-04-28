@@ -4,9 +4,9 @@ Chess engine I wrote in 2015 that can beat a competent beginner.
 - Algorithms used:
     - Search: alpha-beta search, quiescence search, killer heuristic
     - Evaluation: turochamp
-- Strength should be around **1200 Lichess**. It's good at taking free material and giving checkmate, but bad at avoiding pins and endgames.
-- This was my first C++ project which is why the code is poorly written and **leaks memory**. That's why a script to periodically restart the engine is included.
-- No adjustment to time controls. 30+ minute matches recommended.
+- Strength should be around **1300 Lichess**. It's good at taking free material and giving checkmate, but bad at avoiding pins and endgames.
+- This was my first C++ project which is why code quality is suboptimal and C-like.
+- No adjustment of search depth to time controls. 30+ minute matches recommended.
 
 Challenge me on lichess! https://lichess.org/@/jangine
 
@@ -19,8 +19,14 @@ Build
 
     g++ jangine.cpp -o jangine
 
-Run
+Visual tests such as mate-in-n-moves tasks
+
+    ./jangine -t
+
+Run as UCI engine
 
     ./jangine
+
+    ./jangine | tee -a jangine.log  # logging to file
 
 To run with lichess, clone this project https://github.com/ShailChoksi/lichess-bot and place the engine binary in the "engine" folder.

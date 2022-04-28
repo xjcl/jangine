@@ -584,26 +584,14 @@ num turochamp(num depth) {  // assign centipawn value to a given board position
 int killer_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b) {
+    if (!*move_b)
         return -1;
-    }
-    if (!*move_a) {
+    if (!*move_a)
         return 1;
-    }
 
-    Move mva = **(move_a);
-    Move mvb = **(move_b);
-
-    auto ita = KILLERHEURISTIC.find(mva);
-    auto itb = KILLERHEURISTIC.find(mvb);
-    if (ita == KILLERHEURISTIC.end()) {
-        if (itb == KILLERHEURISTIC.end())
-            return 0;
-        return 1;
-    }
-    if (itb == KILLERHEURISTIC.end())
-        return -1;
-    return KILLERHEURISTIC[mvb] - KILLERHEURISTIC[mva];
+    auto vala = KILLERHEURISTIC.find(**move_a) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_a];
+    auto valb = KILLERHEURISTIC.find(**move_b) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_b];
+    return valb - vala;
 }
 
 

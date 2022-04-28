@@ -14,6 +14,8 @@
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
+#define DEBUG 0
+#define SEARCH_DEPTH 5  // how many plies to search
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -57,6 +59,10 @@ typedef struct Move {
     // needed for std::map
     bool operator<( const Move & that ) const {
         return 8*this->f0 + this->f1 < 8*that.f0 + that.f1;
+    }
+    bool operator==( const Move& that ) const {
+        return this->f0 == that.f0 and this->f1 == that.f1 and this->t0 == that.t0
+            and this->t1 == that.t1 and this->prom == that.prom;
     }
 } Move;
 
@@ -524,8 +530,8 @@ num turochamp(num depth) {
                 eval += 8 * (bij & WHITE ? 1 : -1);
         }
 
-    // mobility
-    for (num MUL = -1; MUL < 2; MUL += 2)
+    // mobility: for each piece, add the square root of the number of moves the piece can make
+    for (num MUL = -1; MUL < 2; MUL += 2)  // 2 iterations -- one for WHITE/1 one for BLACK/-1
     {
         num COLOR = (MUL == 1 ? WHITE : BLACK);
 
@@ -534,8 +540,8 @@ num turochamp(num depth) {
         num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
         if (!mvs_len) {
             if (king_not_in_check(COLOR))
-                return 0;
-            return MUL * (-inf+2000+100*depth);
+                return 0;  // stalemate
+            return MUL * (-inf+2000+100*depth);  // checkmate-in-DEPTH-plies
         }
 
         for (num j = 0; j < mvs_len; ++j)
@@ -601,11 +607,11 @@ int killer_cmp(const void* a, const void* b) {
 }
 
 
-ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, num noise) {
+ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, num noise, bool lines) {
 
     NODES += 1;
 
-    if (quies <= 0 or depth > 5)
+    if (quies <= 0 or depth > SEARCH_DEPTH)
         return {turochamp(depth), {0}};
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
@@ -639,6 +645,11 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         Move mv = **(gl.moves);
 
+        if (depth < 2 and DEBUG) {
+            for (int i = 0; i < depth; i++) printf("    ");
+            printf_move(mv); printf("\n");
+        }
+
         PiecePlusCatling ppc = make_move(mv);
 
         ValuePlusMove rec = quiescence(
@@ -647,7 +658,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             beta,
             quies - eval_quies(COLOR, mv, ppc.hit_piece),
             depth + 1,
-            false
+            false,
+            lines
         );
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
@@ -655,22 +667,27 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
             best = {rec.value, mv};
 
-        if (depth == 0) {
+        if (depth == 0 or DEBUG) {
+            for (int i = 0; i < depth; i++)
+                printf("    ");
             printf_move(mv);
-            // due to alpha-beta pruning and killer heuristic, this isn't the "true" eval for suboptimal moves
-            printf(" EVAL %6.2f\n", (float)(rec.value) / 100);
+            // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines=true
+            bool accurate = (best.move == mv) or lines;
+            printf(" EVAL %6.2f %c\n", (float)(rec.value) / 100, accurate ? ' ' : '?');
         }
 
-        if (COLOR == WHITE and best.value > alpha)
-            alpha = best.value;
-        if (COLOR == BLACK and best.value < beta)
-            beta = best.value;
-        if (beta <= alpha) {
-            if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end()) {
-                KILLERHEURISTIC[mv] = 0;
+        if (not (lines and depth == 0)) {
+            if (COLOR == WHITE and best.value > alpha)
+                alpha = best.value;
+            if (COLOR == BLACK and best.value < beta)
+                beta = best.value;
+            if (beta <= alpha) {
+                if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end()) {
+                    KILLERHEURISTIC[mv] = 0;
+                }
+                KILLERHEURISTIC[mv] += depth * depth;
+                break;
             }
-            KILLERHEURISTIC[mv] += depth * depth;
-            break;
         }
 
         gl.moves++;
@@ -685,12 +702,12 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 }
 
 
-std::string calc_move(void) {
+std::string calc_move(bool lines = false) {
     // TODO: mode where a random move gets picked?
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
-    printf("Starting quiescence with depth 5\n");
+    printf("Starting quiescence with depth %d\n", SEARCH_DEPTH);
     NODES = 0;
-    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, true);
+    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, 41, 0, false, lines);
     Move mv = bestmv.move;
     printf("--> BEST ");
     printf_move(mv);
@@ -703,6 +720,7 @@ std::string calc_move(void) {
 
 
 void init_data(void) {
+    // TODO use map with vector inside or something to avoid leaks
     board_initial_position();
 
     PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
@@ -773,7 +791,7 @@ void test() {
     board[2] = WHITE + KING;
     board[63] = WHITE + ROOK;
     pprint();
-    std::cout << calc_move() << std::endl;
+    std::cout << calc_move(true) << std::endl;
 
     std::cout << "Tests Mate-in-2 #1" << std::endl;
 
@@ -787,20 +805,40 @@ void test() {
     board[7*8+3] = WHITE + ROOK;
     board[7*8+2] = WHITE + KING;
     pprint();
-    std::cout << calc_move() << std::endl;
+    std::cout << calc_move(true) << std::endl;
 
+    std::cout << "Tests Mate-in-3 #1" << std::endl;
 
-    std::exit(0);
+    board_clear();
+    board[2] = BLACK + KING;
+    board[7] = BLACK + ROOK;
+    board[8+0] = BLACK + PAWN;
+    board[8+1] = BLACK + PAWN;
+    board[8+2] = BLACK + PAWN;
+    board[5*8+3] = WHITE + QUEEN;
+    board[7*8+3] = WHITE + ROOK;
+    board[7*8+2] = WHITE + KING;
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Tests Castling" << std::endl;
 
     board_initial_position();
+    board[7*8+5] = 0;
+    board[7*8+6] = 0;
+    pprint();
+    std::cout << calc_move(true) << std::endl;
 
-    printf("NEW BOARD EVAL: %ld\n", turochamp(0));
+
+    board_initial_position();
+    printf("INITIAL BOARD EVAL: %ld\n", turochamp(0));
 
     make_move_str("e2e4");
     printf("1. e4 EVAL: %ld\n", turochamp(0));
 
     printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
-    quiescence(BLACK, -inf+1, inf-1, 41, 0, true);
+    quiescence(BLACK, -inf+1, inf-1, 41, 0, true, true);
+    std::exit(0);
 }
 
 void test_botez() {
@@ -825,7 +863,7 @@ void test_botez() {
     make_move_str("f8b4");
 
     printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");
-    quiescence(WHITE, -inf+1, inf-1, 41, 0, true);
+    quiescence(WHITE, -inf+1, inf-1, 41, 0, true, true);
 }
 
 

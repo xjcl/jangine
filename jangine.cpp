@@ -128,14 +128,30 @@ num default_board[64] = {
         WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK
 };
 
+num KINGPOS_WHITE_i = 7;
+num KINGPOS_WHITE_j = 4;
+num KINGPOS_BLACK_i = 0;
+num KINGPOS_BLACK_j = 4;
+
 void board_clear() {
     for (int i = 0; i < 64; ++i)
         board[i] = 0;
 }
 
+void set_up_kings(num wi, num wj, num bi, num bj) {
+    board[8*wi+wj] = KING + WHITE;
+    board[8*bi+bj] = KING + BLACK;
+    KINGPOS_WHITE_i = wi;
+    KINGPOS_WHITE_j = wj;
+    KINGPOS_BLACK_i = bi;
+    KINGPOS_BLACK_j = bj;
+}
+
 void board_initial_position() {
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
+
+    set_up_kings(7, 4, 0, 4);
 }
 
 typedef struct ValuePlusMoves {
@@ -197,6 +213,15 @@ PiecePlusCatling make_move(Move mv) {
         else                CASTLINGBLACK = cr;
     }
 
+    if (piece == WHITE + KING) {
+        KINGPOS_WHITE_i = mv.t0;
+        KINGPOS_WHITE_j = mv.t1;
+    }
+    else if (piece == BLACK + KING) {
+        KINGPOS_BLACK_i = mv.t0;
+        KINGPOS_BLACK_j = mv.t1;
+    }
+
     return {hit_piece, old_cr_w, old_cr_b};
 }
 
@@ -227,6 +252,15 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
     CASTLINGWHITE = c_rights_w;
     CASTLINGBLACK = c_rights_b;
     LASTMOVE = {0};
+
+    if (piece == WHITE + KING) {
+        KINGPOS_WHITE_i = mv.f0;
+        KINGPOS_WHITE_j = mv.f1;
+    }
+    else if (piece == BLACK + KING) {
+        KINGPOS_BLACK_i = mv.f0;
+        KINGPOS_BLACK_j = mv.f1;
+    }
 }
 
 
@@ -253,42 +287,58 @@ void make_move_str(const char* mv) {
 
 
 
-bool king_not_in_check(num COLOR) {
-    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
-    num ADD = COLOR == WHITE ? -1 : 1;
-    num myking = KING + COLOR;
+bool square_in_check(num COLOR, num i, num j) {
+    num OPPONENT_COLOR = COLOR == WHITE ? BLACK : WHITE;
+    num UP = COLOR == WHITE ? -1 : 1;
 
-    gentuples {
-        num bij = board[8*i+j];
-        num bijpiece = bij & ~WHITE & ~BLACK;
-        if (not (bij & NCOLOR))
-            continue;
-        if (bij & PAWN) {
-            if (is_inside(i-ADD, j+1) and board[8*(i-ADD)+j+1] == myking)
-                return false;
-            if (is_inside(i-ADD, j-1) and board[8*(i-ADD)+j-1] == myking)
-                return false;
-        } else {
-            for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
-                num a = PIECEDIRS[bijpiece][l].a;
-                num b = PIECEDIRS[bijpiece][l].b;
-                for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
-                {
-                    if (is_inside(i+a*k, j+b*k)) {
-                        // printf("%ld %ld %ld %ld\n", (i+a*k), j+b*k, board[8*(i+a*k)+j+b*k], myking);
-                        if (board[8*(i+a*k)+j+b*k] == myking)
-                            return false;
-                        if (board[8*(i+a*k)+j+b*k])
-                            break;
-                    } else {
-                        break;
-                    }
-                }
+    // enemy pawns
+    if (is_inside(i+UP, j+1) and board[8*(i+UP)+j+1] == PAWN + OPPONENT_COLOR)
+        return true;
+    if (is_inside(i+UP, j-1) and board[8*(i+UP)+j-1] == PAWN + OPPONENT_COLOR)
+        return true;
+
+    for (int n = 1; n < 6; ++n) {  // enemy pieces incl king
+        num piece = 1 << n;
+
+        for (num l = 0; PIECEDIRS[piece][l].a != 0 or PIECEDIRS[piece][l].b != 0; ++l) {
+            num a = PIECEDIRS[piece][l].a;
+            num b = PIECEDIRS[piece][l].b;
+            for (num k = 1; k <= PIECERANGE[piece]; ++k)
+            {
+                if (not is_inside(i+a*k, j+b*k))  // axis goes off board
+                    break;
+                if (board[8*(i+a*k)+j+b*k] == OPPONENT_COLOR + piece)  // opponent piece of right type on axis
+                    return true;
+                if (board[8*(i+a*k)+j+b*k])  // irrelevant piece along axis
+                    break;
             }
         }
     }
 
-    return true;
+    return false;
+}
+
+
+bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of time spent in this function
+    // keeping track of king position enables a HUGE speedup!
+    num i_likely = COLOR == WHITE ? KINGPOS_WHITE_i : KINGPOS_BLACK_i;
+    num j_likely = COLOR == WHITE ? KINGPOS_WHITE_j : KINGPOS_BLACK_j;
+
+    if (board[8 * i_likely + j_likely] == KING + COLOR)
+        return square_in_check(COLOR, i_likely, j_likely);
+
+    gentuples {
+        if (board[8 * i + j] == KING + COLOR)
+            return square_in_check(COLOR, i, j);
+    }
+
+    if (allow_illegal_position)
+        return true;  // no king on board -> used for illegal move detection
+
+    // TODO: Find out why this happens anyways in unexpected moments :/
+    std::cout << "no king on board, should never happen" << std::endl;
+    pprint();
+    std::exit(0);
 }
 
 
@@ -300,7 +350,7 @@ ValuePlusMoves genlegals(num COLOR) {
     Move** mvsend = mvs;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
-    num ADD = COLOR == WHITE ? -1 : 1;
+    num ADD = COLOR == WHITE ? -1 : 1;  // "up"
     num STARTRANK = COLOR == WHITE ? 6 : 1;
     num PROMRANK = COLOR == WHITE ? 1 : 6;
     num EPRANK = COLOR == WHITE ? 3 : 4;
@@ -396,7 +446,7 @@ ValuePlusMoves genlegals(num COLOR) {
     Move** mvscpy = mvs;
     while (mvscpy != mvsend) {
         PiecePlusCatling ppc = make_move(**mvscpy);
-        bool illegal = !king_not_in_check(COLOR);
+        bool illegal = king_in_check(COLOR);
         unmake_move(**mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
         if (illegal) {
@@ -430,7 +480,7 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     if (hit_piece or mv.prom != '\0' and mv.prom != 'c')  // capture or promotion or en passant
         return 0;
 
-    if (not king_not_in_check(OTHER_COLOR) or board[8*mv.t0+mv.t1] & KING)  // check or was king move
+    if (king_in_check(OTHER_COLOR) or board[8*mv.t0+mv.t1] & KING)  // check or was king move
         return 0;
 
     num quies = 20;
@@ -543,7 +593,7 @@ num turochamp(num depth) {
         num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
 
         if (!mvs_len) {
-            if (king_not_in_check(COLOR))
+            if (not king_in_check(COLOR))
                 return 0;  // stalemate
             return MUL * (-inf+2000+100*depth);  // checkmate-in-DEPTH-plies
         }
@@ -615,7 +665,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
     if (!mvs_len) {
         free(gl_moves_backup);
 
-        if (king_not_in_check(COLOR))
+        if (not king_in_check(COLOR))
             return {0, {0}};  // stalemate
         return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate
     }
@@ -664,7 +714,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             printf_move(mv);
             // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines=true
             bool accurate = (best.move == mv) or lines;
-            printf(" EVAL %6.2f %c\n", (float)(rec.value) / 100, accurate ? ' ' : '?');
+            printf(" EVAL %7.2f %c\n", (float)(rec.value) / 100, accurate ? ' ' : '?');
         }
 
         if (not (lines and depth == 0)) {
@@ -719,20 +769,6 @@ void init_data(void) {
     PIECERANGE = (num*)calloc(65, sizeof(num));
     PIECEVALS = (num*)calloc(65, sizeof(num));
 
-    PIECEDIRS[ROOK] = (Pair*)malloc(5 * sizeof(Pair));
-    PIECEDIRS[ROOK][0] = {0, 1};
-    PIECEDIRS[ROOK][1] = {1, 0};
-    PIECEDIRS[ROOK][2] = {0, -1};
-    PIECEDIRS[ROOK][3] = {-1, 0};
-    PIECEDIRS[ROOK][4] = {0, 0};
-
-    PIECEDIRS[BISHOP] = (Pair*)malloc(5 * sizeof(Pair));
-    PIECEDIRS[BISHOP][0] = {1, 1};
-    PIECEDIRS[BISHOP][1] = {1, -1};
-    PIECEDIRS[BISHOP][2] = {-1, 1};
-    PIECEDIRS[BISHOP][3] = {-1, -1};
-    PIECEDIRS[BISHOP][4] = {0, 0};
-
     PIECEDIRS[KNIGHT] = (Pair*)malloc(9 * sizeof(Pair));
     PIECEDIRS[KNIGHT][0] = {1, 2};
     PIECEDIRS[KNIGHT][1] = {2, 1};
@@ -743,6 +779,20 @@ void init_data(void) {
     PIECEDIRS[KNIGHT][6] = {1, -2};
     PIECEDIRS[KNIGHT][7] = {-2, 1};
     PIECEDIRS[KNIGHT][8] = {0, 0};
+
+    PIECEDIRS[BISHOP] = (Pair*)malloc(5 * sizeof(Pair));
+    PIECEDIRS[BISHOP][0] = {1, 1};
+    PIECEDIRS[BISHOP][1] = {1, -1};
+    PIECEDIRS[BISHOP][2] = {-1, 1};
+    PIECEDIRS[BISHOP][3] = {-1, -1};
+    PIECEDIRS[BISHOP][4] = {0, 0};
+
+    PIECEDIRS[ROOK] = (Pair*)malloc(5 * sizeof(Pair));
+    PIECEDIRS[ROOK][0] = {0, 1};
+    PIECEDIRS[ROOK][1] = {1, 0};
+    PIECEDIRS[ROOK][2] = {0, -1};
+    PIECEDIRS[ROOK][3] = {-1, 0};
+    PIECEDIRS[ROOK][4] = {0, 0};
 
     PIECEDIRS[QUEEN] = (Pair*)malloc(9 * sizeof(Pair));
     PIECEDIRS[QUEEN][0] = {0, 1};
@@ -779,8 +829,7 @@ void test() {
 
     IM_WHITE = true;
     board_clear();
-    board[0] = BLACK + KING;
-    board[2] = WHITE + KING;
+    set_up_kings(0, 2, 0, 0);
     board[63] = WHITE + ROOK;
     pprint();
     std::cout << calc_move(true) << std::endl;
@@ -788,28 +837,26 @@ void test() {
     std::cout << "Tests Mate-in-2 #1" << std::endl;
 
     board_clear();
-    board[1] = BLACK + KING;
+    set_up_kings(7, 2, 0, 1);
     board[7] = BLACK + ROOK;
     board[8+0] = BLACK + PAWN;
     board[8+1] = BLACK + PAWN;
     board[8+2] = BLACK + PAWN;
     board[5*8+3] = WHITE + QUEEN;
     board[7*8+3] = WHITE + ROOK;
-    board[7*8+2] = WHITE + KING;
     pprint();
     std::cout << calc_move(true) << std::endl;
 
     std::cout << "Tests Mate-in-3 #1" << std::endl;
 
     board_clear();
-    board[2] = BLACK + KING;
+    set_up_kings(7, 2, 0, 2);
     board[7] = BLACK + ROOK;
     board[8+0] = BLACK + PAWN;
     board[8+1] = BLACK + PAWN;
     board[8+2] = BLACK + PAWN;
     board[5*8+3] = WHITE + QUEEN;
     board[7*8+3] = WHITE + ROOK;
-    board[7*8+2] = WHITE + KING;
     pprint();
     std::cout << calc_move(true) << std::endl;
 
@@ -834,8 +881,7 @@ void test() {
     std::cout << "Tests Promotion" << std::endl;
 
     board_clear();
-    board[0] = BLACK + KING;
-    board[2] = WHITE + KING;
+    set_up_kings(0, 2, 0, 0);
     board[1*8+6] = WHITE + PAWN;
     pprint();
     std::cout << calc_move(true) << std::endl;

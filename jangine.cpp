@@ -9,6 +9,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <map>
+#include <deque>
 #include <algorithm>
 
 
@@ -38,7 +39,7 @@ bool input_is_move(const char* s) {
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num inf = 32000;
-std::map<num, char> piece_to_letter = {{1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
+std::map<num, char> piece_to_letter = {{0, ' '}, {1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 std::map<num, std::string> id_to_unicode = {
         {  0, "."},
         { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
@@ -169,6 +170,7 @@ typedef struct ValuePlusMoves {
 typedef struct ValuePlusMove {
     num value;
     Move move;
+    std::deque<Move> variation;
 } ValuePlusMove;
 
 
@@ -652,9 +654,9 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
     NODES += 1;
 
     if (quies <= 0 or depth > SEARCH_DEPTH)
-        return {turochamp(depth), {0}};
+        return {turochamp(depth), {0}, std::deque<Move>()};
 
-    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
+    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
 
     ValuePlusMoves gl = genlegals(COLOR);
     Move** gl_moves_backup = gl.moves;
@@ -665,8 +667,8 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         free(gl_moves_backup);
 
         if (not king_in_check(COLOR))
-            return {0, {0}};  // stalemate
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate
+            return {0, {0}, std::deque<Move>()};  // stalemate
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
     }
 
     // printf("BEFORE ALL\n");
@@ -705,7 +707,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
         if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
-            best = {rec.value, mv};
+            best = {rec.value, mv, rec.variation};
 
         if (depth == 0 or DEBUG) {
             for (int i = 0; i < depth; i++)
@@ -713,7 +715,12 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             printf_move(mv);
             // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines=true
             bool accurate = (best.move == mv) or lines;
-            printf(" EVAL %7.2f %c\n", (float)(rec.value) / 100, accurate ? ' ' : '?');
+            printf(" EVAL %7.2f %c | VAR  ... ", (float)(rec.value) / 100, accurate ? ' ' : '?');
+
+            // TODO: not entirely accurate cos move_to_str reads current board state
+            for (int i = 0; i < rec.variation.size(); i++)
+                std::cout << move_to_str(rec.variation[i], true) << " ";
+            std::cout << std::endl;
         }
 
         if (not (lines and depth == 0)) {
@@ -738,6 +745,7 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             free(gl_moves_backup[i]);
     free(gl_moves_backup);
 
+    best.variation.push_front(best.move);
     return best;
 }
 
@@ -824,7 +832,7 @@ void init_data(void) {
 
 
 void test() {
-    std::cout << "Tests Mate-in-1 #1" << std::endl;
+    std::cout << "Tests Mate-in-1 #1 (and stalemate)" << std::endl;
 
     IM_WHITE = true;
     board_clear();

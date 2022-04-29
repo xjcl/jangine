@@ -45,9 +45,9 @@ std::map<num, std::string> id_to_unicode = {
 };
 
 typedef struct CASTLINGRIGHTS {
-    bool lr;  // left rook has been moved
-    bool k;   // king has been moved
-    bool rr;  // right rook has been moved
+    bool lr;  // left rook has not been moved
+    bool k;   // king has not been moved
+    bool rr;  // right rook has not been moved
 } CASTLINGRIGHTS;
 
 typedef struct Move {
@@ -133,9 +133,12 @@ num KINGPOS_WHITE_j = 4;
 num KINGPOS_BLACK_i = 0;
 num KINGPOS_BLACK_j = 4;
 
-void board_clear() {
+void board_clear() {  // setting up random positions
     for (int i = 0; i < 64; ++i)
         board[i] = 0;
+
+    CASTLINGWHITE = {false, false, false};
+    CASTLINGBLACK = {false, false, false};
 }
 
 void set_up_kings(num wi, num wj, num bi, num bj) {
@@ -147,11 +150,13 @@ void set_up_kings(num wi, num wj, num bi, num bj) {
     KINGPOS_BLACK_j = bj;
 }
 
-void board_initial_position() {
+void board_initial_position() {  // setting up a game
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
 
     set_up_kings(7, 4, 0, 4);
+    CASTLINGWHITE = {true, true, true};
+    CASTLINGBLACK = {true, true, true};
 }
 
 typedef struct ValuePlusMoves {
@@ -189,7 +194,6 @@ PiecePlusCatling make_move(Move mv) {
                 board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
                 board[8*CASTLERANK+7] = 0;
             }
-            board[8*CASTLERANK+4] = 0;
         } else {
             num p;
             switch (mv.prom) {
@@ -235,12 +239,12 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
     {
         if (mv.prom == 'e') {
             board[8*mv.f0+mv.t1] = PAWN + (mv.t0 == 5 ? WHITE : BLACK);
-        } else if (mv.prom == 'c') {
-            if (mv.t1 == 2) {
+        } else if (mv.prom == 'c') {  // castling -- undo rook move
+            if (mv.t1 == 2) {  // long
                 board[8*mv.f0] = board[8*mv.f0+3];
                 board[8*mv.f0+3] = 0;
             }
-            else {
+            else {  // short
                 board[8*mv.f0+7] = board[8*mv.f0+5];
                 board[8*mv.f0+5] = 0;
             }
@@ -423,24 +427,17 @@ ValuePlusMoves genlegals(num COLOR) {
         }
     }
 
-    // XXX castling
-
-
-    // if ((CASTLINGWHITE[0] and CASTLINGWHITE[1]) if COLOR == WHITE
-    // else (CASTLINGBLACK[0] and CASTLINGBLACK[1])):
-    //     if not board[CASTLERANK][3] and not board[CASTLERANK][2] and not board[CASTLERANK][1]:
-    //         board[CASTLERANK][2:4] = [COLOR + KING]*2
-    //         if king_not_in_check(COLOR):
-    //             ret.append((CASTLERANK, 4, CASTLERANK, 2, 'c'))
-    //         board[CASTLERANK][2:4] = [0]*2
-    // if ((CASTLINGWHITE[2] and CASTLINGWHITE[1]) if COLOR == WHITE
-    // else (CASTLINGBLACK[2] and CASTLINGBLACK[1])):
-    //     if not board[CASTLERANK][5] and not board[CASTLERANK][6]:
-    //         board[CASTLERANK][5:7] = [COLOR + KING]*2
-    //         if king_not_in_check(COLOR):
-    //             ret.append((CASTLERANK, 4, CASTLERANK, 6, 'c'))
-    //         board[CASTLERANK][5:7] = [0]*2
-
+    CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
+    if (castlingrights.k and castlingrights.rr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
+        if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
+                not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
+            store(CASTLERANK, 4, CASTLERANK, 6, 'c');
+    }
+    if (castlingrights.k and castlingrights.lr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK] == COLOR + ROOK) {  // long castle O-O-O
+        if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
+                not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
+            store(CASTLERANK, 4, CASTLERANK, 2, 'c');
+    }
 
 
     Move** mvscpy = mvs;
@@ -865,6 +862,7 @@ void test() {
     board_initial_position();
     board[7*8+5] = 0;
     board[7*8+6] = 0;
+    board[6*8+4] = 0;
     pprint();
     std::cout << calc_move(true) << std::endl;
 

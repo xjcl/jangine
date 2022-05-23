@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <map>
 #include <deque>
+#include <vector>
+#include <sstream>
 #include <algorithm>
 
 
@@ -93,6 +95,7 @@ num* PIECEVALS = NULL;
 num board[64] = {0};   // malloc 64 or even 100
 bool IM_WHITE = false;
 bool started = true;
+bool MODE_UCI = false;
 
 int64_t NODES = 0;
 
@@ -975,7 +978,41 @@ int main(int argc, char const *argv[])
             printf("feature ping=1\n");
             printf("feature setboard=1\n");
             printf("feature done=1\n");
+            MODE_UCI = false;
         }
+
+        /*** UCI ***/
+        if (strcmp(line, "uci\n") == 0) {
+            printf("id name jangine\n");
+            printf("uciok\n");
+            MODE_UCI = true;
+        }
+
+        if (strcmp(line, "isready\n") == 0) {
+            printf("readyok\n");
+        }
+
+        if (strcmp(line, "ucinewgame\n") == 0) {
+            IM_WHITE = false;
+            board_initial_position();
+        }
+
+        if (startswith("position startpos moves", line)) {
+            std::string buf;
+            std::stringstream ss(line_cpp);
+            std::vector<std::string> tokens;
+
+            while (ss >> buf)
+                tokens.push_back(buf);
+
+            board_initial_position();
+            for (int i = 3; i < tokens.size(); ++i) {
+                make_move_str(tokens[i].c_str());
+                num_moves++;
+            }
+            IM_WHITE = (num_moves + 1) % 2;
+        }
+        /*** UCI END ***/
 
         if (strcmp(line, "force\n") == 0 or startswith("result", line)) {
             started = false;
@@ -1012,16 +1049,16 @@ int main(int argc, char const *argv[])
             std::string mv = calc_move();
             num_moves++;
             pprint();
-            printf("move %s\n", mv.c_str());
+            printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
         }
 
-        if (strcmp(line, "go\n") == 0) {
+        if (startswith("go", line)) {
             IM_WHITE = (num_moves + 1) % 2;
             started = true;
             std::string mv = calc_move();
             num_moves++;
             pprint();
-            printf("move %s\n", mv.c_str());
+            printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
         }
 
         if (startswith("ping", line)) {

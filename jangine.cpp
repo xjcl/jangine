@@ -38,6 +38,15 @@ bool input_is_move(const char* s) {
     Move x = {a, b, c, d, e}; \
     memcpy(*mvsend, &x, sizeof(Move)); \
     mvsend++; }
+#define store_maybe_promote(a, b, c, d)   \
+    { if (i == PROMRANK) {                   \
+        store(a, b, c, d, 'q'); /* best */   \
+        store(a, b, c, d, 'n'); /* likely */ \
+        store(a, b, c, d, 'r');              \
+        store(a, b, c, d, 'b');              \
+    } else                                   \
+        store(a, b, c, d, '\0');             \
+    }
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num inf = 32000;
@@ -353,7 +362,7 @@ bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of t
 
 
 
-ValuePlusMoves genlegals(num COLOR) {
+ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 
     Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves
         // also inits to NULLptrs
@@ -372,39 +381,26 @@ ValuePlusMoves genlegals(num COLOR) {
         if (not (bij & COLOR))
             continue;
         if (bij & PAWN) {  // pawn moves
-            Move** badmvs = mvsend;
-
-            if (not board[8*(i+ADD)+j]) {  // promotion
-                store(i, j, i+ADD, j, '\0');
-                if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {
-                    store(i, j, i+ADD+ADD, j, '\0');
-                }
-            }
+            // diagonal captures
             if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
-                store(i, j, i+ADD, j+1, '\0');
+                store_maybe_promote(i, j, i+ADD, j+1);
             if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
-                store(i, j, i+ADD, j-1, '\0');
+                store_maybe_promote(i, j, i+ADD, j-1);
 
-            if (i == PROMRANK) {
-                Move** mvsendcpy = mvsend;
-                while (mvsendcpy > badmvs) {
-                    mvsendcpy--;
-                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'n');
-                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'b');
-                    // store(*mvsendcpy->f0, *mvsendcpy->f1, *mvsendcpy->t0, *mvsendcpy->t1, 'r');
-                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'n';  mvsend++;
-                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'b';  mvsend++;
-                    *mvsend = (Move*)malloc(sizeof(Move)); memcpy(*mvsend, *mvsendcpy, sizeof(Move));  (*mvsend)->prom = 'r';  mvsend++;
-                    (*mvsendcpy)->prom = 'q';
-                }
+            if (i == EPRANK) {  // en passant capture
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1)
+                    store(i, j, i+ADD, j-1, 'e');
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1)
+                    store(i, j, i+ADD, j+1, 'e');
             }
 
-            if (i == EPRANK) {  // en passant
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1) {
-                    store(i, j, i+ADD, j-1, 'e');
-                }
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1) {
-                    store(i, j, i+ADD, j+1, 'e');
+            if (only_captures)
+                continue;
+
+            if (not board[8*(i+ADD)+j]) {  // 1 square forward
+                store_maybe_promote(i, j, i+ADD, j);
+                if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {  // 2 squares forward
+                    store(i, j, i+ADD+ADD, j, '\0');
                 }
             }
         }
@@ -415,14 +411,12 @@ ValuePlusMoves genlegals(num COLOR) {
                 for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
                 {
                     if (is_inside(i+a*k, j+b*k)) {
-                        if (not board[8*(i+a*k)+j+b*k]) {
-                            // printf("%ld%ld%ld%ld %ld%ld\n", i, j, i+a*k, j+b*k, a, b);
+                        if (not only_captures and not board[8*(i+a*k)+j+b*k]) {  // empty square
                             store(i, j, i+a*k, j+b*k, '\0');
-                        } else if (board[8*(i+a*k)+j+b*k] & NCOLOR) {
-                            // printf("%ld%ld%ld%ld %ld%ld\n", i, j, i+a*k, j+b*k, a, b);
+                        } else if (board[8*(i+a*k)+j+b*k] & NCOLOR) {  // square with enemy piece
                             store(i, j, i+a*k, j+b*k, '\0');
                             break;
-                        } else if (board[8*(i+a*k)+j+b*k] & COLOR) {
+                        } else if (board[8*(i+a*k)+j+b*k] & COLOR) {  // square with own piece
                             break;
                         }
                     } else {

@@ -21,7 +21,7 @@ typedef int_fast16_t num;
 #define NEW_EVAL
 #define DEBUG 0
 #define NO_QUIES 0
-#define SEARCH_DEPTH 4  // how many plies to search
+#define SEARCH_DEPTH 4  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
 #define QUIES_DEPTH 0  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
@@ -179,6 +179,7 @@ num* PIECERANGE = NULL;
 num* PIECEVALS = NULL;
 
 num board[64] = {0};   // malloc 64 or even 100
+num board_eval = 0;
 bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
@@ -249,6 +250,7 @@ void board_initial_position() {  // setting up a game
     set_up_kings(7, 4, 0, 4);
     CASTLINGWHITE = {true, true, true};
     CASTLINGBLACK = {true, true, true};
+    board_eval = 0;  // TODO: do not swap left and right??
 }
 
 typedef struct ValuePlusMoves {
@@ -263,6 +265,39 @@ typedef struct ValuePlusMove {
     std::deque<Move> variation;
 } ValuePlusMove;
 
+num eval_material(num piece_with_color) {
+    num piece = piece_with_color & ~WHITE & ~BLACK;
+    return piece_with_color & WHITE ? PIECEVALS[piece] : -PIECEVALS[piece];
+}
+
+num eval_piece_on_square(num piece_with_color, num i, num j) {
+    num piece = piece_with_color & ~WHITE & ~BLACK;
+    return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+j];
+}
+
+// TODO: test Nb4 incident  https://lichess.org/Y7wbd6Jn04IP
+// https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
+// https://www.chessprogramming.org/Simplified_Evaluation_Function
+// Returns centipawn value to a given board position, from WHITE's perspective
+// TODO: breakdown into component numbers for better testability
+num initial_eval() {
+    num eval = 0;
+
+    // material counting
+    gentuples {
+        eval += eval_material(board[8*i+j]);
+    }
+
+    // https://www.chessprogramming.org/Piece-Square_Tables
+    // piece positioning using piece-square-tabkes
+    gentuples {
+        eval += eval_piece_on_square(board[8*i+j], i, j);
+    }
+
+    return eval;
+}
+
+
 
 PiecePlusCatling make_move(Move mv) {
 
@@ -276,16 +311,22 @@ PiecePlusCatling make_move(Move mv) {
 
     num CASTLERANK = piece & WHITE ? 7 : 0;
 
+    board_eval -= eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // remove captured piece. ignores empty squares (0s)  // always empty for en passant
+    board_eval += eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
+
     if (mv.prom) {
         if (mv.prom == 'e') {  // en passant
+            board_eval -= eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get removed earlier
             board[8*mv.f0+mv.t1] = 0;
         } else if (mv.prom == 'c') {  // castling
             if (mv.t1 == 2) {  // long
                 board[8*CASTLERANK+3] = board[8*CASTLERANK];
                 board[8*CASTLERANK] = 0;
+                board_eval += eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 3) - eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 0);  // rook positioning
             } else {  // short
                 board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
                 board[8*CASTLERANK+7] = 0;
+                board_eval += eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 5) - eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 7);  // rook positioning
             }
         } else {
             num p;
@@ -295,7 +336,10 @@ PiecePlusCatling make_move(Move mv) {
                 case 'b':  p = BISHOP;  break;
                 case 'n':  p = KNIGHT;  break;
             }
-            board[8*mv.t0+mv.t1] = p + (mv.t0 == 0 ? WHITE : BLACK);
+            p += (mv.t0 == 0 ? WHITE : BLACK);
+            board[8*mv.t0+mv.t1] = p;
+            board_eval += eval_material(p) - eval_material(piece);
+            board_eval += eval_piece_on_square(p, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.t0, mv.t1);  // t0/t1 to compensate for wrong pieceval earlier
         }
     }
 
@@ -328,21 +372,30 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
     board[8*(mv.t0)+mv.t1] = hit_piece;
     board[8*(mv.f0)+mv.f1] = piece;
 
+    board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // add captured piece back in
+    board_eval -= eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
+
     if (mv.prom)
     {
         if (mv.prom == 'e') {
             board[8*mv.f0+mv.t1] = PAWN + (mv.t0 == 5 ? WHITE : BLACK);
+            board_eval += eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get added earlier
         } else if (mv.prom == 'c') {  // castling -- undo rook move
             if (mv.t1 == 2) {  // long
                 board[8*mv.f0] = board[8*mv.f0+3];
                 board[8*mv.f0+3] = 0;
+                board_eval += eval_piece_on_square(board[8*mv.f0], mv.f0, 0) - eval_piece_on_square(board[8*mv.f0], mv.f0, 3);  // rook positioning
             }
             else {  // short
                 board[8*mv.f0+7] = board[8*mv.f0+5];
                 board[8*mv.f0+5] = 0;
+                board_eval += eval_piece_on_square(board[8*mv.f0+7], mv.f0, 7) - eval_piece_on_square(board[8*mv.f0+7], mv.f0, 5);  // rook positioning
             }
         } else {
-            board[8*mv.f0+mv.f1] = PAWN + (mv.t0 == 0 ? WHITE : BLACK);
+            num old_pawn = PAWN + (mv.t0 == 0 ? WHITE : BLACK);
+            board[8*mv.f0+mv.f1] = old_pawn;
+            board_eval -= eval_material(piece) - eval_material(old_pawn);
+            board_eval -= eval_piece_on_square(piece, mv.f0, mv.f1) - eval_piece_on_square(old_pawn, mv.f0, mv.f1);  // t0/t1 to compensate for wrong pieceval earlier
         }
     }
 
@@ -616,130 +669,6 @@ void printf_moves(Move** mvs, num count, std::string header) {
 }
 
 
-#ifdef NEW_EVAL
-num turochamp(num depth) {
-    num eval = 0;
-
-    gentuples {
-        // material counting
-        num piece_with_color = board[8*i+j];
-        num piece = piece_with_color & ~WHITE & ~BLACK;
-        num MUL = piece_with_color & WHITE ? 1 : -1;
-
-        eval += MUL * PIECEVALS[piece];
-    }
-
-    // https://www.chessprogramming.org/Piece-Square_Tables
-    // TODO: would be more efficient if handled in make_move and unmake_move!!
-    gentuples {
-        // piece positioning
-        num piece_with_color = board[8*i+j];
-        num piece = piece_with_color & ~WHITE & ~BLACK;
-        eval += (piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+(7-j)]);
-    }
-
-    return eval;
-}
-
-
-#else
-// TODO: Nb4 incident  https://lichess.org/Y7wbd6Jn04IP
-// https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
-// https://www.chessprogramming.org/Simplified_Evaluation_Function
-// Returns centipawn value to a given board position, from WHITE's perspective
-// TODO: breakdown into component numbers for better testability
-num turochamp(num depth) {
-
-    num eval = 0;
-
-    gentuples {
-        // material counting
-        num bijp = board[8*i+j] & ~WHITE & ~BLACK;
-        num bij = board[8*i+j];
-        num MUL = bij & WHITE ? 1 : -1;
-
-        eval += MUL * PIECEVALS[bijp];
-
-        // king safety: how many moves would the king have if it was a queen
-        if (bijp == KING) {
-            num c = 0;
-            for (num l = 0; PIECEDIRS[QUEEN][l].a != 0 or PIECEDIRS[QUEEN][l].b != 0; ++l) {
-                num a = PIECEDIRS[QUEEN][l].a;
-                num b = PIECEDIRS[QUEEN][l].b;
-                for (num k = 1; k <= PIECERANGE[QUEEN]; ++k)
-                {
-                    if (not is_inside(i+a*k, j+b*k) or board[8*(i+a*k)+j+b*k])
-                        break;
-                    ++c;
-                }
-            }
-            eval -= MUL * 30 * round(sqrt(c));
-        }
-
-        // pawn advancement
-        if (bij & PAWN)
-            eval += 8 * (bij & WHITE ? 6-i : 1-i);
-    }
-
-    // center control
-    for (int i = 3; i < 5; ++i)
-        for (int j = 3; j < 5; ++j)
-        {
-            num bij = board[8*i+j];
-            if (bij and not(bij & ROOK) and not(bij & QUEEN))
-                eval += 8 * (bij & WHITE ? 1 : -1);
-        }
-
-    // mobility: for each piece, add the square root of the number of moves the piece can make
-    for (num MUL = -1; MUL < 2; MUL += 2)  // 2 iterations -- one for WHITE/1 one for BLACK/-1
-    {
-        num COLOR = (MUL == 1 ? WHITE : BLACK);
-
-        ValuePlusMoves gl = genlegals(COLOR);
-
-        num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
-
-        if (!mvs_len) {
-            if (not king_in_check(COLOR))
-                return 0;  // stalemate
-            return MUL * (-inf+2000+100*depth);  // checkmate-in-DEPTH-plies
-        }
-
-        for (num j = 0; j < mvs_len; ++j)
-        {
-            if (gl.moves[j] == NULL)
-                continue;
-            Move ref_mv = *(gl.moves[j]);
-            num i = 0;
-            if (not (board[8*ref_mv.f0+ref_mv.f1] & KING)) {
-                while (j < mvs_len) {
-                    if (gl.moves[j] == NULL) {
-                        ++j;
-                        continue;
-                    }
-                    if ((*(gl.moves[j])).f0 != ref_mv.f0 or (*(gl.moves[j])).f1 != ref_mv.f1)
-                        break;  // next piece
-                    ++i;
-                    if (board[8* (*(gl.moves[j])).t0 + (*(gl.moves[j])).t1])  // capture counts as 2
-                        ++i;
-                    ++j;
-                }
-            }
-            eval += MUL * 13 * round(sqrt(i));
-        }
-
-        for (int i = 0; i < 128; ++i)
-            if (gl.moves[i])
-                free(gl.moves[i]);
-        free(gl.moves);
-    }
-
-    return eval;
-}
-#endif
-
-
-
 // better move is smaller (since lists are sorted small->large)
 int killer_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
@@ -762,10 +691,13 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
 
+    if (depth == 0)
+        board_eval = initial_eval();
+
     if (is_quies) {
         //if (depth >= SEARCH_DEPTH + 99)
         if (NO_QUIES)
-            return {turochamp(depth), {0}, std::deque<Move>()};
+            return {board_eval, {0}, std::deque<Move>()};
     }
     else
         if (quies < 0 or depth >= SEARCH_DEPTH)
@@ -775,7 +707,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
     if (is_quies) {
         // "standing pat": to compensate for not considering non-capture moves, at least one move should be
         //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
-        best = {turochamp(depth), {0}, std::deque<Move>()};
+        best = {board_eval, {0}, std::deque<Move>()};
         // TODO: why does valgrind throw erros for M1 ??
 
         if (COLOR == WHITE) {
@@ -1115,10 +1047,10 @@ void test() {
 
     board_initial_position();
     IM_WHITE = true;
-    printf("INITIAL BOARD EVAL: %ld\n", turochamp(0));
+    printf("INITIAL BOARD EVAL: %ld\n", board_eval);
 
     make_move_str("e2e4");
-    printf("1. e4 EVAL: %ld\n", turochamp(0));
+    printf("1. e4 EVAL: %ld\n", board_eval);
 
     printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
     pprint();

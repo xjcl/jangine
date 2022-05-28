@@ -19,7 +19,9 @@
 typedef int_fast16_t num;
 
 #define DEBUG 0
-#define SEARCH_DEPTH 5  // how many plies to search
+#define NO_QUIES 0
+#define SEARCH_DEPTH 6  // how many plies to search
+#define QUIES_DEPTH 0  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
@@ -106,7 +108,8 @@ bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
 
-int64_t NODES = 0;
+int64_t NODES_NORMAL = 0;
+int64_t NODES_QUIES = 0;
 
 void pprint() {
     for (num i = 0; i < 8; ++i) {
@@ -470,7 +473,7 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 }
 
 
-// quiescence value of a move AFTER it is already on the board. Low values indicate importance
+// alphabeta value of a move AFTER it is already on the board. Low values indicate importance
 num eval_quies(num COLOR, Move mv, num hit_piece) {
     num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
 
@@ -522,7 +525,8 @@ void printf_move(Move mv) {
     printf("MOVE %15s | KH %8ld |", cstr, kh);
 }
 
-void printf_moves(Move** mvs, num count) {
+void printf_moves(Move** mvs, num count, std::string header) {
+    std::cout << header;
     for (long int i = 0; i < count; ++i)
     {
         if (mvs[i] != NULL) {
@@ -531,7 +535,7 @@ void printf_moves(Move** mvs, num count) {
             printf("\n");
         }
         else{
-            printf("MISSING\n");
+            printf("%ld MISSING\n", i);
         }
     }
 }
@@ -646,21 +650,56 @@ int killer_cmp(const void* a, const void* b) {
 }
 
 
-ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, num noise, bool lines) {
+// non-negamax quiescent alpha-beta minimax search
+// https://www.chessprogramming.org/Quiescence_Search
+ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies, num depth, bool lines) {
 
-    NODES += 1;
+    NODES_NORMAL += !is_quies;
+    NODES_QUIES += is_quies;
 
-    if (quies <= 0 or depth > SEARCH_DEPTH)
-        return {turochamp(depth), {0}, std::deque<Move>()};
+    if (is_quies) {
+        //if (depth >= SEARCH_DEPTH + 99)
+        if (NO_QUIES)
+            return {turochamp(depth), {0}, std::deque<Move>()};
+    }
+    else
+        if (quies < 0 or depth >= SEARCH_DEPTH)
+            return alphabeta(COLOR, alpha, beta, quies, true, depth, lines);
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
+    if (is_quies) {
+        // "standing pat": to compensate for not considering non-capture moves, at least one move should be
+        //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
+        best = {turochamp(depth), {0}, std::deque<Move>()};
+        // TODO: why does valgrind throw erros for M1 ??
 
-    ValuePlusMoves gl = genlegals(COLOR);
+        if (COLOR == WHITE) {
+            if (best.value >= beta) {
+                best.value = beta;
+                return best;
+            }
+            if (alpha < best.value)
+                alpha = best.value;
+        }
+        if (COLOR == BLACK) {
+            if (best.value <= alpha) {
+                best.value = alpha;
+                return best;
+            }
+            if (beta > best.value)
+                beta = best.value;
+        }
+    }
+
+    ValuePlusMoves gl = genlegals(COLOR, is_quies);  // TODO: how to handle checks?
     Move** gl_moves_backup = gl.moves;
 
     num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
 
-    if (!mvs_len) {
+    // TODO: if we have no moves this could be no captures
+    // TODO: move stalemate/checkmate detection from turochamp to here
+    // TODO: depth-adjusted checkmating value missing in quies search
+    if (!is_quies and !mvs_len) {
         free(gl_moves_backup);
 
         if (not king_in_check(COLOR))
@@ -668,12 +707,18 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
         return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
     }
 
-    // printf("BEFORE ALL\n");
-    // printf(" mvs_len: %ld\n", mvs_len);
-    // printf_moves(gl.moves, mvs_len);
-    qsort(gl.moves, mvs_len, sizeof(Move*), killer_cmp);
-    // printf_moves(gl.moves, mvs_len);
-    // printf("AFTER QSORT\n");
+    if (is_quies and !mvs_len) {
+        free(gl_moves_backup);
+        return best;
+    }
+
+    if (0) {
+        // TODO: sort by capturer-captured value and compare to KILLERHEURISTIC
+    } else {
+        if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
+        qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);  // cannot handle nmemb=0
+        if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
+    }
 
     while (gl.moves != gl.movesend) {
 
@@ -691,13 +736,13 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 
         PiecePlusCatling ppc = make_move(mv);
 
-        ValuePlusMove rec = quiescence(
+        ValuePlusMove rec = alphabeta(
             COLOR == WHITE ? BLACK : WHITE,
             alpha,
             beta,
             quies - eval_quies(COLOR, mv, ppc.hit_piece),
-            depth + 1,
             false,
+            depth + 1,
             lines
         );
 
@@ -720,18 +765,54 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             std::cout << std::endl;
         }
 
-        if (not (lines and depth == 0)) {
-            if (COLOR == WHITE and best.value > alpha)
+        if (not is_quies and not (lines and depth == 0)) {
+            if (COLOR == WHITE and best.value > alpha)  // lo bound
                 alpha = best.value;
-            if (COLOR == BLACK and best.value < beta)
+            if (COLOR == BLACK and best.value < beta)  // hi bound
                 beta = best.value;
-            if (beta <= alpha) {
-                if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end()) {
+            if (beta <= alpha) {  // alpha-beta cutoff
+                if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end())
                     KILLERHEURISTIC[mv] = 0;
-                }
-                KILLERHEURISTIC[mv] += depth * depth;
+                KILLERHEURISTIC[mv] = depth * depth;
                 break;
             }
+        }
+
+        // TODO: combine both cases
+        // quiescence cutoff
+        if (is_quies and COLOR == WHITE) {
+            if (best.value >= beta) {
+                best.value = beta;
+
+                for (int i = 0; i < 128; ++i)
+                    if (gl_moves_backup[i])
+                        free(gl_moves_backup[i]);
+                free(gl_moves_backup);
+
+                if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
+                    best.variation.push_front(best.move);
+
+                return best;
+            }
+            if (best.value > alpha)
+                alpha = best.value;
+        }
+        if (is_quies and COLOR == BLACK) {
+            if (best.value <= alpha) {
+                best.value = alpha;
+
+                for (int i = 0; i < 128; ++i)
+                    if (gl_moves_backup[i])
+                        free(gl_moves_backup[i]);
+                free(gl_moves_backup);
+
+                if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
+                    best.variation.push_front(best.move);
+
+                return best;
+            }
+            if (best.value < beta)
+                beta = best.value;
         }
 
         gl.moves++;
@@ -742,7 +823,14 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
             free(gl_moves_backup[i]);
     free(gl_moves_backup);
 
-    best.variation.push_front(best.move);
+    if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
+        best.variation.push_front(best.move);
+
+    if (is_quies and COLOR == WHITE)
+        best.value = alpha;
+    if (is_quies and COLOR == BLACK)
+        best.value = beta;
+
     return best;
 }
 
@@ -750,16 +838,17 @@ ValuePlusMove quiescence(num COLOR, num alpha, num beta, num quies, num depth, n
 std::string calc_move(bool lines = false) {
     // TODO: mode where a random move gets picked?
     // TODO: what happens if no moves (stalemate/checkmate)? Null?
-    printf("Starting quiescence with depth %d\n", SEARCH_DEPTH);
-    NODES = 0;
+    printf("Starting alphabeta with depth %d\n", SEARCH_DEPTH);
+    NODES_NORMAL = 0;
+    NODES_QUIES = 0;
     KILLERHEURISTIC.clear();
-    ValuePlusMove bestmv = quiescence(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, QUIESCENCE, 0, false, lines);
+    ValuePlusMove bestmv = alphabeta(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, QUIESCENCE, false, 0, lines);
     Move mv = bestmv.move;
     printf("--> BEST ");
     printf_move(mv);
     printf("\n");
     make_move(mv);
-    printf("SEARCHED %ld NODES\n", NODES);
+    printf("Number of nodes searched: %ld normal %ld quiescent\n", NODES_NORMAL, NODES_QUIES);
 
     return move_to_str(mv);
 }
@@ -928,7 +1017,7 @@ void test() {
 
     printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
     pprint();
-    quiescence(BLACK, -inf+1, inf-1, 41, 0, true, true);
+    alphabeta(BLACK, -inf+1, inf-1, 41, false, 0, true);
 
     IM_WHITE = true;
     board_initial_position();

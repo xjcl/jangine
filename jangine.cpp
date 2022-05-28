@@ -125,7 +125,7 @@ void pprint() {
 
 bool startswith(const char *pre, const char *str) {
     size_t lenpre = strlen(pre), lenstr = strlen(str);
-    return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
+    return lenstr >= lenpre and strncmp(pre, str, lenpre) == 0;
 }
 
 std::map<Move, int_fast32_t> KILLERHEURISTIC;

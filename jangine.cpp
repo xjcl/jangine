@@ -498,7 +498,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     char c4 = (char)(mv.prom ? mv.prom : ' ');
 
     if (!algebraic) {
-        if (c4 == ' ' or c4 == 'c')
+        if (c4 == ' ' or c4 == 'c' or c4 == 'e')
             return std::string{c0, c1, c2, c3};
         return std::string{c0, c1, c2, c3, c4};
     }

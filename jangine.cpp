@@ -846,7 +846,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
             alpha,
             beta,
             quies - eval_quies(COLOR, mv, ppc.hit_piece),
-            false,
+            is_quies,
             depth + 1,
             lines
         );

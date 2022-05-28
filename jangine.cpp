@@ -1196,6 +1196,7 @@ int main(int argc, char const *argv[])
             std::string buf;
             std::stringstream ss(line_cpp);
             std::vector<std::string> tokens;
+            num_moves = 0;
 
             while (ss >> buf)
                 tokens.push_back(buf);

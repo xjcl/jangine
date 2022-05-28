@@ -870,12 +870,19 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "Tests Castling" << std::endl;
+    std::cout << "Tests Stalemate" << std::endl;
 
-    board_initial_position();
-    board[7*8+5] = 0;
-    board[7*8+6] = 0;
-    board[6*8+4] = 0;
+    board_clear();
+    set_up_kings(0, 2, 0, 0);
+    board[2*8+1] = WHITE + PAWN;
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Tests Promotion" << std::endl;
+
+    board_clear();
+    set_up_kings(0, 2, 0, 0);
+    board[1*8+6] = WHITE + PAWN;
     pprint();
     std::cout << calc_move(true) << std::endl;
 
@@ -889,11 +896,12 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "Tests Promotion" << std::endl;
+    std::cout << "Tests Castling" << std::endl;
 
-    board_clear();
-    set_up_kings(0, 2, 0, 0);
-    board[1*8+6] = WHITE + PAWN;
+    board_initial_position();
+    board[7*8+5] = 0;
+    board[7*8+6] = 0;
+    board[6*8+4] = 0;
     pprint();
     std::cout << calc_move(true) << std::endl;
 

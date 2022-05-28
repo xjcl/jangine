@@ -130,7 +130,7 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
                  20, 20,  0,  0,  0,  0, 20, 20,
-                 20, 30, 10,  0,  0,  0, 30, 20
+                 20, 30, 15,  0, 10,  0, 30, 20
         }}
 };
 
@@ -645,6 +645,7 @@ num turochamp(num depth) {
 #else
 // TODO: Nb4 incident  https://lichess.org/Y7wbd6Jn04IP
 // https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
+// https://www.chessprogramming.org/Simplified_Evaluation_Function
 // Returns centipawn value to a given board position, from WHITE's perspective
 // TODO: breakdown into component numbers for better testability
 num turochamp(num depth) {

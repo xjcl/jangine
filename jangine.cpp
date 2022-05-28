@@ -18,9 +18,10 @@
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
+#define NEW_EVAL
 #define DEBUG 0
 #define NO_QUIES 0
-#define SEARCH_DEPTH 6  // how many plies to search
+#define SEARCH_DEPTH 4  // how many plies to search
 #define QUIES_DEPTH 0  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
@@ -57,6 +58,80 @@ std::map<num, std::string> id_to_unicode = {
         {  0, "."},
         { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
         {129, "♟"}, {130, "♞"}, {132, "♝"}, {136, "♜"}, {144, "♛"}, {160, "♚"},
+};
+std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
+        {0, std::array<num, 64>{
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+        }},
+        {PAWN, std::array<num, 64>{
+                  0,   0,   0,   0,   0,   0,   0,   0,
+                100, 100, 100, 100, 100, 100, 100, 100,
+                 20,  20,  40,  60,  60,  40,  40,  40,
+                  0,   0,   0,  10,  10,  20,  20,  20,
+                  5,   0,  10,  30,  30,   0,   0,   0,
+                  5,   0,   0,   0,   0,   0,   0,   0,
+                  0,   0, -10, -20, -20,  20,  20,  10,
+                  0,   0,   0,   0,   0,   0,   0,   0,
+        }},
+        // TODO: avoid the knight moving too much forward and getting trapped?
+        {KNIGHT, std::array<num, 64>{
+                -50,-40,-30,-30,-30,-30,-40,-50,
+                -40,-20,  0,  0,  0,  0,-20,-40,
+                -30,  0, 10, 15, 15, 10,  0,-30,
+                -30,  5, 15, 20, 20, 15,  5,-30,
+                -30,  0, 15, 20, 20, 15,  0,-30,
+                -30,  5, 10, 15, 15, 10,  5,-30,
+                -40,-20,  0,  5,  5,  0,-20,-40,
+                -50,-40,-30,-30,-30,-30,-40,-50,
+        }},
+        // TODO: Bishop isn't actually bad on the back row?
+        {BISHOP, std::array<num, 64>{
+                -20,-10,-10,-10,-10,-10,-10,-20,
+                -10,  0,  0,  0,  0,  0,  0,-10,
+                -10,  0,  5, 10, 10,  5,  0,-10,
+                -10,  5,  5, 10, 10,  5,  5,-10,
+                -10,  0, 10, 10, 10, 10,  0,-10,
+                -10, 10, 10, 10, 10, 10, 10,-10,
+                -10,  5,  0,  0,  0,  0,  5,-10,
+                -20,-10,-10,-10,-10,-10,-10,-20,
+        }},
+        {ROOK, std::array<num, 64>{
+                  0,  0,  0,  0,  0,  0,  0,  0,
+                  5, 10, 10, 10, 10, 10, 10,  5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                  0,  0,  0,  5,  5,  0,  0,  0
+        }},
+        {QUEEN, std::array<num, 64>{
+                -20,-10,-10, -5, -5,-10,-10,-20,
+                -10,  0,  0,  0,  0,  0,  0,-10,
+                -10,  0,  5,  5,  5,  5,  0,-10,
+                 -5,  0,  5,  5,  5,  5,  0, -5,
+                  0,  0,  5,  5,  5,  5,  0, -5,
+                -10,  5,  5,  5,  5,  5,  0,-10,
+                -10,  0,  5,  0,  0,  0,  0,-10,
+                -20,-10,-10, -5, -5,-10,-10,-20
+        }},
+        {KING, std::array<num, 64>{
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                -20,-20,-20,-20,-20,-20,-20,-20,
+                 20, 20,  0,  0,  0,  0, 20, 20,
+                 20, 30, 10,  0,  0,  0, 30, 20
+        }}
 };
 
 typedef struct CASTLINGRIGHTS {
@@ -540,6 +615,35 @@ void printf_moves(Move** mvs, num count, std::string header) {
     }
 }
 
+
+#ifdef NEW_EVAL
+num turochamp(num depth) {
+    num eval = 0;
+
+    gentuples {
+        // material counting
+        num piece_with_color = board[8*i+j];
+        num piece = piece_with_color & ~WHITE & ~BLACK;
+        num MUL = piece_with_color & WHITE ? 1 : -1;
+
+        eval += MUL * PIECEVALS[piece];
+    }
+
+    // https://www.chessprogramming.org/Piece-Square_Tables
+    // TODO: would be more efficient if handled in make_move and unmake_move!!
+    gentuples {
+        // piece positioning
+        num piece_with_color = board[8*i+j];
+        num piece = piece_with_color & ~WHITE & ~BLACK;
+        eval += (piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+(7-j)]);
+    }
+
+    return eval;
+}
+
+
+#else
+// TODO: Nb4 incident  https://lichess.org/Y7wbd6Jn04IP
 // https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 // Returns centipawn value to a given board position, from WHITE's perspective
 // TODO: breakdown into component numbers for better testability
@@ -604,7 +708,6 @@ num turochamp(num depth) {
         {
             if (gl.moves[j] == NULL)
                 continue;
-            // printf("%p ", gl.moves[j]);
             Move ref_mv = *(gl.moves[j]);
             num i = 0;
             if (not (board[8*ref_mv.f0+ref_mv.f1] & KING)) {
@@ -632,6 +735,7 @@ num turochamp(num depth) {
 
     return eval;
 }
+#endif
 
 
 

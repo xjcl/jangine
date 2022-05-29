@@ -52,6 +52,7 @@ bool input_is_move(const char* s) {
     }
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
+num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
 num inf = 32000;
 std::map<num, char> piece_to_letter = {{0, ' '}, {1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 std::map<num, std::string> id_to_unicode = {
@@ -266,12 +267,12 @@ typedef struct ValuePlusMove {
 } ValuePlusMove;
 
 num eval_material(num piece_with_color) {
-    num piece = piece_with_color & ~WHITE & ~BLACK;
+    num piece = piece_with_color & COLORBLIND;
     return piece_with_color & WHITE ? PIECEVALS[piece] : -PIECEVALS[piece];
 }
 
 num eval_piece_on_square(num piece_with_color, num i, num j) {
-    num piece = piece_with_color & ~WHITE & ~BLACK;
+    num piece = piece_with_color & COLORBLIND;
     return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+j];
 }
 
@@ -508,7 +509,7 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 
     gentuples {
         num bij = board[8*i+j];
-        num bijpiece = bij & ~WHITE & ~BLACK;
+        num bijpiece = bij & COLORBLIND;
         if (not (bij & COLOR))
             continue;
         if (bij & PAWN) {  // pawn moves
@@ -637,7 +638,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     num piece = board[8*mv.f0+mv.f1];
     num hit_piece = board[8*mv.t0+mv.t1];
 
-    char alg0 = piece_to_letter[piece & ~WHITE & ~BLACK];
+    char alg0 = piece_to_letter[piece & COLORBLIND];
     char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
 
     std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};

@@ -52,6 +52,7 @@ bool input_is_move(const char* s) {
     }
 
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
+num KING_EARLYGAME = 8001, KING_ENDGAME = 8002, PAWN_EARLYGAME = 9001, PAWN_ENDGAME = 9002;
 num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
 num inf = 32000;
 std::map<num, char> piece_to_letter = {{0, ' '}, {1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
@@ -71,14 +72,24 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
         }},
-        {PAWN, std::array<num, 64>{
+        {PAWN_EARLYGAME, std::array<num, 64>{
                   0,   0,   0,   0,   0,   0,   0,   0,
                 100, 100, 100, 100, 100, 100, 100, 100,
-                 20,  20,  40,  60,  60,  40,  40,  40,
-                  0,   0,   0,  10,  10,  20,  20,  20,
+                 20,  20,  40,  60,  60,  40,  60,  60,
+                  0,   0,   0,  10,  10,   0,  20,  20,
                   5,   0,  10,  30,  30,   0,   0,   0,
                   5,   0,   0,   0,   0,   0,   0,   0,
                   0,   0, -10, -20, -20,  20,  20,  10,
+                  0,   0,   0,   0,   0,   0,   0,   0,
+        }},
+        {PAWN_ENDGAME, std::array<num, 64>{
+                  0,   0,   0,   0,   0,   0,   0,   0,
+                100, 100, 100, 100, 100, 100, 100, 100,
+                 60,  60,  60,  60,  60,  60,  60,  40,
+                 40,  40,  40,  40,  40,  40,  40,  40,
+                 20,  20,  20,  20,  20,  20,  20,  20,
+                 10,  10,  10,  10,  10,  10,  10,  10,
+                  0,   0,   0,   0,   0,   0,   0,   0,
                   0,   0,   0,   0,   0,   0,   0,   0,
         }},
         // TODO: avoid the knight moving too much forward and getting trapped?
@@ -92,13 +103,14 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -40,-20,  0,  5,  5,  0,-20,-40,
                 -50,-40,-30,-30,-30,-30,-40,-50,
         }},
-        // TODO: Bishop isn't actually bad on the back row?
+        // TODO: 15/20 to develop to active squares?
+        // bishop isn't actually bad on the bad row but prevents castling
         {BISHOP, std::array<num, 64>{
                 -20,-10,-10,-10,-10,-10,-10,-20,
                 -10,  0,  0,  0,  0,  0,  0,-10,
                 -10,  0,  5, 10, 10,  5,  0,-10,
-                -10,  5,  5, 10, 10,  5,  5,-10,
-                -10,  0, 10, 10, 10, 10,  0,-10,
+                -10, 20,  5, 10, 10,  5, 20,-10,
+                -10,  0, 15, 10, 10, 15,  0,-10,
                 -10, 10, 10, 10, 10, 10, 10,-10,
                 -10,  5,  0,  0,  0,  0,  5,-10,
                 -20,-10,-10,-10,-10,-10,-10,-20,
@@ -106,13 +118,14 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
         {ROOK, std::array<num, 64>{
                   0,  0,  0,  0,  0,  0,  0,  0,
                   5, 10, 10, 10, 10, 10, 10,  5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  5,  5,  0,  0, -5,
+                 -5,  0,  0,  5,  5,  0,  0, -5,
+                 -5,  0,  0,  5,  5,  0,  0, -5,
+                 -5,  0,  0,  5,  5,  0,  0, -5,
+                 -5,  0,  0,  5,  5,  0,  0, -5,
                   0,  0,  0,  5,  5,  0,  0,  0
         }},
+        // TODO: avoid capturing b7?
         {QUEEN, std::array<num, 64>{
                 -20,-10,-10, -5, -5,-10,-10,-20,
                 -10,  0,  0,  0,  0,  0,  0,-10,
@@ -123,7 +136,7 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -10,  0,  5,  0,  0,  0,  0,-10,
                 -20,-10,-10, -5, -5,-10,-10,-20
         }},
-        {KING, std::array<num, 64>{
+        {KING_EARLYGAME, std::array<num, 64>{
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
@@ -132,6 +145,16 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -20,-20,-20,-20,-20,-20,-20,-20,
                  20, 20,  0,  0,  0,  0, 20, 20,
                  20, 30, 15,  0, 10,  0, 30, 20
+        }},
+        {KING_ENDGAME, std::array<num, 64>{
+                 50, 50, 50, 50, 50, 50, 50, 50,
+                 50, 50, 50, 50, 50, 50, 50, 50,
+                 50, 50, 50, 50, 50, 50, 50, 50,
+                 20, 30, 40, 50, 50, 40, 30, 20,
+                 10, 10, 30, 40, 40, 30, 10, 10,
+                  0,  0, 20, 30, 30, 20,  0,  0,
+                -30,-30,  0,  0,  0,  0,-30,-30,
+                -30,-30,-30,-30,-30,-30,-30,-30
         }}
 };
 
@@ -227,14 +250,6 @@ num KINGPOS_WHITE_j = 4;
 num KINGPOS_BLACK_i = 0;
 num KINGPOS_BLACK_j = 4;
 
-void board_clear() {  // setting up random positions
-    for (int i = 0; i < 64; ++i)
-        board[i] = 0;
-
-    CASTLINGWHITE = {false, false, false};
-    CASTLINGBLACK = {false, false, false};
-}
-
 void set_up_kings(num wi, num wj, num bi, num bj) {
     board[8*wi+wj] = KING + WHITE;
     board[8*bi+bj] = KING + BLACK;
@@ -248,10 +263,23 @@ void board_initial_position() {  // setting up a game
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
 
+    PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
+    PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+
     set_up_kings(7, 4, 0, 4);
     CASTLINGWHITE = {true, true, true};
     CASTLINGBLACK = {true, true, true};
-    board_eval = 0;  // TODO: do not swap left and right??
+    board_eval = 0;
+}
+
+void board_clear() {  // setting up random positions
+    board_initial_position();
+
+    for (int i = 0; i < 64; ++i)
+        board[i] = 0;
+
+    CASTLINGWHITE = {false, false, false};
+    CASTLINGBLACK = {false, false, false};
 }
 
 typedef struct ValuePlusMoves {
@@ -710,9 +738,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
 
-    if (depth == 0)
-        board_eval = initial_eval();
-
     if (is_quies) {
         //if (depth >= SEARCH_DEPTH + 99)
         if (NO_QUIES)
@@ -892,20 +917,38 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
 }
 
 
+// find and play the best move in the position
 std::string calc_move(bool lines = false) {
-    // TODO: mode where a random move gets picked?
-    // TODO: what happens if no moves (stalemate/checkmate)? Null?
+    // TODO: mode where a random/suboptimal move can get picked?
     printf("Starting alphabeta with depth %d\n", SEARCH_DEPTH);
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
     KILLERHEURISTIC.clear();
+
+    // Have to re-calculate board info anew each time because GUI/Lichess might reset state
+    board_eval = initial_eval();
+
+    num queens_on_board = 0;
+    gentuples { queens_on_board += !!(board[8*i+j] & QUEEN); }
+
+    if (queens_on_board == 0) {
+        printf("No queens on board, piece square tables set to endgame evaluation");
+        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_ENDGAME];
+        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_ENDGAME];
+    } else {
+        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
+        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+    }
+
     ValuePlusMove bestmv = alphabeta(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, QUIESCENCE, false, 0, lines);
     Move mv = bestmv.move;
+
     printf("--> BEST ");
     printf_move(mv);
     printf("\n");
-    make_move(mv);
     printf("Number of nodes searched: %ld normal %ld quiescent\n", NODES_NORMAL, NODES_QUIES);
+
+    make_move(mv);
 
     return move_to_str(mv);
 }

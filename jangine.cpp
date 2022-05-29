@@ -768,14 +768,14 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
         return best;
     }
 
+    if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
     if (is_quies) {
         // TODO: also add mvv_lva sorting to non-quiescent nodes?
         qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);  // qsort cannot handle nmemb=0
     } else {
-        if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
         qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);  // cannot handle nmemb=0
-        if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
     }
+    if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
 
     while (gl.moves != gl.movesend) {
 

@@ -1029,10 +1029,8 @@ void test() {
     std::cout << "Tests En-Passant" << std::endl;
 
     board_initial_position();
-    make_move_str("e2e4");
-    make_move_str("a7a6");
-    make_move_str("e4e5");
-    make_move_str("d7d5");
+    make_move_str("e2e4"); make_move_str("a7a6");
+    make_move_str("e4e5"); make_move_str("d7d5");
     pprint();
     std::cout << calc_move(true) << std::endl;
 
@@ -1049,19 +1047,47 @@ void test() {
 
     board_initial_position();
     IM_WHITE = false;
-    make_move_str("d2d4");
-    make_move_str("d7d5");
-    make_move_str("c2c4");
-    make_move_str("e7e5");
-    make_move_str("d4e5");
-    make_move_str("d5d4");
-    make_move_str("e2e3");
-    make_move_str("f8b4");
-    make_move_str("c1d2");
-    make_move_str("d4e3");
-    make_move_str("d2b4");
-    make_move_str("e3f2");
+    make_move_str("d2d4"); make_move_str("d7d5");
+    make_move_str("c2c4"); make_move_str("e7e5");
+    make_move_str("d4e5"); make_move_str("d5d4");
+    make_move_str("e2e3"); make_move_str("f8b4");
+    make_move_str("c1d2"); make_move_str("d4e3");
+    make_move_str("d2b4"); make_move_str("e3f2");
     make_move_str("e1e2");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Tests missed fork from a game" << std::endl;
+
+    board_initial_position();
+    IM_WHITE = false;
+    make_move_str("d2d4"); make_move_str("b8c6");
+    make_move_str("c2c4"); make_move_str("g8f6");
+    make_move_str("d4d5"); make_move_str("c6e5");
+    make_move_str("d1c2"); make_move_str("e5g6");
+    make_move_str("b1c3"); make_move_str("e7e5");
+    make_move_str("e2e4"); make_move_str("f8d6");
+    make_move_str("g1f3"); make_move_str("c7c6");
+    make_move_str("c1g5"); make_move_str("c6d5");
+    make_move_str("e4d5"); make_move_str("g6f4");
+    make_move_str("g2g3"); make_move_str("f4g6");
+    make_move_str("f1g2"); make_move_str("e8g8");
+    make_move_str("c3e4"); make_move_str("d6b4");
+    make_move_str("e4c3"); make_move_str("d7d6");
+    make_move_str("e1g1"); make_move_str("b4c5");
+    make_move_str("a2a3"); make_move_str("h7h6");
+    make_move_str("g5f6"); make_move_str("d8f6");
+    make_move_str("c3e4"); make_move_str("f6f5");
+    make_move_str("a1c1"); make_move_str("c8d7");
+    make_move_str("e4c5"); make_move_str("d6c5");
+    make_move_str("f1e1"); make_move_str("f5c2");
+    make_move_str("c1c2"); make_move_str("d7f5");
+    make_move_str("c2c3"); make_move_str("a8e8");
+    make_move_str("b2b4"); make_move_str("b7b6");
+    make_move_str("f3d2"); make_move_str("c5b4");
+    make_move_str("a3b4"); make_move_str("e8d8");
+    make_move_str("d2e4"); make_move_str("f8e8");
+    make_move_str("c3e3");
     pprint();
     std::cout << calc_move(true) << std::endl;
 
@@ -1078,22 +1104,14 @@ void test() {
 
     IM_WHITE = true;
     board_initial_position();
-    make_move_str("h2h4");
-    make_move_str("b7b6");
-    make_move_str("g1f3");
-    make_move_str("c8a6");
-    make_move_str("d2d4");
-    make_move_str("e7e6");
-    make_move_str("b1d2");
-    make_move_str("d8e7");
-    make_move_str("c2c4");
-    make_move_str("a6b7");
-    make_move_str("d1b3");
-    make_move_str("e7f6");
-    make_move_str("b3b5");
-    make_move_str("b7c6");
-    make_move_str("b5h5");
-    make_move_str("f8b4");
+    make_move_str("h2h4"); make_move_str("b7b6");
+    make_move_str("g1f3"); make_move_str("c8a6");
+    make_move_str("d2d4"); make_move_str("e7e6");
+    make_move_str("b1d2"); make_move_str("d8e7");
+    make_move_str("c2c4"); make_move_str("a6b7");
+    make_move_str("d1b3"); make_move_str("e7f6");
+    make_move_str("b3b5"); make_move_str("b7c6");
+    make_move_str("b5h5"); make_move_str("f8b4");
     pprint();
 
     printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");

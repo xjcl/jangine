@@ -117,13 +117,13 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
         }},
         {ROOK, std::array<num, 64>{
                   0,  0,  0,  0,  0,  0,  0,  0,
-                  5, 10, 10, 10, 10, 10, 10,  5,
-                 -5,  0,  0,  5,  5,  0,  0, -5,
-                 -5,  0,  0,  5,  5,  0,  0, -5,
-                 -5,  0,  0,  5,  5,  0,  0, -5,
-                 -5,  0,  0,  5,  5,  0,  0, -5,
-                 -5,  0,  0,  5,  5,  0,  0, -5,
-                  0,  0,  0,  5,  5,  0,  0,  0
+                  5, 30, 30, 30, 30, 30, 30,  5,
+                 -5,  0,  0, 15, 15,  0,  0, -5,
+                 -5,  0,  0, 15, 15,  0,  0, -5,
+                 -5,  0,  0, 15, 15,  0,  0, -5,
+                 -5,  0,  0, 15, 15,  0,  0, -5,
+                 -5,  0,  0, 15, 15,  0,  0, -5,
+                  0,  0,  0, 15, 15,  0,  0,  0
         }},
         // TODO: avoid capturing b7?
         {QUEEN, std::array<num, 64>{
@@ -143,8 +143,8 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
-                 20, 20,  0,  0,  0,  0, 20, 20,
-                 20, 30, 15,  0, 10,  0, 30, 20
+                 40, 40,  0,  0,  0,  0, 40, 40,
+                 40, 50, 30,  0, 10,  0, 50, 40
         }},
         {KING_ENDGAME, std::array<num, 64>{
                  50, 50, 50, 50, 50, 50, 50, 50,
@@ -703,8 +703,8 @@ void printf_moves(Move** mvs, num count, std::string header) {
 int mvv_lva_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b)  return -1;  // -1 = pick a
-    if (!*move_a)  return 1;   // +1 = pick b
+    if (!*move_b)  return -1;  // -1 = pick a as left value
+    if (!*move_a)  return 1;   // +1 = pick b as left value
 
     Move mv_a = **move_a;
     Move mv_b = **move_b;
@@ -715,7 +715,7 @@ int mvv_lva_cmp(const void* a, const void* b) {
     // auto vala = board[8*mv_a.t0+mv_a.t1] == 0 ? PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
     // auto valb = board[8*mv_b.t0+mv_b.t1] == 0 ? PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
 
-    return valb - vala;
+    return valb - vala;  // invert comparison so biggest-valued move is at start of list
 }
 
 
@@ -723,13 +723,13 @@ int mvv_lva_cmp(const void* a, const void* b) {
 int killer_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b)  return -1;  // -1 = pick a
-    if (!*move_a)  return 1;   // +1 = pick b
+    if (!*move_b)  return -1;  // -1 = pick a as left value
+    if (!*move_a)  return 1;   // +1 = pick b as left value
 
     auto vala = KILLERHEURISTIC.find(**move_a) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_a];
     auto valb = KILLERHEURISTIC.find(**move_b) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_b];
 
-    return valb - vala;
+    return valb - vala;  // invert comparison so biggest-valued move is at start of list
 }
 
 

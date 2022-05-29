@@ -614,10 +614,10 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
 
     num quies = 20;
 
-    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "retreating" move -> quiet + should be searched less
-        quies *= 1.2;
-    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "forward" move -> less quiescent
+    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "forward" move -> less quiescent
         quies *= 0.8;
+    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "retreating" move -> quiet + should be searched less
+        quies *= 1.2;
 
     return quies;
 }

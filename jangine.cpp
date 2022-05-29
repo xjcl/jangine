@@ -700,33 +700,37 @@ void printf_moves(Move** mvs, num count, std::string header) {
 
 // https://www.chessprogramming.org/MVV-LVA
 // For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
+// In this specific implementation, all captures are sorted before non-captures.
+// For the remaining non-captures, the least valuable pieces move first (good cos queens have so many moves)
 int mvv_lva_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b)
-        return -1;
-    if (!*move_a)
-        return 1;
+    if (!*move_b)  return -1;  // -1 = pick a
+    if (!*move_a)  return 1;   // +1 = pick b
 
     Move mv_a = **move_a;
     Move mv_b = **move_b;
-    auto vala = PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
-    auto valb = PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
+
+    auto vala = 1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
+    auto valb = 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
+
+    // auto vala = board[8*mv_a.t0+mv_a.t1] == 0 ? PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
+    // auto valb = board[8*mv_b.t0+mv_b.t1] == 0 ? PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
+
     return valb - vala;
 }
 
 
-// better move is smaller (since lists are sorted small->large)
+// Order moves by killer heuristic
 int killer_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b)
-        return -1;
-    if (!*move_a)
-        return 1;
+    if (!*move_b)  return -1;  // -1 = pick a
+    if (!*move_a)  return 1;   // +1 = pick b
 
     auto vala = KILLERHEURISTIC.find(**move_a) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_a];
     auto valb = KILLERHEURISTIC.find(**move_b) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_b];
+
     return valb - vala;
 }
 
@@ -780,6 +784,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
     // TODO: if we have no moves this could be no captures
     // TODO: move stalemate/checkmate detection from turochamp to here
     // TODO: depth-adjusted checkmating value missing in quies search
+    // qsort apparently cannot handle empty arrays (nmemb=0) so handle them here
     if (!is_quies and !mvs_len) {
         free(gl_moves_backup);
 
@@ -795,10 +800,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
 
     if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
     if (is_quies) {
-        // TODO: also add mvv_lva sorting to non-quiescent nodes?
-        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);  // qsort cannot handle nmemb=0
+        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);
     } else {
-        qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);  // cannot handle nmemb=0
+        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);
+        // TODO: Try for a killer heuristic that improves on MVV-LVA
+        //qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);
     }
     if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
 

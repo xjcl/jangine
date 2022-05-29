@@ -21,7 +21,7 @@ typedef int_fast16_t num;
 #define NEW_EVAL
 #define DEBUG 0
 #define NO_QUIES 0
-#define SEARCH_DEPTH 4  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
+#define SEARCH_DEPTH 5  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
 #define QUIES_DEPTH 0  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
@@ -670,6 +670,24 @@ void printf_moves(Move** mvs, num count, std::string header) {
 }
 
 
+// https://www.chessprogramming.org/MVV-LVA
+// For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
+int mvv_lva_cmp(const void* a, const void* b) {
+    Move **move_a = (Move **)a;
+    Move **move_b = (Move **)b;
+    if (!*move_b)
+        return -1;
+    if (!*move_a)
+        return 1;
+
+    Move mv_a = **move_a;
+    Move mv_b = **move_b;
+    auto vala = PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
+    auto valb = PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
+    return valb - vala;
+}
+
+
 // better move is smaller (since lists are sorted small->large)
 int killer_cmp(const void* a, const void* b) {
     Move **move_a = (Move **)a;
@@ -750,8 +768,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
         return best;
     }
 
-    if (0) {
-        // TODO: sort by capturer-captured value and compare to KILLERHEURISTIC
+    if (is_quies) {
+        // TODO: also add mvv_lva sorting to non-quiescent nodes?
+        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);  // qsort cannot handle nmemb=0
     } else {
         if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
         qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);  // cannot handle nmemb=0

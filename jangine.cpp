@@ -22,8 +22,8 @@ typedef int_fast16_t num;
 #define DEBUG 0
 #define NO_QUIES 0
 #define SEARCH_DEPTH 5  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
-#define QUIES_DEPTH 0  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
-#define QUIESCENCE 41  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
+#define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
+#define QUIESCENCE 46  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -643,9 +643,7 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     num quies = 20;
 
     if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "forward" move -> less quiescent
-        quies *= 0.8;
-    if (COLOR == WHITE ? mv.f0 < mv.t0 : mv.f0 > mv.t0)  // "retreating" move -> quiet + should be searched less
-        quies *= 1.2;
+        quies *= 0.6;
 
     return quies;
 }

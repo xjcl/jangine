@@ -680,8 +680,11 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 }
 
 
-// alphabeta value of a move AFTER it is already on the board. Low values indicate importance
-num eval_quies(num COLOR, Move mv, num hit_piece) {
+// adaptive quiescence-like value of a move AFTER it is already on the board. Low values indicate importance
+num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
+    if (skip)  // skip for quiescence search, simply not needed
+        return 0;
+
     num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
 
     if (hit_piece or mv.prom != '\0' and mv.prom != 'c')  // capture or promotion or en passant

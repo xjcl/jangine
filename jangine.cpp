@@ -294,41 +294,41 @@ num CLASSICAL_PLUS = 8;
 num CLASSICAL_PLUS_PLUS = 9;
 num TIME_CONTROL_REQUESTED = BLITZ;
 void set_time_control(num TIME_CONTROL) {
-    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.0s
-        SEARCH_DEPTH = 2;
-        SEARCH_ADAPTIVE_DEPTH = 9;
-    }
-    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 0.3s
+    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.1s
         SEARCH_DEPTH = 3;
         SEARCH_ADAPTIVE_DEPTH = 11;
     }
-    if (TIME_CONTROL == HYPERBULLET) {  // -t: 1.3s
-        SEARCH_DEPTH = 3;
+    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 0.4s
+        SEARCH_DEPTH = 4;
         SEARCH_ADAPTIVE_DEPTH = 13;
     }
-    if (TIME_CONTROL == BULLET) {  // -t: 8s
+    if (TIME_CONTROL == HYPERBULLET) {  // -t: 1.8s
         SEARCH_DEPTH = 4;
         SEARCH_ADAPTIVE_DEPTH = 21;
     }
-    if (TIME_CONTROL == BLITZ) {  // -t: 40s
+    if (TIME_CONTROL == BULLET) {  // -t: 9.3s
         SEARCH_DEPTH = 5;
         SEARCH_ADAPTIVE_DEPTH = 25;
     }
-    if (TIME_CONTROL == RAPID) {  // -t: 113s
+    if (TIME_CONTROL == BLITZ) {  // -t: 25s
         SEARCH_DEPTH = 6;
         SEARCH_ADAPTIVE_DEPTH = 29;
     }
-    if (TIME_CONTROL == CLASSICAL) {  // -t: 247s
+    if (TIME_CONTROL == RAPID) {  // -t: 59s
         SEARCH_DEPTH = 6;
         SEARCH_ADAPTIVE_DEPTH = 33;
     }
-    if (TIME_CONTROL == CLASSICAL_PLUS) {  // -t: 900s
+    if (TIME_CONTROL == CLASSICAL) {  // -t: 221s
         SEARCH_DEPTH = 7;
         SEARCH_ADAPTIVE_DEPTH = 35;
     }
-    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
+    if (TIME_CONTROL == CLASSICAL_PLUS) {  // -t: ...s
         SEARCH_DEPTH = 7;
         SEARCH_ADAPTIVE_DEPTH = 39;
+    }
+    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
+        SEARCH_DEPTH = 8;
+        SEARCH_ADAPTIVE_DEPTH = 41;
     }
 }
 
@@ -1267,10 +1267,10 @@ int main(int argc, char const *argv[])
         if (startswith("time", line)) {
             int time_left = std::stoi(line_cpp.substr(5));
             TIME_CONTROL_REQUESTED = HYPERHYPERHYPERBULLET;                    // just move when under 2 seconds
-            if (time_left >=   200) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when under 2 seconds
-            if (time_left >=   500) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when under 5 seconds
-            if (time_left >=  1500) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when under 45 seconds
-            if (time_left >=  4500) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 45+ seconds left
+            if (time_left >=   200) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when 2 seconds left
+            if (time_left >=   500) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when 5 seconds left
+            if (time_left >=  1500) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when 15 seconds left
+            if (time_left >=  4500) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 45 seconds left
             if (time_left >= 18000) TIME_CONTROL_REQUESTED = RAPID;            // play rapid-like when 3+ minutes left
             if (time_left >= 48000) TIME_CONTROL_REQUESTED = CLASSICAL;        // play classical-like when 8+ mins left
         }

@@ -598,9 +598,9 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
                 store_maybe_promote(i, j, i+ADD, j-1);
 
             if (i == EPRANK) {  // en passant capture
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1)
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1 and board[8*i+j-1] & PAWN)
                     store(i, j, i+ADD, j-1, 'e');
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1)
+                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1 and board[8*i+j+1] & PAWN)
                     store(i, j, i+ADD, j+1, 'e');
             }
 

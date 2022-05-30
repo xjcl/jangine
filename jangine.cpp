@@ -18,12 +18,10 @@
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
-#define NEW_EVAL
+#define SIMPLE_EVAL  // TODO: just-material eval
 #define DEBUG 0
 #define NO_QUIES 0
-#define SEARCH_DEPTH 5  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
-#define QUIESCENCE 46  // how deep to search in quiescence search (combines with SEARCH_DEPTH)
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -280,6 +278,58 @@ void board_clear() {  // setting up random positions
 
     CASTLINGWHITE = {false, false, false};
     CASTLINGBLACK = {false, false, false};
+}
+
+num SEARCH_DEPTH = 5;  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
+num SEARCH_ADAPTIVE_DEPTH = 21;  // how deep to search in adaptive search (combines with SEARCH_DEPTH)
+
+num HYPERHYPERHYPERBULLET = 1;
+num HYPERHYPERBULLET = 2;
+num HYPERBULLET = 3;
+num BULLET = 4;
+num BLITZ = 5;
+num RAPID = 6;
+num CLASSICAL = 7;
+num CLASSICAL_PLUS = 8;
+num CLASSICAL_PLUS_PLUS = 9;
+num TIME_CONTROL_REQUESTED = BLITZ;
+void set_time_control(num TIME_CONTROL) {
+    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.0s
+        SEARCH_DEPTH = 2;
+        SEARCH_ADAPTIVE_DEPTH = 9;
+    }
+    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 0.3s
+        SEARCH_DEPTH = 3;
+        SEARCH_ADAPTIVE_DEPTH = 11;
+    }
+    if (TIME_CONTROL == HYPERBULLET) {  // -t: 1.3s
+        SEARCH_DEPTH = 3;
+        SEARCH_ADAPTIVE_DEPTH = 13;
+    }
+    if (TIME_CONTROL == BULLET) {  // -t: 8s
+        SEARCH_DEPTH = 4;
+        SEARCH_ADAPTIVE_DEPTH = 21;
+    }
+    if (TIME_CONTROL == BLITZ) {  // -t: 40s
+        SEARCH_DEPTH = 5;
+        SEARCH_ADAPTIVE_DEPTH = 25;
+    }
+    if (TIME_CONTROL == RAPID) {  // -t: 113s
+        SEARCH_DEPTH = 6;
+        SEARCH_ADAPTIVE_DEPTH = 29;
+    }
+    if (TIME_CONTROL == CLASSICAL) {  // -t: 247s
+        SEARCH_DEPTH = 6;
+        SEARCH_ADAPTIVE_DEPTH = 33;
+    }
+    if (TIME_CONTROL == CLASSICAL_PLUS) {  // -t: 900s
+        SEARCH_DEPTH = 7;
+        SEARCH_ADAPTIVE_DEPTH = 35;
+    }
+    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
+        SEARCH_DEPTH = 7;
+        SEARCH_ADAPTIVE_DEPTH = 39;
+    }
 }
 
 typedef struct ValuePlusMoves {
@@ -640,12 +690,10 @@ num eval_quies(num COLOR, Move mv, num hit_piece) {
     if (king_in_check(OTHER_COLOR) or board[8*mv.t0+mv.t1] & KING)  // check or was king move
         return 0;
 
-    num quies = 20;
-
     if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "forward" move -> less quiescent
-        quies *= 0.6;
+        return 6;
 
-    return quies;
+    return 10;
 }
 
 std::string move_to_str(Move mv, bool algebraic = false) {
@@ -735,7 +783,7 @@ int killer_cmp(const void* a, const void* b) {
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies, num depth, bool lines) {
+ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines) {
 
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
@@ -746,8 +794,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
             return {board_eval, {0}, std::deque<Move>()};
     }
     else
-        if (quies < 0 or depth >= SEARCH_DEPTH)
-            return alphabeta(COLOR, alpha, beta, quies, true, depth, lines);
+        if (adaptive < 0 or depth >= SEARCH_DEPTH)
+            return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines);
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
     if (is_quies) {
@@ -817,7 +865,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
 
         if (depth < 2 and DEBUG) {
             for (int i = 0; i < depth; i++) printf("    ");
-            printf_move(mv); printf(" QUIES %ld \n", quies);
+            printf_move(mv); printf(" ADAPT %ld \n", adaptive);
         }
 
         PiecePlusCatling ppc = make_move(mv);
@@ -826,7 +874,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
             COLOR == WHITE ? BLACK : WHITE,
             alpha,
             beta,
-            quies - eval_quies(COLOR, mv, ppc.hit_piece),
+            adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies),
             is_quies,
             depth + 1,
             lines
@@ -924,7 +972,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num quies, bool is_quies
 // find and play the best move in the position
 std::string calc_move(bool lines = false) {
     // TODO: mode where a random/suboptimal move can get picked?
-    printf("Starting alphabeta with depth %d\n", SEARCH_DEPTH);
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
     KILLERHEURISTIC.clear();
@@ -944,7 +991,9 @@ std::string calc_move(bool lines = false) {
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
     }
 
-    ValuePlusMove bestmv = alphabeta(IM_WHITE ? WHITE : BLACK, -inf+1, inf-1, QUIESCENCE, false, 0, lines);
+    printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
+
+    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines);
     Move mv = bestmv.move;
 
     printf("--> BEST ");
@@ -1147,7 +1196,7 @@ void test() {
 
     printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
     pprint();
-    alphabeta(BLACK, -inf+1, inf-1, 41, false, 0, true);
+    alphabeta(BLACK, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, true);
 
     IM_WHITE = true;
     board_initial_position();
@@ -1192,6 +1241,24 @@ int main(int argc, char const *argv[])
             printf("feature setboard=1\n");
             printf("feature done=1\n");
             MODE_UCI = false;
+        }
+        if (strcmp(line, "xboard\n") == 0) {
+            printf("feature myname=\"jangine\"\n");
+            // printf("feature sigint=0 sigterm=0\n");
+            printf("feature ping=1\n");
+            printf("feature setboard=1\n");
+            printf("feature done=1\n");
+            MODE_UCI = false;
+        }
+        if (startswith("time", line)) {
+            int time_left = std::stoi(line_cpp.substr(5));
+            TIME_CONTROL_REQUESTED = HYPERHYPERHYPERBULLET;                    // just move when under 2 seconds
+            if (time_left >=   200) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when under 2 seconds
+            if (time_left >=   500) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when under 5 seconds
+            if (time_left >=  1500) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when under 45 seconds
+            if (time_left >=  4500) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 45+ seconds left
+            if (time_left >= 18000) TIME_CONTROL_REQUESTED = RAPID;            // play rapid-like when 3+ minutes left
+            if (time_left >= 48000) TIME_CONTROL_REQUESTED = CLASSICAL;        // play classical-like when 8+ mins left
         }
 
         /*** UCI ***/

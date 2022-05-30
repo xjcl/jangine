@@ -17,9 +17,9 @@ Challenge me on lichess! https://lichess.org/@/jangine
 
 Build
 
-    g++ jangine.cpp -o jangine
+    g++ -O2 jangine.cpp -o jangine
 
-Visual tests such as mate-in-n-moves tasks
+Tests for rules (checkmate, stalemate, castling, promotion, en passant, etc.) and benchmarking time used
 
     ./jangine -t
 

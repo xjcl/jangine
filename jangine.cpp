@@ -480,7 +480,6 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
 
     CASTLINGWHITE = c_rights_w;
     CASTLINGBLACK = c_rights_b;
-    LASTMOVE = {0};
 
     if (piece == WHITE + KING) {
         KINGPOS_WHITE_i = mv.f0;
@@ -491,7 +490,6 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
         KINGPOS_BLACK_j = mv.f1;
     }
 }
-
 
 
 void make_move_str(const char* mv) {
@@ -511,9 +509,8 @@ void make_move_str(const char* mv) {
 
     Move to_mv = {a, b, c, d, e};
     make_move(to_mv);
-    LASTMOVE = to_mv;  // copies the struct(?)
+    LASTMOVE = to_mv;  // copies the struct
 }
-
 
 
 bool square_in_check(num COLOR, num i, num j) {
@@ -825,13 +822,13 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         }
     }
 
-    ValuePlusMoves gl = genlegals(COLOR, is_quies);  // TODO: how to handle checks?
+    ValuePlusMoves gl = genlegals(COLOR, is_quies);
     Move** gl_moves_backup = gl.moves;
 
     num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
 
     // TODO: if we have no moves this could be no captures
-    // TODO: move stalemate/checkmate detection from turochamp to here
+    // TODO: stalemate/checkmate detection here or in evaluation?
     // TODO: depth-adjusted checkmating value missing in quies search
     // qsort apparently cannot handle empty arrays (nmemb=0) so handle them here
     if (!is_quies and !mvs_len) {
@@ -872,6 +869,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         }
 
         PiecePlusCatling ppc = make_move(mv);
+        LASTMOVE = mv;  // only needed for genlegals so okay to only set here
 
         ValuePlusMove rec = alphabeta(
             COLOR == WHITE ? BLACK : WHITE,
@@ -1092,7 +1090,7 @@ void test() {
     set_up_kings(0, 2, 0, 0);
     board[63] = WHITE + ROOK;
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
 
     std::cout << "Tests Mate-in-2 #1" << std::endl;
 
@@ -1105,7 +1103,7 @@ void test() {
     board[5*8+3] = WHITE + QUEEN;
     board[7*8+3] = WHITE + ROOK;
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // Should find mate-in-2 (eval=297) if depth >= 4
 
     std::cout << "Tests Mate-in-3 #1" << std::endl;
 
@@ -1118,7 +1116,7 @@ void test() {
     board[5*8+3] = WHITE + QUEEN;
     board[7*8+3] = WHITE + ROOK;
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // Should find mate-in-3 (eval=295) if depth >= 6
 
     std::cout << "Tests Stalemate" << std::endl;
 
@@ -1126,7 +1124,7 @@ void test() {
     set_up_kings(0, 2, 0, 0);
     board[2*8+1] = WHITE + PAWN;
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // Kc7 is stalemate, b7+ promotes
 
     std::cout << "Tests Promotion" << std::endl;
 
@@ -1165,7 +1163,7 @@ void test() {
     make_move_str("d2b4"); make_move_str("e3f2");
     make_move_str("e1e2");
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // Should find knight promotion as best
 
     std::cout << "Tests missed fork from a game" << std::endl;
 
@@ -1199,7 +1197,44 @@ void test() {
     make_move_str("d2e4"); make_move_str("f8e8");
     make_move_str("c3e3");
     pprint();
-    std::cout << calc_move(true) << std::endl;
+    std::cout << calc_move(true) << std::endl;  // should NOT play Rc8??
+    // Reason for this bug was searching forward moves LESS than backwards moves (intended the other way)
+
+    std::cout << "Tests missed en-passant https://lichess.org/4bSSvnGS/white#60" << std::endl;
+    board_initial_position();
+    IM_WHITE = true;
+    make_move_str("c2c4"); make_move_str("e7e6");  // 1.
+    make_move_str("d2d4"); make_move_str("g8f6");
+    make_move_str("b1c3"); make_move_str("f8b4");
+    make_move_str("f2f3"); make_move_str("c7c5");
+    make_move_str("d4d5"); make_move_str("b7b5");
+    make_move_str("e2e4"); make_move_str("b5c4");
+    make_move_str("f1c4"); make_move_str("f6d5");
+    make_move_str("c4d5"); make_move_str("e6d5");
+    make_move_str("d1d5"); make_move_str("b8c6");
+    make_move_str("c1g5"); make_move_str("d8a5");  // 10.
+    make_move_str("g1e2"); make_move_str("h7h6");
+    make_move_str("g5d2"); make_move_str("c8b7");
+    make_move_str("a2a3"); make_move_str("c6d8");
+    make_move_str("d5a2"); make_move_str("b4c3");
+    make_move_str("d2c3"); make_move_str("a5b6");
+    make_move_str("c3g7"); make_move_str("h8g8");
+    make_move_str("g7e5"); make_move_str("g8g2");
+    make_move_str("e1f1"); make_move_str("g2g5");
+    make_move_str("e5f4"); make_move_str("g5g6");
+    make_move_str("h1g1"); make_move_str("g6g1");  // 20.
+    make_move_str("f1g1"); make_move_str("c5c4");
+    make_move_str("g1g2"); make_move_str("d7d5");
+    make_move_str("e4d5"); make_move_str("b7d5");
+    make_move_str("e2c3"); make_move_str("b6g6");
+    make_move_str("f4g3"); make_move_str("g6c2");
+    make_move_str("g3f2"); make_move_str("d5e6");
+    make_move_str("a1e1"); make_move_str("e8f8");
+    make_move_str("e1e2"); make_move_str("c2f5");
+    make_move_str("f2g3"); make_move_str("d8c6");
+    make_move_str("e2e4"); make_move_str("f8g8");  // 30.
+    pprint();
+    std::cout << calc_move(true) << std::endl; // should NOT play 31. b4??
 
     board_initial_position();
     IM_WHITE = true;

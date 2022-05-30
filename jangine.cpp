@@ -982,16 +982,27 @@ std::string calc_move(bool lines = false) {
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
 
+    num my_color = IM_WHITE ? WHITE : BLACK;
     num queens_on_board = 0;
+    num own_pieces_on_board = 0;
     gentuples { queens_on_board += !!(board[8*i+j] & QUEEN); }
+    gentuples { own_pieces_on_board += !!((board[8*i+j] & my_color) and (board[8*i+j] & (ROOK | BISHOP | KNIGHT))); }
 
-    if (queens_on_board == 0) {
-        printf("No queens on board, piece square tables set to endgame evaluation");
+    if (queens_on_board == 0 and own_pieces_on_board <= 2) {
+        printf("Late endgame: Bringing in pawns and king\n");
         PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_ENDGAME];
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_ENDGAME];
-    } else {
+        set_time_control(TIME_CONTROL_REQUESTED + 2);  // without queens search is faster, so search more nodes
+    } else if (queens_on_board == 0) {
+        printf("Early endgame: Queens traded, taking longer thinks\n");
         PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+        set_time_control(TIME_CONTROL_REQUESTED + 1);  // without queens search is faster, so search more nodes
+    } else {
+        printf("Earlygame (opening or middlegame): Queens still on board\n");
+        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
+        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+        set_time_control(TIME_CONTROL_REQUESTED);
     }
 
     printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);

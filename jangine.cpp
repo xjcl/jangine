@@ -72,9 +72,9 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
         }},
         {PAWN_EARLYGAME, std::array<num, 64>{
                   0,   0,   0,   0,   0,   0,   0,   0,
-                100, 100, 100, 100, 100, 100, 100, 100,
-                 20,  20,  40,  60,  60,  40,  60,  60,
-                  0,   0,   0,  10,  10,   0,  20,  20,
+                 60,  80,  80,  80,  80,  80,  80,  60,
+                 20,  40,  40,  40,  40,  40,  40,  40,
+                  0,   0,   0,  10,  10,  10,  10,  10,
                   5,   0,  10,  30,  30,   0,   0,   0,
                   5,   0,   0,   0,   0,   0,   0,   0,
                   0,   0, -10, -20, -20,  20,  20,  10,
@@ -82,46 +82,44 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
         }},
         {PAWN_ENDGAME, std::array<num, 64>{
                   0,   0,   0,   0,   0,   0,   0,   0,
-                100, 100, 100, 100, 100, 100, 100, 100,
-                 60,  60,  60,  60,  60,  60,  60,  40,
-                 40,  40,  40,  40,  40,  40,  40,  40,
-                 20,  20,  20,  20,  20,  20,  20,  20,
-                 10,  10,  10,  10,  10,  10,  10,  10,
+                 80, 100, 100, 100, 100, 100, 100,  80,
+                 40,  60,  60,  60,  60,  60,  60,  40,
+                 30,  40,  40,  40,  40,  40,  40,  30,
+                 10,  20,  20,  20,  20,  20,  20,  10,
+                  5,  10,  10,  10,  10,  10,  10,   5,
                   0,   0,   0,   0,   0,   0,   0,   0,
                   0,   0,   0,   0,   0,   0,   0,   0,
         }},
-        // TODO: avoid the knight moving too much forward and getting trapped?
         {KNIGHT, std::array<num, 64>{
-                -50,-40,-30,-30,-30,-30,-40,-50,
-                -40,-20,  0,  0,  0,  0,-20,-40,
+                -90,-50,-30,-30,-30,-30,-50,-90,
+                -50,-20,  0,  0,  0,  0,-20,-50,
                 -30,  0, 10, 15, 15, 10,  0,-30,
-                -30,  5, 15, 20, 20, 15,  5,-30,
                 -30,  0, 15, 20, 20, 15,  0,-30,
-                -30,  5, 10, 15, 15, 10,  5,-30,
-                -40,-20,  0,  5,  5,  0,-20,-40,
-                -50,-40,-30,-30,-30,-30,-40,-50,
+                -30,  0, 15, 20, 20, 15,  0,-30,
+                -30,  5, 15, 15, 15, 15,  5,-30,
+                -50,-20,  0, 10, 10,  0,-20,-50,
+                -90,-50,-30,-30,-30,-30,-50,-90,
         }},
-        // TODO: 15/20 to develop to active squares?
         // bishop isn't actually bad on the bad row but prevents castling
         {BISHOP, std::array<num, 64>{
                 -20,-10,-10,-10,-10,-10,-10,-20,
                 -10,  0,  0,  0,  0,  0,  0,-10,
                 -10,  0,  5, 10, 10,  5,  0,-10,
-                -10, 20,  5, 10, 10,  5, 20,-10,
+                -10, 15,  5, 10, 10,  5, 15,-10,
                 -10,  0, 15, 10, 10, 15,  0,-10,
                 -10, 10, 10, 10, 10, 10, 10,-10,
                 -10,  5,  0,  0,  0,  0,  5,-10,
                 -20,-10,-10,-10,-10,-10,-10,-20,
         }},
         {ROOK, std::array<num, 64>{
-                  0,  0,  0,  0,  0,  0,  0,  0,
-                  5, 30, 30, 30, 30, 30, 30,  5,
-                 -5,  0,  0, 15, 15,  0,  0, -5,
-                 -5,  0,  0, 15, 15,  0,  0, -5,
-                 -5,  0,  0, 15, 15,  0,  0, -5,
-                 -5,  0,  0, 15, 15,  0,  0, -5,
-                 -5,  0,  0, 15, 15,  0,  0, -5,
-                  0,  0,  0, 15, 15,  0,  0,  0
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5, 20, 20, 20, 20, 20, 20, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
+                 -5,  0,  0, 10, 10,  0,  0, -5,
         }},
         // TODO: avoid capturing b7?
         {QUEEN, std::array<num, 64>{
@@ -141,18 +139,18 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
                 -20,-20,-20,-20,-20,-20,-20,-20,
-                 40, 40, 20,  0,  0,  0, 40, 40,
-                 40, 50, 30,  0, 10,  0, 50, 40
+                 20, 20, 10,  0,  0,  0, 40, 40,
+                 20, 30, 20,  0, 10,  0, 50, 40   // strongly encourage short castling
         }},
         {KING_ENDGAME, std::array<num, 64>{
-                 50, 50, 50, 50, 50, 50, 50, 50,
-                 50, 50, 50, 50, 50, 50, 50, 50,
-                 50, 50, 50, 50, 50, 50, 50, 50,
+                 10, 20, 30, 40, 40, 30, 20, 10,
+                 20, 30, 40, 40, 40, 40, 30, 20,
+                 30, 40, 50, 50, 50, 50, 40, 30,
                  20, 30, 40, 50, 50, 40, 30, 20,
                  10, 10, 30, 40, 40, 30, 10, 10,
                   0,  0, 20, 30, 30, 20,  0,  0,
                 -30,-30,  0,  0,  0,  0,-30,-30,
-                -30,-30,-30,-30,-30,-30,-30,-30
+                -30,-30,-30,-30,-30,-30,-30,-30   // encourage going to the center
         }}
 };
 
@@ -1092,7 +1090,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
 
-    std::cout << "Tests Mate-in-2 #1" << std::endl;
+    std::cout << "\nTests Mate-in-2 #1" << std::endl;
 
     board_clear();
     set_up_kings(7, 2, 0, 1);
@@ -1105,7 +1103,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-2 (eval=297) if depth >= 4
 
-    std::cout << "Tests Mate-in-3 #1" << std::endl;
+    std::cout << "\nTests Mate-in-3 #1" << std::endl;
 
     board_clear();
     set_up_kings(7, 2, 0, 2);
@@ -1118,7 +1116,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-3 (eval=295) if depth >= 6
 
-    std::cout << "Tests Stalemate" << std::endl;
+    std::cout << "\nTests Stalemate" << std::endl;
 
     board_clear();
     set_up_kings(0, 2, 0, 0);
@@ -1126,7 +1124,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Kc7 is stalemate, b7+ promotes
 
-    std::cout << "Tests Promotion" << std::endl;
+    std::cout << "\nTests Promotion" << std::endl;
 
     board_clear();
     set_up_kings(0, 2, 0, 0);
@@ -1134,7 +1132,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "Tests En-Passant" << std::endl;
+    std::cout << "\nTests En-Passant" << std::endl;
 
     board_initial_position();
     make_move_str("e2e4"); make_move_str("a7a6");
@@ -1142,7 +1140,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "Tests Castling" << std::endl;
+    std::cout << "\nTests Castling" << std::endl;
 
     board_initial_position();
     board[7*8+5] = 0;
@@ -1151,7 +1149,19 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "Tests Lasker Trap in Albin Countergambit" << std::endl;
+    std::cout << "\nTests detecting/avoiding repetitions" << std::endl;
+
+    board_initial_position();
+    IM_WHITE = true;
+    board[3] = 0;  // up a queen so shouldn't draw
+    board_positions_seen.insert(board_to_zobrint_hash());
+    make_move_str("g1f3"); make_move_str("g8f6");
+    make_move_str("f3g1"); make_move_str("f6g8");
+    make_move_str("g1f3"); make_move_str("g8f6");
+    pprint();
+    std::cout << calc_move(true) << std::endl;  // Should see that f3g1 would be 3-fold
+
+    std::cout << "\nTests Lasker Trap in Albin Countergambit" << std::endl;
 
     board_initial_position();
     IM_WHITE = false;
@@ -1165,7 +1175,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find knight promotion as best
 
-    std::cout << "Tests missed fork from a game" << std::endl;
+    std::cout << "\nTests missed fork from a game" << std::endl;
 
     board_initial_position();
     IM_WHITE = false;
@@ -1200,14 +1210,14 @@ void test() {
     std::cout << calc_move(true) << std::endl;  // should NOT play Rc8??
     // Reason for this bug was searching forward moves LESS than backwards moves (intended the other way)
 
-    std::cout << "Tests missed en-passant https://lichess.org/4bSSvnGS/white#60" << std::endl;
+    std::cout << "\nTests missed en-passant https://lichess.org/4bSSvnGS/white#60" << std::endl;
     board_initial_position();
     IM_WHITE = true;
     make_move_str("c2c4"); make_move_str("e7e6");  // 1.
     make_move_str("d2d4"); make_move_str("g8f6");
     make_move_str("b1c3"); make_move_str("f8b4");
     make_move_str("f2f3"); make_move_str("c7c5");
-    make_move_str("d4d5"); make_move_str("b7b5");
+    make_move_str("d4d5"); make_move_str("b7b5");  // 5.
     make_move_str("e2e4"); make_move_str("b5c4");
     make_move_str("f1c4"); make_move_str("f6d5");
     make_move_str("c4d5"); make_move_str("e6d5");
@@ -1217,7 +1227,7 @@ void test() {
     make_move_str("g5d2"); make_move_str("c8b7");
     make_move_str("a2a3"); make_move_str("c6d8");
     make_move_str("d5a2"); make_move_str("b4c3");
-    make_move_str("d2c3"); make_move_str("a5b6");
+    make_move_str("d2c3"); make_move_str("a5b6");  // 15.
     make_move_str("c3g7"); make_move_str("h8g8");
     make_move_str("g7e5"); make_move_str("g8g2");
     make_move_str("e1f1"); make_move_str("g2g5");
@@ -1227,7 +1237,7 @@ void test() {
     make_move_str("g1g2"); make_move_str("d7d5");
     make_move_str("e4d5"); make_move_str("b7d5");
     make_move_str("e2c3"); make_move_str("b6g6");
-    make_move_str("f4g3"); make_move_str("g6c2");
+    make_move_str("f4g3"); make_move_str("g6c2");  // 25.
     make_move_str("g3f2"); make_move_str("d5e6");
     make_move_str("a1e1"); make_move_str("e8f8");
     make_move_str("e1e2"); make_move_str("c2f5");
@@ -1236,14 +1246,41 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl; // should NOT play 31. b4??
 
+    std::cout << "\nTests missed knight move https://lichess.org/jOQqZlqM#42" << std::endl;
     board_initial_position();
     IM_WHITE = true;
-    printf("INITIAL BOARD EVAL: %ld\n", board_eval);
+    make_move_str("e2e4"); make_move_str("c7c6");  // 1.
+    make_move_str("d2d4"); make_move_str("d7d5");
+    make_move_str("e4d5"); make_move_str("c6d5");
+    make_move_str("c2c4"); make_move_str("g8f6");
+    make_move_str("b1c3"); make_move_str("b8c6");  // 5.
+    make_move_str("c1g5"); make_move_str("d5c4");
+    make_move_str("f1c4"); make_move_str("h7h6");
+    make_move_str("g5f6"); make_move_str("e7f6");
+    make_move_str("g1e2"); make_move_str("f8d6");
+    make_move_str("c4b5"); make_move_str("c8d7");  // 10.
+    make_move_str("d1d3"); make_move_str("e8g8");
+    make_move_str("e1g1"); make_move_str("a7a6");
+    make_move_str("b5c6"); make_move_str("d7c6");
+    make_move_str("a1d1"); make_move_str("d6c7");
+    make_move_str("a2a3"); make_move_str("f8e8");  // 15.
+    make_move_str("e2g3"); make_move_str("d8d6");
+    make_move_str("b2b4"); make_move_str("h6h5");
+    make_move_str("b4b5"); make_move_str("a6b5");
+    make_move_str("d4d5"); make_move_str("h5h4");
+    make_move_str("d5c6"); make_move_str("d6d3");  // 20.
+    make_move_str("d1d3"); make_move_str("h4g3");
+    pprint();
+    std::cout << calc_move(true) << std::endl; // should NOT play 22. hxg3?, rather Nxb5 or Nd5
+
+    board_initial_position();
+    IM_WHITE = true;
+    printf("\nINITIAL BOARD EVAL: %ld\n", board_eval);
 
     make_move_str("e2e4");
-    printf("1. e4 EVAL: %ld\n", board_eval);
+    printf("\n1. e4 EVAL: %ld\n", board_eval);
 
-    printf("LIST OF MOVES IN RESPONSE TO 1. e4\n");
+    printf("\nLIST OF MOVES IN RESPONSE TO 1. e4\n");
     pprint();
     alphabeta(BLACK, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, true);
 
@@ -1259,7 +1296,7 @@ void test() {
     make_move_str("b5h5"); make_move_str("f8b4");
     pprint();
 
-    printf("LIST OF MOVES IN RESPONSE TO QUEEN\n");
+    printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     std::cout << calc_move(true) << std::endl;
     std::exit(0);
 }

@@ -7,8 +7,10 @@
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
+#include <random>
 #include <unistd.h>
 #include <map>
+#include <set>
 #include <deque>
 #include <vector>
 #include <sstream>
@@ -246,6 +248,39 @@ num KINGPOS_WHITE_j = 4;
 num KINGPOS_BLACK_i = 0;
 num KINGPOS_BLACK_j = 4;
 
+std::map<num, std::array<num, 64>> zobrint_random_table;
+std::set<int64_t> board_positions_seen;
+int64_t zobrint_hash = 0;
+
+void init_zobrint() {
+    int64_t zobrint_hash_ = 0;
+
+    std::mt19937_64 e2(5489u);  // fixed default seed
+    std::uniform_int_distribution<long long int> dist(0);  // undefined for in64_t :/
+
+    std::array<num, 12> pieces = {
+        WHITE + PAWN, WHITE + KNIGHT, WHITE + BISHOP, WHITE + ROOK, WHITE + QUEEN, WHITE + KING,
+        BLACK + PAWN, BLACK + KNIGHT, BLACK + BISHOP, BLACK + ROOK, BLACK + QUEEN, BLACK + KING,
+    };
+    for (const num& piece : pieces)
+        for (int i = 0; i < 64; ++i)
+            zobrint_random_table[piece][i] = dist(e2);
+}
+
+int64_t board_to_zobrint_hash() {
+    int64_t zobrint_hash_ = 0;
+
+    for (int i = 0; i < 64; ++i)
+        zobrint_hash_ ^= zobrint_random_table[board[i]][i];
+
+    // TODO: Add who to move
+
+    // Okay to implement this without castling rights and en passant at first (very rare)
+    // We just want to avoid voluntarily going into repeated positions in otherwise winning endgames
+
+    return zobrint_hash_;
+}
+
 void set_up_kings(num wi, num wj, num bi, num bj) {
     board[8*wi+wj] = KING + WHITE;
     board[8*bi+bj] = KING + BLACK;
@@ -266,6 +301,9 @@ void board_initial_position() {  // setting up a game
     CASTLINGWHITE = {true, true, true};
     CASTLINGBLACK = {true, true, true};
     board_eval = 0;
+
+    board_positions_seen.clear();
+    board_positions_seen.insert(board_to_zobrint_hash());
 }
 
 void board_clear() {  // setting up random positions
@@ -508,6 +546,8 @@ void make_move_str(const char* mv) {
     Move to_mv = {a, b, c, d, e};
     make_move(to_mv);
     LASTMOVE = to_mv;  // copies the struct
+
+    board_positions_seen.insert(board_to_zobrint_hash());
 }
 
 
@@ -786,6 +826,10 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
 
+    // treat all repeated positions as an instant draw to avoid repetitions when winning and encourage when losing
+    if ((depth == 1 or depth == 2) and board_positions_seen.count(board_to_zobrint_hash()))
+        return {0, {0}, std::deque<Move>()};
+
     if (is_quies) {
         //if (depth >= SEARCH_DEPTH + 99)
         if (NO_QUIES)
@@ -1018,8 +1062,9 @@ std::string calc_move(bool lines = false) {
 
 
 void init_data(void) {
-    // TODO use map with vector inside or something to avoid leaks
+    // TODO use std::array or map with vector inside or something to avoid leaks
     board_initial_position();
+    init_zobrint();
 
     PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
     PIECERANGE = (num*)calloc(65, sizeof(num));

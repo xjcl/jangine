@@ -659,11 +659,12 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
                         break;
                     if (board[8*(i+a*k)+j+b*k] & COLOR)  // move to square with own piece (illegal)
                         break;
-                    if (board[8*(i+a*k)+j+b*k] & NCOLOR)  // move to square with enemy piece (capture)
+                    if (board[8*(i+a*k)+j+b*k] & NCOLOR) {  // move to square with enemy piece (capture)
                         store(i, j, i+a*k, j+b*k, '\0');
-                    if (not board[8*(i+a*k)+j+b*k])  // move to empty square
-                        if (not only_captures)
-                            store(i, j, i+a*k, j+b*k, '\0');
+                        break;
+                    }
+                    if (not only_captures and not board[8*(i+a*k)+j+b*k])  // move to empty square
+                        store(i, j, i+a*k, j+b*k, '\0');
                 }
             }
         }

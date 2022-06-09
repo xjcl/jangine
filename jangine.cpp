@@ -669,16 +669,21 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
         }
     }
 
-    CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
-    if (castlingrights.k and castlingrights.rr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
-        if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
-                not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
-            store(CASTLERANK, 4, CASTLERANK, 6, 'c');
-    }
-    if (castlingrights.k and castlingrights.lr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK] == COLOR + ROOK) {  // long castle O-O-O
-        if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
-                not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
-            store(CASTLERANK, 4, CASTLERANK, 2, 'c');
+    if (not only_captures) {
+        //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
+        //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
+        //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
+        CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
+        if (castlingrights.k and castlingrights.rr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
+            if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
+                    not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
+                store(CASTLERANK, 4, CASTLERANK, 6, 'c');
+        }
+        if (castlingrights.k and castlingrights.lr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK] == COLOR + ROOK) {  // long castle O-O-O
+            if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
+                    not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
+                store(CASTLERANK, 4, CASTLERANK, 2, 'c');
+        }
     }
 
 

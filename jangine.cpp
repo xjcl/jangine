@@ -686,7 +686,7 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
         }
     }
 
-
+    // Remove moves which would leave the king in check (i.e. illegal moves)
     Move** mvscpy = mvs;
     while (mvscpy != mvsend) {
         PiecePlusCatling ppc = make_move(**mvscpy);
@@ -702,16 +702,8 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
     }
 
     // remove trailing NULLs
-    mvsend--;
-    while (!(*mvsend) and mvsend > mvs) {
+    while (mvsend > mvs and !*(mvsend - 1))
         mvsend--;
-    }
-
-    // we can't -1 if size is 0
-    if (!(*mvsend))
-        return {0, mvs, mvs};
-
-    mvsend++;
 
     return {0, mvs, mvsend};
 }
@@ -838,6 +830,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             return {board_eval, {0}, std::deque<Move>()};
     }
     else
+        // Main search is done, do quiescence search at the leaf nodes
         if (adaptive < 0 or depth >= SEARCH_DEPTH)
             return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines);
 

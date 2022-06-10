@@ -24,6 +24,7 @@ typedef int_fast16_t num;
 #define DEBUG 0
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
+#define MAX_KILLER_MOVES 2
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -200,8 +201,12 @@ Pair** PIECEDIRS = NULL;
 num* PIECERANGE = NULL;
 num* PIECEVALS = NULL;
 
-num board[64] = {0};   // malloc 64 or even 100
-num board_eval = 0;
+num NODE_DEPTH = 0;
+Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
+Move PV_TABLE[8][8] = {0};
+
+num board[64] = {0};
+num board_eval = 0;  // takes about 10% of compute time
 bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
@@ -781,22 +786,37 @@ void printf_moves(Move** mvs, num count, std::string header) {
 // For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
 // In this specific implementation, all captures are sorted before non-captures.
 // For the remaining non-captures, the least valuable pieces move first (good cos queens have so many moves)
-int mvv_lva_cmp(const void* a, const void* b) {
+// https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
+int_fast32_t move_order_key(Move mv)
+{
+    // try best move (pv move) from sibling node
+    if (NODE_DEPTH < SEARCH_DEPTH)
+        if (PV_TABLE[NODE_DEPTH][NODE_DEPTH] == mv)
+            return 90000001;
+
+    if (board[8*mv.t0+mv.t1])
+        return 1000 * PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] - PIECEVALS[board[8*mv.f0+mv.f1] & COLORBLIND];
+
+    // try "killer moves"
+    for (num i = 0; i < MAX_KILLER_MOVES; i++)
+        if (KILLER_TABLE[NODE_DEPTH][i] == mv)
+            return 20 - i;
+
+    if (mv.prom)
+        return 1;
+
+    return 0;
+}
+
+
+int move_order_cmp(const void* a, const void* b)
+{
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
     if (!*move_b)  return -1;  // -1 = pick a as left value
     if (!*move_a)  return 1;   // +1 = pick b as left value
 
-    Move mv_a = **move_a;
-    Move mv_b = **move_b;
-
-    auto vala = 1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
-    auto valb = 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
-
-    // auto vala = board[8*mv_a.t0+mv_a.t1] == 0 ? PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND];
-    // auto valb = board[8*mv_b.t0+mv_b.t1] == 0 ? PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND] : 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND];
-
-    return valb - vala;  // invert comparison so biggest-valued move is at start of list
+    return move_order_key(**move_b) - move_order_key(**move_a);  // invert comparison so biggest-valued move is at start of list
 }
 
 
@@ -882,14 +902,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         return best;
     }
 
+    NODE_DEPTH = depth;
+
     if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
-    if (is_quies) {
-        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);
-    } else {
-        qsort(gl.moves, mvs_len, sizeof(Move *), mvv_lva_cmp);
-        // TODO: Try for a killer heuristic that improves on MVV-LVA
-        //qsort(gl.moves, mvs_len, sizeof(Move *), killer_cmp);
-    }
+    // TODO: Different sorting function for quies vs non-quies?
+    qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);
     if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
 
     while (gl.moves != gl.movesend) {
@@ -921,8 +938,16 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
+        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value) {
             best = {rec.value, mv, rec.variation};
+
+            if (not is_quies) {
+                // add pv to pv table and copy pv discovered at deeper ply
+                PV_TABLE[depth][depth] = mv;
+                for (num deeper = depth + 1; deeper < SEARCH_DEPTH; deeper++)
+                    PV_TABLE[depth][deeper] = PV_TABLE[depth+1][deeper];
+            }
+        }
 
         if (depth == 0 or DEBUG) {
             for (int i = 0; i < depth; i++)
@@ -946,8 +971,21 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (beta <= alpha) {  // alpha-beta cutoff
                 if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end())
                     KILLERHEURISTIC[mv] = 0;
-                KILLERHEURISTIC[mv] = depth * depth;
-                break;
+                KILLERHEURISTIC[mv] += depth * depth;
+
+                if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
+                    for (num i = 0; i < MAX_KILLER_MOVES; i++)
+                        if (KILLER_TABLE[depth][i] == mv)
+                            goto do_not_store_in_killer_table;
+
+                    // shift old entries over by 1
+                    for (num i = MAX_KILLER_MOVES - 1; i >= 1; i--)
+                        KILLER_TABLE[depth][i] = KILLER_TABLE[depth][i-1];
+
+                    KILLER_TABLE[depth][0] = mv;
+                }
+
+                do_not_store_in_killer_table: break;
             }
         }
 
@@ -1013,6 +1051,12 @@ std::string calc_move(bool lines = false) {
     // TODO: mode where a random/suboptimal move can get picked?
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
+    for (num i = 0; i < 8; i++)
+        for (num j = 0; j < 8; j++)
+            PV_TABLE[i][j] = {0};
+    for (num i = 0; i < 20; i++)
+        for (num j = 0; j < MAX_KILLER_MOVES; j++)
+            KILLER_TABLE[i][j] = {0};
     KILLERHEURISTIC.clear();
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state

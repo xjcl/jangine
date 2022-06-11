@@ -194,6 +194,8 @@ CASTLINGRIGHTS CASTLINGWHITE = {true, true, true};
 CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 
 Move LASTMOVE = {0};
+Move LASTMOVE_GAME = {0};
+std::map<Move, Move> COUNTERMOVE;
 
 struct Pair {
     num a;
@@ -204,6 +206,7 @@ Pair** PIECEDIRS = NULL;
 num* PIECERANGE = NULL;
 num* PIECEVALS = NULL;
 
+bool FOLLOWING_PV = true;
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
 Move PV_TABLE[PV_TABLE_SIZE][PV_TABLE_SIZE] = {0};
@@ -558,7 +561,7 @@ void make_move_str(const char* mv) {
 
     Move to_mv = {a, b, c, d, e};
     make_move(to_mv);
-    LASTMOVE = to_mv;  // copies the struct
+    LASTMOVE_GAME = to_mv;  // copies the struct
 
     board_positions_seen.insert(board_to_zobrint_hash());
 }
@@ -808,11 +811,24 @@ void printf_moves(Move** mvs, num count, std::string header) {
 // https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
 int_fast32_t move_order_key(Move mv)
 {
-    // try best move (pv move) from iterative deepening or sibling node
+    // try best move (pv move) from iterative deepening
+    if (FOLLOWING_PV and NODE_DEPTH < PV_TABLE_SIZE)
+        if (PV_TABLE[0][NODE_DEPTH] == mv)
+            //{printf("FOLLOWING PV %ld  ", NODE_DEPTH); printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000030;}
+            return 90000030;
+
+    // for top-level moves, try refutation from previous search. this is identical to the PV_TABLE for the PV
+    if (NODE_DEPTH == 1)
+        if (COUNTERMOVE.count(LASTMOVE) and COUNTERMOVE[LASTMOVE] == mv)
+            //{printf_move(LASTMOVE); printf_move(COUNTERMOVE); printf("\n"); return 90000003;}
+            return 90000020;
+
+    // try best move from sibling node
     if (NODE_DEPTH < PV_TABLE_SIZE)
         if (PV_TABLE[NODE_DEPTH][NODE_DEPTH] == mv)
-            return 90000001;
+            return 90000010;
 
+    // MVV-LVA (most valuable victim, least valuable attacker)
     if (board[8*mv.t0+mv.t1])
         return 1000 * PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] - PIECEVALS[board[8*mv.f0+mv.f1] & COLORBLIND];
 
@@ -844,7 +860,7 @@ int move_order_cmp(const void* a, const void* b)
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines) {
+ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate) {
 
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
@@ -861,7 +877,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     else
         // Main search is done, do quiescence search at the leaf nodes
         if (adaptive < 0 or depth >= SEARCH_DEPTH)
-            return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines);
+            return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
     if (is_quies) {
@@ -940,15 +956,19 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies),
             is_quies,
             depth + 1,
-            lines
+            lines,
+            lines_accurate
         );
+
+        if (depth <= 0 and not rec.variation.empty())
+            COUNTERMOVE[mv] = rec.variation[0];
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
         if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value) {
             best = {rec.value, mv, rec.variation};
 
-            if (not is_quies) {
+            if (not is_quies and depth < PV_TABLE_SIZE) {
                 // add pv to pv table and copy pv discovered at deeper ply
                 PV_TABLE[depth][depth] = mv;
                 for (num deeper = depth + 1; deeper < PV_TABLE_SIZE; deeper++)
@@ -960,12 +980,12 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             for (int i = 0; i < depth; i++)
                 printf("    ");
             printf_move(mv);
-            // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines=true
-            bool accurate = (best.move == mv) or lines;
+            // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines_accurate=true
+            bool accurate = (best.move == mv) or lines_accurate;
             printf_move_eval(rec, accurate);
         }
 
-        if (not is_quies and not (lines and depth == 0)) {
+        if (not is_quies and not (lines_accurate and depth == 0)) {
             if (COLOR == WHITE and best.value > alpha)  // lo bound
                 alpha = best.value;
             if (COLOR == BLACK and best.value < beta)  // hi bound
@@ -1031,6 +1051,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         gl.moves++;
     }
 
+    // as soon as we back up once we are no longer in the leftmost path
+    FOLLOWING_PV = false;
+
     for (int i = 0; i < 128; ++i)
         if (gl_moves_backup[i])
             free(gl_moves_backup[i]);
@@ -1063,6 +1086,7 @@ std::string calc_move(bool lines = false)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
     HISTORY_HEURISTIC.clear();
+    COUNTERMOVE.clear();
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
@@ -1095,14 +1119,18 @@ std::string calc_move(bool lines = false)
     // TODO: stop at TIME_CONTROL_TO_USE, TIME_CONTROL_TO_USE - 1, TIME_CONTROL_TO_USE - 2, etc. ?
     for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 2; TIME_CONTROL++) {
         set_time_control(TIME_CONTROL);
-        ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false);
+        FOLLOWING_PV = true;
+        LASTMOVE = LASTMOVE_GAME;
+        ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
         printf_move(best_lo.move);
         printf_move_eval(best_lo, true);
     }
 
     set_time_control(TIME_CONTROL_TO_USE);
+    FOLLOWING_PV = true;
+    LASTMOVE = LASTMOVE_GAME;
     printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
-    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false);
+    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines, false);
     Move mv = bestmv.move;
 
     printf("**** BEST ****\n");

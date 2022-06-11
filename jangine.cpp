@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
+#include <ctime>
 #include <random>
 #include <unistd.h>
 #include <map>
@@ -25,6 +26,7 @@ typedef int_fast16_t num;
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
+#define PV_TABLE_SIZE 8
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -203,7 +205,7 @@ num* PIECEVALS = NULL;
 
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
-Move PV_TABLE[8][8] = {0};
+Move PV_TABLE[PV_TABLE_SIZE][PV_TABLE_SIZE] = {0};
 
 num board[64] = {0};
 num board_eval = 0;  // takes about 10% of compute time
@@ -213,6 +215,7 @@ bool MODE_UCI = false;
 
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
+std::clock_t SEARCH_START_CLOCK;
 
 void pprint() {
     for (num i = 0; i < 8; ++i) {
@@ -766,6 +769,18 @@ void printf_move(Move mv) {
     printf("MOVE %15s | KH %8ld |", cstr, kh);
 }
 
+void printf_move_eval(ValuePlusMove rec, bool accurate) {
+    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+    printf(" EVAL %7.2f %c | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
+        (float)(rec.value) / 100, accurate ? ' ' : '?', NODES_NORMAL, NODES_QUIES, time_expired);
+
+    // TODO: not entirely accurate cos move_to_str reads current board state
+    for (int i = 0; i < rec.variation.size(); i++)
+        std::cout << move_to_str(rec.variation[i], true) << " ";
+
+    std::cout << std::endl;
+}
+
 void printf_moves(Move** mvs, num count, std::string header) {
     std::cout << header;
     for (long int i = 0; i < count; ++i)
@@ -789,8 +804,8 @@ void printf_moves(Move** mvs, num count, std::string header) {
 // https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
 int_fast32_t move_order_key(Move mv)
 {
-    // try best move (pv move) from sibling node
-    if (NODE_DEPTH < SEARCH_DEPTH)
+    // try best move (pv move) from iterative deepening or sibling node
+    if (NODE_DEPTH < PV_TABLE_SIZE)
         if (PV_TABLE[NODE_DEPTH][NODE_DEPTH] == mv)
             return 90000001;
 
@@ -944,23 +959,18 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (not is_quies) {
                 // add pv to pv table and copy pv discovered at deeper ply
                 PV_TABLE[depth][depth] = mv;
-                for (num deeper = depth + 1; deeper < SEARCH_DEPTH; deeper++)
+                for (num deeper = depth + 1; deeper < PV_TABLE_SIZE; deeper++)
                     PV_TABLE[depth][deeper] = PV_TABLE[depth+1][deeper];
             }
         }
 
-        if (depth == 0 or DEBUG) {
+        if ((depth == 0 and lines) or DEBUG) {
             for (int i = 0; i < depth; i++)
                 printf("    ");
             printf_move(mv);
             // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines=true
             bool accurate = (best.move == mv) or lines;
-            printf(" EVAL %7.2f %c | VAR  ... ", (float)(rec.value) / 100, accurate ? ' ' : '?');
-
-            // TODO: not entirely accurate cos move_to_str reads current board state
-            for (int i = 0; i < rec.variation.size(); i++)
-                std::cout << move_to_str(rec.variation[i], true) << " ";
-            std::cout << std::endl;
+            printf_move_eval(rec, accurate);
         }
 
         if (not is_quies and not (lines and depth == 0)) {
@@ -1047,12 +1057,15 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
 
 // find and play the best move in the position
-std::string calc_move(bool lines = false) {
+std::string calc_move(bool lines = false)
+{
+    SEARCH_START_CLOCK = std::clock();
+
     // TODO: mode where a random/suboptimal move can get picked?
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
-    for (num i = 0; i < 8; i++)
-        for (num j = 0; j < 8; j++)
+    for (num i = 0; i < PV_TABLE_SIZE; i++)
+        for (num j = 0; j < PV_TABLE_SIZE; j++)
             PV_TABLE[i][j] = {0};
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
@@ -1062,6 +1075,7 @@ std::string calc_move(bool lines = false) {
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
 
+    num TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     num my_color = IM_WHITE ? WHITE : BLACK;
     num queens_on_board = 0;
     num own_pieces_on_board = 0;
@@ -1072,28 +1086,36 @@ std::string calc_move(bool lines = false) {
         printf("Late endgame: Bringing in pawns and king\n");
         PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_ENDGAME];
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_ENDGAME];
-        set_time_control(TIME_CONTROL_REQUESTED + 2);  // without queens search is faster, so search more nodes
+        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 2;  // without queens search is faster, so search more nodes
     } else if (queens_on_board == 0) {
         printf("Early endgame: Queens traded, taking longer thinks\n");
         PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
-        set_time_control(TIME_CONTROL_REQUESTED + 1);  // without queens search is faster, so search more nodes
+        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 1;  // without queens search is faster, so search more nodes
     } else {
         printf("Earlygame (opening or middlegame): Queens still on board\n");
         PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
         PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
-        set_time_control(TIME_CONTROL_REQUESTED);
+        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     }
 
-    printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
+    printf("Starting iterative deepening pre-search to fill the PV table\n");
+    // TODO: stop at TIME_CONTROL_TO_USE, TIME_CONTROL_TO_USE - 1, TIME_CONTROL_TO_USE - 2, etc. ?
+    for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 2; TIME_CONTROL++) {
+        set_time_control(TIME_CONTROL);
+        ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false);
+        printf_move(best_lo.move);
+        printf_move_eval(best_lo, true);
+    }
 
-    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines);
+    set_time_control(TIME_CONTROL_TO_USE);
+    printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
+    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false);
     Move mv = bestmv.move;
 
-    printf("--> BEST ");
+    printf("**** BEST ****\n");
     printf_move(mv);
-    printf("\n");
-    printf("Number of nodes searched: %ld normal %ld quiescent\n", NODES_NORMAL, NODES_QUIES);
+    printf_move_eval(bestmv, true);
 
     make_move(mv);
 
@@ -1364,10 +1386,6 @@ void test() {
 
     make_move_str("e2e4");
     printf("\n1. e4 EVAL: %ld\n", board_eval);
-
-    printf("\nLIST OF MOVES IN RESPONSE TO 1. e4\n");
-    pprint();
-    alphabeta(BLACK, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, true);
 
     IM_WHITE = true;
     board_initial_position();

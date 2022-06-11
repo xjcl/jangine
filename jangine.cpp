@@ -174,7 +174,8 @@ typedef struct Move {
 
     // needed for std::map
     bool operator<( const Move & that ) const {
-        return 8*this->f0 + this->f1 < 8*that.f0 + that.f1;
+        return (64 * (8*this->t0 + this->t1) + 8*this->f0 + this->f1) << 8 + this->prom <
+            (64 * (8*that.t0 + that.t1) + 8*that.f0 + that.f1) << 8 + that.prom;
     }
     bool operator==( const Move& that ) const {
         return this->f0 == that.f0 and this->f1 == that.f1 and this->t0 == that.t0

@@ -338,41 +338,45 @@ num CLASSICAL_PLUS = 8;
 num CLASSICAL_PLUS_PLUS = 9;
 num TIME_CONTROL_REQUESTED = BLITZ;
 void set_time_control(num TIME_CONTROL) {
-    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.1s
-        SEARCH_DEPTH = 3;
-        SEARCH_ADAPTIVE_DEPTH = 11;
-    }
-    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 0.4s
+    //TIME_CONTROL++;
+    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.3s  // lines=false: 0.10s
         SEARCH_DEPTH = 4;
         SEARCH_ADAPTIVE_DEPTH = 13;
     }
-    if (TIME_CONTROL == HYPERBULLET) {  // -t: 1.8s
+    // HYPERHYPERBULLET  1.5 --0W3D17L-- 18.5  BULLET  (implied rating BULLET-300)
+    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 1.3s  // lines=false: 0.32s
         SEARCH_DEPTH = 4;
         SEARCH_ADAPTIVE_DEPTH = 21;
     }
-    if (TIME_CONTROL == BULLET) {  // -t: 9.3s
+    // HYPERBULLET  5 --3W4D13L-- 15  BULLET  (implied rating BULLET-200)
+    if (TIME_CONTROL == HYPERBULLET) {  // -t: 6.2s  // lines=false: 1.2s
         SEARCH_DEPTH = 5;
         SEARCH_ADAPTIVE_DEPTH = 25;
     }
-    if (TIME_CONTROL == BLITZ) {  // -t: 25s
+    if (TIME_CONTROL == BULLET) {  // -t: 14s  // lines=false: 3.1s
         SEARCH_DEPTH = 6;
         SEARCH_ADAPTIVE_DEPTH = 29;
     }
-    if (TIME_CONTROL == RAPID) {  // -t: 59s
+    // BLITZ  62 -- 38  BULLET  (implied rating BULLET+85)
+    if (TIME_CONTROL == BLITZ) {  // -t: 40s  // lines=false: 6.5s
         SEARCH_DEPTH = 6;
         SEARCH_ADAPTIVE_DEPTH = 33;
     }
-    if (TIME_CONTROL == CLASSICAL) {  // -t: 221s
+    if (TIME_CONTROL == RAPID) {  // -t: 120s  // lines=false: 15.5s
         SEARCH_DEPTH = 7;
         SEARCH_ADAPTIVE_DEPTH = 35;
     }
-    if (TIME_CONTROL == CLASSICAL_PLUS) {  // -t: ...s
+    if (TIME_CONTROL == CLASSICAL) {  // lines=false: 29s
         SEARCH_DEPTH = 7;
         SEARCH_ADAPTIVE_DEPTH = 39;
     }
-    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
+    if (TIME_CONTROL == CLASSICAL_PLUS) {
         SEARCH_DEPTH = 8;
         SEARCH_ADAPTIVE_DEPTH = 41;
+    }
+    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
+        SEARCH_DEPTH = 8;
+        SEARCH_ADAPTIVE_DEPTH = 45;
     }
 }
 

@@ -234,7 +234,7 @@ bool startswith(const char *pre, const char *str) {
     return lenstr >= lenpre and strncmp(pre, str, lenpre) == 0;
 }
 
-std::map<Move, int_fast32_t> KILLERHEURISTIC;
+std::map<Move, int_fast32_t> HISTORY_HEURISTIC;
 
 num default_board[64] = {
     BLACK + ROOK, BLACK + KNIGHT, BLACK + BISHOP, BLACK + QUEEN,
@@ -761,12 +761,11 @@ std::string move_to_str(Move mv, bool algebraic = false) {
 }
 
 void printf_move(Move mv) {
-    auto it = KILLERHEURISTIC.find(mv);
-    num kh = it == KILLERHEURISTIC.end() ? 0 : it->second;
+    num hh = HISTORY_HEURISTIC.count(mv) ? HISTORY_HEURISTIC[mv] : 0;
 
     std::string move_str = move_to_str(mv, true);
     const char* cstr = move_str.c_str();
-    printf("MOVE %15s | KH %8ld |", cstr, kh);
+    printf("MOVE %15s | HH %8ld |", cstr, hh);
 }
 
 void printf_move_eval(ValuePlusMove rec, bool accurate) {
@@ -815,7 +814,10 @@ int_fast32_t move_order_key(Move mv)
     // try "killer moves"
     for (num i = 0; i < MAX_KILLER_MOVES; i++)
         if (KILLER_TABLE[NODE_DEPTH][i] == mv)
-            return 20 - i;
+            return 99000 - i;
+
+//     if (HISTORY_HEURISTIC.count(mv))
+//        return HISTORY_HEURISTIC[mv];
 
     if (mv.prom)
         return 1;
@@ -832,20 +834,6 @@ int move_order_cmp(const void* a, const void* b)
     if (!*move_a)  return 1;   // +1 = pick b as left value
 
     return move_order_key(**move_b) - move_order_key(**move_a);  // invert comparison so biggest-valued move is at start of list
-}
-
-
-// Order moves by killer heuristic
-int killer_cmp(const void* a, const void* b) {
-    Move **move_a = (Move **)a;
-    Move **move_b = (Move **)b;
-    if (!*move_b)  return -1;  // -1 = pick a as left value
-    if (!*move_a)  return 1;   // +1 = pick b as left value
-
-    auto vala = KILLERHEURISTIC.find(**move_a) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_a];
-    auto valb = KILLERHEURISTIC.find(**move_b) == KILLERHEURISTIC.end() ? 0 : KILLERHEURISTIC[**move_b];
-
-    return valb - vala;  // invert comparison so biggest-valued move is at start of list
 }
 
 
@@ -875,7 +863,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         // "standing pat": to compensate for not considering non-capture moves, at least one move should be
         //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
         best = {board_eval, {0}, std::deque<Move>()};
-        // TODO: why does valgrind throw erros for M1 ??
 
         if (COLOR == WHITE) {
             if (best.value >= beta) {
@@ -898,7 +885,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     ValuePlusMoves gl = genlegals(COLOR, is_quies);
     Move** gl_moves_backup = gl.moves;
 
-    num mvs_len = ((num)gl.movesend - (num)gl.moves) / sizeof(Move*);
+    num mvs_len = gl.movesend - gl.moves;
 
     // TODO: if we have no moves this could be no captures
     // TODO: stalemate/checkmate detection here or in evaluation?
@@ -979,9 +966,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (COLOR == BLACK and best.value < beta)  // hi bound
                 beta = best.value;
             if (beta <= alpha) {  // alpha-beta cutoff
-                if (KILLERHEURISTIC.find(mv) == KILLERHEURISTIC.end())
-                    KILLERHEURISTIC[mv] = 0;
-                KILLERHEURISTIC[mv] += depth * depth;
+                if (HISTORY_HEURISTIC.count(mv) == 0)
+                    HISTORY_HEURISTIC[mv] = 0;
+                HISTORY_HEURISTIC[mv] += depth * depth;
 
                 if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
                     for (num i = 0; i < MAX_KILLER_MOVES; i++)
@@ -1070,7 +1057,7 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    KILLERHEURISTIC.clear();
+    HISTORY_HEURISTIC.clear();
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();

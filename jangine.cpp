@@ -26,7 +26,6 @@ typedef int_fast16_t num;
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
-#define PV_TABLE_SIZE 8
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -195,7 +194,7 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-std::map<Move, Move> COUNTERMOVE;
+std::map<int64_t, Move> TRANSPOS_TABLE;
 
 struct Pair {
     num a;
@@ -206,10 +205,8 @@ Pair** PIECEDIRS = NULL;
 num* PIECERANGE = NULL;
 num* PIECEVALS = NULL;
 
-bool FOLLOWING_PV = true;
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
-Move PV_TABLE[PV_TABLE_SIZE][PV_TABLE_SIZE] = {0};
 
 num board[64] = {0};
 num board_eval = 0;  // takes about 10% of compute time
@@ -223,22 +220,20 @@ std::clock_t SEARCH_START_CLOCK;
 
 void pprint() {
     for (num i = 0; i < 8; ++i) {
-        printf("%ld ", (8 - i));
+        printf("  %ld ", (8 - i));
         for (num j = 0; j < 8; ++j) {
             std::string s = id_to_unicode[board[8 * i + j]];
             printf("%s ", s.c_str());
         }
         printf(" \n");
     }
-    printf("  a b c d e f g h\n\n");
+    printf("    a b c d e f g h\n\n");
 }
 
 bool startswith(const char *pre, const char *str) {
     size_t lenpre = strlen(pre), lenstr = strlen(str);
     return lenstr >= lenpre and strncmp(pre, str, lenpre) == 0;
 }
-
-std::map<Move, int_fast32_t> HISTORY_HEURISTIC;
 
 num default_board[64] = {
     BLACK + ROOK, BLACK + KNIGHT, BLACK + BISHOP, BLACK + QUEEN,
@@ -260,20 +255,23 @@ num KINGPOS_WHITE_j = 4;
 num KINGPOS_BLACK_i = 0;
 num KINGPOS_BLACK_j = 4;
 
-std::map<num, std::array<num, 64>> zobrint_random_table;
+std::map<num, std::array<int64_t, 64>> zobrint_random_table;
 std::set<int64_t> board_positions_seen;
 int64_t zobrint_hash = 0;
 
 void init_zobrint() {
-    int64_t zobrint_hash_ = 0;
-
     std::mt19937_64 e2(5489u);  // fixed default seed
     std::uniform_int_distribution<long long int> dist(0);  // undefined for in64_t :/
 
-    std::array<num, 12> pieces = {
+    std::array<num, 13> pieces = {
+        1,  // keep zobrint_random_table[1][0] for who to move
         WHITE + PAWN, WHITE + KNIGHT, WHITE + BISHOP, WHITE + ROOK, WHITE + QUEEN, WHITE + KING,
         BLACK + PAWN, BLACK + KNIGHT, BLACK + BISHOP, BLACK + ROOK, BLACK + QUEEN, BLACK + KING,
     };
+
+    for (int i = 0; i < 64; ++i)
+        zobrint_random_table[0][i] = 0;  // fill level 0 with 0s to ensure empty squares have no effect
+
     for (const num& piece : pieces)
         for (int i = 0; i < 64; ++i)
             zobrint_random_table[piece][i] = dist(e2);
@@ -285,9 +283,12 @@ int64_t board_to_zobrint_hash() {
     for (int i = 0; i < 64; ++i)
         zobrint_hash_ ^= zobrint_random_table[board[i]][i];
 
-    // TODO: Add who to move
+    if (not IM_WHITE)
+        zobrint_hash_ ^= zobrint_random_table[1][0];
 
-    // Okay to implement this without castling rights and en passant at first (very rare)
+    // TODO: Add en passant ranks and castling rights
+    // Okay to implement this without castling rights and en passant at first
+    //  because this is only used for repetition detection and PV store, not for actual transpositions
     // We just want to avoid voluntarily going into repeated positions in otherwise winning endgames
 
     return zobrint_hash_;
@@ -314,12 +315,14 @@ void board_initial_position() {  // setting up a game
     CASTLINGBLACK = {true, true, true};
     board_eval = 0;
 
+    zobrint_hash = board_to_zobrint_hash();
     board_positions_seen.clear();
-    board_positions_seen.insert(board_to_zobrint_hash());
+    board_positions_seen.insert(zobrint_hash);
 }
 
 void board_clear() {  // setting up random positions
     board_initial_position();
+    zobrint_hash = 0;
 
     for (int i = 0; i < 64; ++i)
         board[i] = 0;
@@ -396,6 +399,64 @@ typedef struct ValuePlusMove {
     std::deque<Move> variation;
 } ValuePlusMove;
 
+
+std::string move_to_str(Move mv, bool algebraic = false) {
+    char c0 = 'a' + (char) (mv.f1);
+    char c1 = '0' + (char) (8 - mv.f0);
+    char c2 = 'a' + (char) (mv.t1);
+    char c3 = '0' + (char) (8 - mv.t0);
+    char c4 = (char)(mv.prom ? mv.prom : ' ');
+
+    if (!algebraic) {
+        if (c4 == ' ' or c4 == 'c' or c4 == 'e')
+            return std::string{c0, c1, c2, c3};
+        return std::string{c0, c1, c2, c3, c4};
+    }
+
+    num piece = board[8*mv.f0+mv.f1];
+    num hit_piece = board[8*mv.t0+mv.t1];
+
+    char alg0 = piece_to_letter[piece & COLORBLIND];
+    char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
+
+    std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
+    return ret;
+}
+
+void printf_move(Move mv) {
+    std::string move_str = move_to_str(mv, true);
+    const char* cstr = move_str.c_str();
+    printf("MOVE %15s |", cstr);
+}
+
+void printf_move_eval(ValuePlusMove rec, bool accurate) {
+    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+    printf(" EVAL %7.2f %c | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
+        (float)(rec.value) / 100, accurate ? ' ' : '?', NODES_NORMAL, NODES_QUIES, time_expired);
+
+    // TODO: not entirely accurate cos move_to_str reads current board state
+    for (int i = 0; i < rec.variation.size(); i++)
+        std::cout << move_to_str(rec.variation[i], true) << " ";
+
+    std::cout << std::endl;
+}
+
+void printf_moves(Move** mvs, num count, std::string header) {
+    std::cout << header;
+    for (long int i = 0; i < count; ++i)
+    {
+        if (mvs[i] != NULL) {
+            printf("%ld ", i);
+            printf_move(*(mvs[i]));
+            printf("\n");
+        }
+        else{
+            printf("%ld MISSING\n", i);
+        }
+    }
+}
+
+
 num eval_material(num piece_with_color) {
     num piece = piece_with_color & COLORBLIND;
     return piece_with_color & WHITE ? PIECEVALS[piece] : -PIECEVALS[piece];
@@ -429,9 +490,8 @@ num initial_eval() {
 }
 
 
-
-PiecePlusCatling make_move(Move mv) {
-
+PiecePlusCatling make_move(Move mv)
+{
     if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0)
         printf("XXX DANGEROUS! NULL MOVE");
 
@@ -445,32 +505,42 @@ PiecePlusCatling make_move(Move mv) {
     board_eval -= eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // remove captured piece. ignores empty squares (0s)  // always empty for en passant
     board_eval += eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
 
+    zobrint_hash ^= zobrint_random_table[piece][8*mv.f0+mv.f1];  // xor OUT piece at   initial   square
+    zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];  // xor  IN piece at destination square
+    zobrint_hash ^= zobrint_random_table[hit_piece][8*mv.t0+mv.t1];  // xor OUT captured piece (0 if square empty)
+
     if (mv.prom) {
         if (mv.prom == 'e') {  // en passant
             board_eval -= eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get removed earlier
+            zobrint_hash ^= zobrint_random_table[board[8*mv.f0+mv.t1]][8*mv.f0+mv.t1];  // xor OUT captured pawn
             board[8*mv.f0+mv.t1] = 0;
-        } else if (mv.prom == 'c') {  // castling
-            if (mv.t1 == 2) {  // long
+        } else if (mv.prom == 'c') {  // castling -- rook part
+            if (mv.t1 == 2) {  // long (left)
                 board[8*CASTLERANK+3] = board[8*CASTLERANK];
                 board[8*CASTLERANK] = 0;
                 board_eval += eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 3) - eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 0);  // rook positioning
-            } else {  // short
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+3]][8*CASTLERANK  ];  // xor OUT old rook position
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+3]][8*CASTLERANK+3];  // xor  IN new rook position
+            } else {  // short (right)
                 board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
                 board[8*CASTLERANK+7] = 0;
                 board_eval += eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 5) - eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 7);  // rook positioning
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+5]][8*CASTLERANK+7];  // xor OUT old rook position
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+5]][8*CASTLERANK+5];  // xor  IN new rook position
             }
-        } else {
-            num p;
+        } else {  // pawn promotion
+            num p = (mv.t0 == 0 ? WHITE : BLACK);
             switch (mv.prom) {
-                case 'q':  p = QUEEN;   break;
-                case 'r':  p = ROOK;    break;
-                case 'b':  p = BISHOP;  break;
-                case 'n':  p = KNIGHT;  break;
+                case 'q':  p += QUEEN;   break;
+                case 'r':  p += ROOK;    break;
+                case 'b':  p += BISHOP;  break;
+                case 'n':  p += KNIGHT;  break;
             }
-            p += (mv.t0 == 0 ? WHITE : BLACK);
             board[8*mv.t0+mv.t1] = p;
             board_eval += eval_material(p) - eval_material(piece);
             board_eval += eval_piece_on_square(p, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.t0, mv.t1);  // t0/t1 to compensate for wrong pieceval earlier
+            zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];  // xor OUT promoting pawn
+            zobrint_hash ^= zobrint_random_table[    p][8*mv.t0+mv.t1];  // xor  IN promoted piece
         }
     }
 
@@ -494,39 +564,54 @@ PiecePlusCatling make_move(Move mv) {
         KINGPOS_BLACK_j = mv.t1;
     }
 
+    zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
+
     return {hit_piece, old_cr_w, old_cr_b};
 }
 
-void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b) {
-
+void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b)
+{
     num piece = board[8*(mv.t0)+mv.t1];
     board[8*(mv.t0)+mv.t1] = hit_piece;
     board[8*(mv.f0)+mv.f1] = piece;
 
+    num CASTLERANK = piece & WHITE ? 7 : 0;
+
     board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // add captured piece back in
     board_eval -= eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
 
+    zobrint_hash ^= zobrint_random_table[piece][8*mv.f0+mv.f1];
+    zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];
+    zobrint_hash ^= zobrint_random_table[hit_piece][8*mv.t0+mv.t1];
+
     if (mv.prom)
     {
-        if (mv.prom == 'e') {
+        if (mv.prom == 'e') {  // en passant
             board[8*mv.f0+mv.t1] = PAWN + (mv.t0 == 5 ? WHITE : BLACK);
             board_eval += eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get added earlier
+            zobrint_hash ^= zobrint_random_table[board[8*mv.f0+mv.t1]][8*mv.f0+mv.t1];
         } else if (mv.prom == 'c') {  // castling -- undo rook move
-            if (mv.t1 == 2) {  // long
+            if (mv.t1 == 2) {  // long (left)
                 board[8*mv.f0] = board[8*mv.f0+3];
                 board[8*mv.f0+3] = 0;
                 board_eval += eval_piece_on_square(board[8*mv.f0], mv.f0, 0) - eval_piece_on_square(board[8*mv.f0], mv.f0, 3);  // rook positioning
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK  ]][8*CASTLERANK  ];
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK  ]][8*CASTLERANK+3];
             }
-            else {  // short
+            else {  // short (right)
                 board[8*mv.f0+7] = board[8*mv.f0+5];
                 board[8*mv.f0+5] = 0;
                 board_eval += eval_piece_on_square(board[8*mv.f0+7], mv.f0, 7) - eval_piece_on_square(board[8*mv.f0+7], mv.f0, 5);  // rook positioning
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+7]][8*CASTLERANK+7];
+                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+7]][8*CASTLERANK+5];
             }
-        } else {
+        } else {  // promotion
             num old_pawn = PAWN + (mv.t0 == 0 ? WHITE : BLACK);
             board[8*mv.f0+mv.f1] = old_pawn;
             board_eval -= eval_material(piece) - eval_material(old_pawn);
             board_eval -= eval_piece_on_square(piece, mv.f0, mv.f1) - eval_piece_on_square(old_pawn, mv.f0, mv.f1);  // t0/t1 to compensate for wrong pieceval earlier
+            zobrint_hash ^= zobrint_random_table[old_pawn][8*mv.f0+mv.f1];
+            zobrint_hash ^= zobrint_random_table[   piece][8*mv.f0+mv.f1];
         }
     }
 
@@ -541,6 +626,8 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
         KINGPOS_BLACK_i = mv.f0;
         KINGPOS_BLACK_j = mv.f1;
     }
+
+    zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
 
 
@@ -745,64 +832,6 @@ num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
     return 10;
 }
 
-std::string move_to_str(Move mv, bool algebraic = false) {
-    char c0 = 'a' + (char) (mv.f1);
-    char c1 = '0' + (char) (8 - mv.f0);
-    char c2 = 'a' + (char) (mv.t1);
-    char c3 = '0' + (char) (8 - mv.t0);
-    char c4 = (char)(mv.prom ? mv.prom : ' ');
-
-    if (!algebraic) {
-        if (c4 == ' ' or c4 == 'c' or c4 == 'e')
-            return std::string{c0, c1, c2, c3};
-        return std::string{c0, c1, c2, c3, c4};
-    }
-
-    num piece = board[8*mv.f0+mv.f1];
-    num hit_piece = board[8*mv.t0+mv.t1];
-
-    char alg0 = piece_to_letter[piece & COLORBLIND];
-    char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
-
-    std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
-    return ret;
-}
-
-void printf_move(Move mv) {
-    num hh = HISTORY_HEURISTIC.count(mv) ? HISTORY_HEURISTIC[mv] : 0;
-
-    std::string move_str = move_to_str(mv, true);
-    const char* cstr = move_str.c_str();
-    printf("MOVE %15s | HH %8ld |", cstr, hh);
-}
-
-void printf_move_eval(ValuePlusMove rec, bool accurate) {
-    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
-    printf(" EVAL %7.2f %c | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
-        (float)(rec.value) / 100, accurate ? ' ' : '?', NODES_NORMAL, NODES_QUIES, time_expired);
-
-    // TODO: not entirely accurate cos move_to_str reads current board state
-    for (int i = 0; i < rec.variation.size(); i++)
-        std::cout << move_to_str(rec.variation[i], true) << " ";
-
-    std::cout << std::endl;
-}
-
-void printf_moves(Move** mvs, num count, std::string header) {
-    std::cout << header;
-    for (long int i = 0; i < count; ++i)
-    {
-        if (mvs[i] != NULL) {
-            printf("%ld ", i);
-            printf_move(*(mvs[i]));
-            printf("\n");
-        }
-        else{
-            printf("%ld MISSING\n", i);
-        }
-    }
-}
-
 
 // https://www.chessprogramming.org/MVV-LVA
 // For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
@@ -811,22 +840,10 @@ void printf_moves(Move** mvs, num count, std::string header) {
 // https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
 int_fast32_t move_order_key(Move mv)
 {
-    // try best move (pv move) from iterative deepening
-    if (FOLLOWING_PV and NODE_DEPTH < PV_TABLE_SIZE)
-        if (PV_TABLE[0][NODE_DEPTH] == mv)
-            //{printf("FOLLOWING PV %ld  ", NODE_DEPTH); printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000030;}
-            return 90000030;
-
-    // for top-level moves, try refutation from previous search. this is identical to the PV_TABLE for the PV
-    if (NODE_DEPTH == 1)
-        if (COUNTERMOVE.count(LASTMOVE) and COUNTERMOVE[LASTMOVE] == mv)
-            //{printf_move(LASTMOVE); printf_move(COUNTERMOVE); printf("\n"); return 90000003;}
-            return 90000020;
-
-    // try best move from sibling node
-    if (NODE_DEPTH < PV_TABLE_SIZE)
-        if (PV_TABLE[NODE_DEPTH][NODE_DEPTH] == mv)
-            return 90000010;
+    // try best move (pv move) from previous search (iterative deepening)
+    if (TRANSPOS_TABLE.count(zobrint_hash) and TRANSPOS_TABLE[zobrint_hash] == mv)
+        //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
+        return 90000020;
 
     // MVV-LVA (most valuable victim, least valuable attacker)
     if (board[8*mv.t0+mv.t1])
@@ -836,9 +853,6 @@ int_fast32_t move_order_key(Move mv)
     for (num i = 0; i < MAX_KILLER_MOVES; i++)
         if (KILLER_TABLE[NODE_DEPTH][i] == mv)
             return 99000 - i;
-
-//     if (HISTORY_HEURISTIC.count(mv))
-//        return HISTORY_HEURISTIC[mv];
 
     if (mv.prom)
         return 1;
@@ -860,13 +874,13 @@ int move_order_cmp(const void* a, const void* b)
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate) {
-
+ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)
+{
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
 
     // treat all repeated positions as an instant draw to avoid repetitions when winning and encourage when losing
-    if ((depth == 1 or depth == 2) and board_positions_seen.count(board_to_zobrint_hash()))
+    if ((depth == 1 or depth == 2) and board_positions_seen.count(zobrint_hash))
         return {0, {0}, std::deque<Move>()};
 
     if (is_quies) {
@@ -932,8 +946,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);
     if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
 
-    while (gl.moves != gl.movesend) {
-
+    while (gl.moves != gl.movesend)
+    {
         if (!*(gl.moves)) {
             gl.moves++;
             continue;
@@ -960,21 +974,10 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             lines_accurate
         );
 
-        if (depth <= 0 and not rec.variation.empty())
-            COUNTERMOVE[mv] = rec.variation[0];
-
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value) {
+        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
             best = {rec.value, mv, rec.variation};
-
-            if (not is_quies and depth < PV_TABLE_SIZE) {
-                // add pv to pv table and copy pv discovered at deeper ply
-                PV_TABLE[depth][depth] = mv;
-                for (num deeper = depth + 1; deeper < PV_TABLE_SIZE; deeper++)
-                    PV_TABLE[depth][deeper] = PV_TABLE[depth+1][deeper];
-            }
-        }
 
         if ((depth == 0 and lines) or DEBUG) {
             for (int i = 0; i < depth; i++)
@@ -991,10 +994,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (COLOR == BLACK and best.value < beta)  // hi bound
                 beta = best.value;
             if (beta <= alpha) {  // alpha-beta cutoff
-                if (HISTORY_HEURISTIC.count(mv) == 0)
-                    HISTORY_HEURISTIC[mv] = 0;
-                HISTORY_HEURISTIC[mv] += depth * depth;
-
                 if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
                     for (num i = 0; i < MAX_KILLER_MOVES; i++)
                         if (KILLER_TABLE[depth][i] == mv)
@@ -1051,8 +1050,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         gl.moves++;
     }
 
-    // as soon as we back up once we are no longer in the leftmost path
-    FOLLOWING_PV = false;
+    if (depth <= 5 and not is_quies)
+        TRANSPOS_TABLE[zobrint_hash] = best.move;
 
     for (int i = 0; i < 128; ++i)
         if (gl_moves_backup[i])
@@ -1079,17 +1078,15 @@ std::string calc_move(bool lines = false)
     // TODO: mode where a random/suboptimal move can get picked?
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
-    for (num i = 0; i < PV_TABLE_SIZE; i++)
-        for (num j = 0; j < PV_TABLE_SIZE; j++)
-            PV_TABLE[i][j] = {0};
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    HISTORY_HEURISTIC.clear();
-    COUNTERMOVE.clear();
+    TRANSPOS_TABLE.clear();
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
+    zobrint_hash = board_to_zobrint_hash();
+    std::cout << "Starting search with ZOB " << zobrint_hash << std::endl;
 
     num TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     num my_color = IM_WHITE ? WHITE : BLACK;
@@ -1119,7 +1116,6 @@ std::string calc_move(bool lines = false)
     // TODO: stop at TIME_CONTROL_TO_USE, TIME_CONTROL_TO_USE - 1, TIME_CONTROL_TO_USE - 2, etc. ?
     for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 2; TIME_CONTROL++) {
         set_time_control(TIME_CONTROL);
-        FOLLOWING_PV = true;
         LASTMOVE = LASTMOVE_GAME;
         ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
         printf_move(best_lo.move);
@@ -1127,7 +1123,6 @@ std::string calc_move(bool lines = false)
     }
 
     set_time_control(TIME_CONTROL_TO_USE);
-    FOLLOWING_PV = true;
     LASTMOVE = LASTMOVE_GAME;
     printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
     ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines, false);
@@ -1280,6 +1275,7 @@ void test() {
 
     board_initial_position();
     IM_WHITE = true;
+    zobrint_hash ^= zobrint_random_table[board[3]][3];
     board[3] = 0;  // up a queen so shouldn't draw
     board_positions_seen.insert(board_to_zobrint_hash());
     make_move_str("g1f3"); make_move_str("g8f6");
@@ -1536,7 +1532,7 @@ int main(int argc, char const *argv[])
             make_move_str(line);
             num_moves++;
             pprint();
-            std::string mv = calc_move();
+            std::string mv = calc_move(true);
             num_moves++;
             pprint();
             printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
@@ -1545,7 +1541,7 @@ int main(int argc, char const *argv[])
         if (startswith("go", line)) {
             IM_WHITE = (num_moves + 1) % 2;
             started = true;
-            std::string mv = calc_move();
+            std::string mv = calc_move(true);
             num_moves++;
             pprint();
             printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());

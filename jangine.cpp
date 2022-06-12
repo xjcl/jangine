@@ -63,7 +63,8 @@ std::map<num, std::string> id_to_unicode = {
         { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
         {129, "♟"}, {130, "♞"}, {132, "♝"}, {136, "♜"}, {144, "♛"}, {160, "♚"},
 };
-std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES = {
+num PIECE_SQUARE_TABLES[161][64] = {0};  // C array is much faster to query than a C++ map
+std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES_SOURCE = {
         {0, std::array<num, 64>{
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
@@ -194,7 +195,7 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-std::map<int64_t, Move> TRANSPOS_TABLE;
+Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits, use & 0xffffff  -> 20 * 2**24 bytes = 320 MiB
 
 struct Pair {
     num a;
@@ -255,7 +256,7 @@ num KINGPOS_WHITE_j = 4;
 num KINGPOS_BLACK_i = 0;
 num KINGPOS_BLACK_j = 4;
 
-std::map<num, std::array<int64_t, 64>> zobrint_random_table;
+int64_t zobrint_random_table[161][64] = {0};
 std::set<int64_t> board_positions_seen;
 int64_t zobrint_hash = 0;
 
@@ -303,12 +304,23 @@ void set_up_kings(num wi, num wj, num bi, num bj) {
     KINGPOS_BLACK_j = bj;
 }
 
+void set_piece_square_table(bool is_endgame = false) {
+    for (int j = 0; j < 64; j++) {
+        PIECE_SQUARE_TABLES[KNIGHT][j] = PIECE_SQUARE_TABLES_SOURCE[KNIGHT][j];
+        PIECE_SQUARE_TABLES[BISHOP][j] = PIECE_SQUARE_TABLES_SOURCE[BISHOP][j];
+        PIECE_SQUARE_TABLES[  ROOK][j] = PIECE_SQUARE_TABLES_SOURCE[  ROOK][j];
+        PIECE_SQUARE_TABLES[ QUEEN][j] = PIECE_SQUARE_TABLES_SOURCE[ QUEEN][j];
+
+        PIECE_SQUARE_TABLES[KING][j] = PIECE_SQUARE_TABLES_SOURCE[is_endgame ? KING_ENDGAME : KING_EARLYGAME][j];
+        PIECE_SQUARE_TABLES[PAWN][j] = PIECE_SQUARE_TABLES_SOURCE[is_endgame ? PAWN_ENDGAME : PAWN_EARLYGAME][j];
+    }
+}
+
 void board_initial_position() {  // setting up a game
     for (int i = 0; i < 64; ++i)
         board[i] = default_board[i];
 
-    PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
-    PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+    set_piece_square_table();
 
     set_up_kings(7, 4, 0, 4);
     CASTLINGWHITE = {true, true, true};
@@ -841,7 +853,7 @@ num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
 int_fast32_t move_order_key(Move mv)
 {
     // try best move (pv move) from previous search (iterative deepening)
-    if (TRANSPOS_TABLE.count(zobrint_hash) and TRANSPOS_TABLE[zobrint_hash] == mv)
+    if (TRANSPOS_TABLE[zobrint_hash & 0xffffff] == mv)
         //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
         return 90000020;
 
@@ -1051,7 +1063,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
 
     if (depth <= 5 and not is_quies)
-        TRANSPOS_TABLE[zobrint_hash] = best.move;
+        TRANSPOS_TABLE[zobrint_hash & 0xffffff] = best.move;
 
     for (int i = 0; i < 128; ++i)
         if (gl_moves_backup[i])
@@ -1081,7 +1093,7 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    TRANSPOS_TABLE.clear();
+    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
@@ -1097,18 +1109,15 @@ std::string calc_move(bool lines = false)
 
     if (queens_on_board == 0 and own_pieces_on_board <= 2) {
         printf("Late endgame: Bringing in pawns and king\n");
-        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_ENDGAME];
-        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_ENDGAME];
+        set_piece_square_table(true);
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 2;  // without queens search is faster, so search more nodes
     } else if (queens_on_board == 0) {
         printf("Early endgame: Queens traded, taking longer thinks\n");
-        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
-        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+        set_piece_square_table();
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 1;  // without queens search is faster, so search more nodes
     } else {
         printf("Earlygame (opening or middlegame): Queens still on board\n");
-        PIECE_SQUARE_TABLES[KING] = PIECE_SQUARE_TABLES[KING_EARLYGAME];
-        PIECE_SQUARE_TABLES[PAWN] = PIECE_SQUARE_TABLES[PAWN_EARLYGAME];
+        set_piece_square_table();
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     }
 

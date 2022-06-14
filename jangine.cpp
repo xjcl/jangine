@@ -194,6 +194,7 @@ typedef struct PiecePlusCatling {
 CASTLINGRIGHTS CASTLINGWHITE = {true, true, true};
 CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 
+Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
 Move TRANSPOS_TABLE[1048576] = {0};  // 20 bits, use & 0xfffff  -> 20 * 2**20 bytes = 20 MiB
@@ -482,7 +483,7 @@ num initial_eval() {
 
 PiecePlusCatling make_move(Move mv)
 {
-    if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0)
+    if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE");
 
     num piece = board[8*mv.f0+mv.f1];
@@ -1137,7 +1138,7 @@ std::string calc_move(bool lines = false)
         }
     }
 
-    if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0) {
+    if (mv == NULLMOVE) {
         SEARCH_ADAPTIVE_DEPTH = search_depth_requested;
         LASTMOVE = LASTMOVE_GAME;
         printf("Starting alphabeta at ZOB %ld with depth %ld\n", zobrint_hash, SEARCH_ADAPTIVE_DEPTH);

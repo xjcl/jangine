@@ -199,7 +199,6 @@ Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
 Move TRANSPOS_TABLE[1048576] = {0};  // 20 bits, use & 0xfffff  -> 20 * 2**20 bytes = 20 MiB
 int64_t TRANSPOS_TABLE_ZOB[1048576] = {0};
-std::set<int64_t> TRANSPOS_TABLE_GROUND;
 
 struct Pair {
     num a;
@@ -1108,7 +1107,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     if ((depth <= 5) and (not is_quies) and not (best.move == NULLMOVE)) {
         TRANSPOS_TABLE[zobrint_hash & 0xfffff] = best.move;
         TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] = zobrint_hash;  // verify we got the right one
-        TRANSPOS_TABLE_GROUND.insert(zobrint_hash);
     }
 
     if (not (best.move == NULLMOVE))
@@ -1166,8 +1164,6 @@ std::string calc_move(bool lines = false)
     num search_depth_requested = time_control_to_depth(TIME_CONTROL_TO_USE);
     Move mv = {0};
 
-    TRANSPOS_TABLE_GROUND.clear();
-
     printf("Starting iterative deepening pre-search to fill the PV table\n");
     // TODO: stop at search_depth_requested - 1 or search_depth_requested etc. ?
     for (num search_depth = 1; search_depth < search_depth_requested; search_depth++) {
@@ -1194,17 +1190,6 @@ std::string calc_move(bool lines = false)
         printf_move(mv);
         printf_move_eval(bestmv, true);
     }
-
-    std::cout << "Expected size " << TRANSPOS_TABLE_GROUND.size() << std::endl;
-
-    size_t sz = 0;
-    for (size_t i = 0; i < 1048576; ++i) {
-        Move mv = TRANSPOS_TABLE[i];
-        sz += (mv.f0 != 0) or (mv.f1 != 0) or (mv.t0 != 0) or (mv.t1 != 0);
-    }
-
-    std::cout << "Actual size " << sz << std::endl;
-    std::cout << "Collisions " << (TRANSPOS_TABLE_GROUND.size() - sz) << std::endl;
 
     make_move(mv);
 

@@ -343,8 +343,7 @@ void board_clear() {  // setting up random positions
     CASTLINGBLACK = {false, false, false};
 }
 
-num SEARCH_DEPTH = 99;  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
-num SEARCH_ADAPTIVE_DEPTH = 6;  // how deep to search in adaptive search (combines with SEARCH_DEPTH)
+num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
 num HYPERHYPERHYPERBULLET = 1;
 num HYPERHYPERBULLET = 2;
@@ -356,26 +355,25 @@ num CLASSICAL = 7;
 num CLASSICAL_PLUS = 8;
 num CLASSICAL_PLUS_PLUS = 9;
 num TIME_CONTROL_REQUESTED = RAPID;
-void set_time_control(num TIME_CONTROL) {
-    SEARCH_DEPTH = 99;
+num time_control_to_depth(num TIME_CONTROL) {
     if (TIME_CONTROL <= HYPERHYPERHYPERBULLET)  // 0.2s
-        SEARCH_ADAPTIVE_DEPTH = 3;
+        return 3;
     if (TIME_CONTROL == HYPERHYPERBULLET)  // 0.6s
-        SEARCH_ADAPTIVE_DEPTH = 4;
+        return 4;
     if (TIME_CONTROL == HYPERBULLET)  // 2.8s
-        SEARCH_ADAPTIVE_DEPTH = 5;
+        return 5;
     if (TIME_CONTROL == BULLET)  // 6.0s
-        SEARCH_ADAPTIVE_DEPTH = 6;
+        return 6;
     if (TIME_CONTROL == BLITZ)  // 13.5s
-        SEARCH_ADAPTIVE_DEPTH = 6;
+        return 6;
     if (TIME_CONTROL == RAPID)  // 36s
-        SEARCH_ADAPTIVE_DEPTH = 7;
+        return 7;
     if (TIME_CONTROL == CLASSICAL)  // 62s
-        SEARCH_ADAPTIVE_DEPTH = 7;
+        return 7;
     if (TIME_CONTROL == CLASSICAL_PLUS)
-        SEARCH_ADAPTIVE_DEPTH = 8;
+        return 8;
     if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS)
-        SEARCH_ADAPTIVE_DEPTH = 8;
+        return 8;
 }
 
 typedef struct ValuePlusMoves {
@@ -872,13 +870,13 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         return {0, {0}, std::deque<Move>()};
 
     if (is_quies) {
-        //if (depth >= SEARCH_DEPTH + 99)
+        // TODO: limit quiescence search depth somehow
         if (NO_QUIES)
             return {board_eval, {0}, std::deque<Move>()};
     }
     else
         // Main search is done, do quiescence search at the leaf nodes
-        if (adaptive <= 0 or depth >= SEARCH_DEPTH)
+        if (adaptive <= 0)
             return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
@@ -1069,12 +1067,11 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));  // TODO: This takes 6ms to reset, try to do this on opponent time
+    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));  // TODO: This takes 3ms to reset, try to do this on opponent time
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
     zobrint_hash = board_to_zobrint_hash();
-    std::cout << "Starting search with ZOB " << zobrint_hash << std::endl;
 
     num TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     num my_color = IM_WHITE ? WHITE : BLACK;
@@ -1097,25 +1094,35 @@ std::string calc_move(bool lines = false)
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     }
 
+    num search_depth_requested = time_control_to_depth(TIME_CONTROL_TO_USE);
+    Move mv = {0};
+
     printf("Starting iterative deepening pre-search to fill the PV table\n");
-    // TODO: stop at TIME_CONTROL_TO_USE, TIME_CONTROL_TO_USE - 1, TIME_CONTROL_TO_USE - 2, etc. ?
-    for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 1; TIME_CONTROL++) {
-        set_time_control(TIME_CONTROL);
+    // TODO: stop at search_depth_requested - 1 or search_depth_requested etc. ?
+    for (num search_depth = 1; search_depth < search_depth_requested; search_depth++) {
+        SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
-        ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
-        printf_move(best_lo.move);
-        printf_move_eval(best_lo, true);
+        ValuePlusMove best_at_depth = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
+        printf_move(best_at_depth.move);
+        printf_move_eval(best_at_depth, true);
+        if ((best_at_depth.value < -inf/2) or (best_at_depth.value > inf/2)) {
+            printf("Found mate score already so stopping iterative deepening early\n");
+            mv = best_at_depth.move;
+            break;
+        }
     }
 
-    set_time_control(TIME_CONTROL_TO_USE);
-    LASTMOVE = LASTMOVE_GAME;
-    printf("Starting alphabeta with depth %ld adaptive %ld\n", SEARCH_DEPTH, SEARCH_ADAPTIVE_DEPTH);
-    ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines, false);
-    Move mv = bestmv.move;
+    if (mv.f0 == 0 and mv.f1 == 0 and mv.t0 == 0 and mv.t1 == 0) {
+        SEARCH_ADAPTIVE_DEPTH = search_depth_requested;
+        LASTMOVE = LASTMOVE_GAME;
+        printf("Starting alphabeta at ZOB %ld with depth %ld\n", zobrint_hash, SEARCH_ADAPTIVE_DEPTH);
+        ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines, false);
+        mv = bestmv.move;
 
-    printf("**** BEST ****\n");
-    printf_move(mv);
-    printf_move_eval(bestmv, true);
+        printf("**** BEST ****\n");
+        printf_move(mv);
+        printf_move_eval(bestmv, true);
+    }
 
     make_move(mv);
 
@@ -1181,7 +1188,7 @@ void init_data(void) {
 
 
 void test() {
-    std::cout << "Tests Mate-in-1 #1 (and stalemate)" << std::endl;
+    std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
 
     IM_WHITE = true;
     board_clear();
@@ -1190,7 +1197,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
 
-    std::cout << "\nTests Mate-in-2 #1" << std::endl;
+    std::cout << "\nTests Mate-in-2" << std::endl;
 
     board_clear();
     set_up_kings(7, 2, 0, 1);
@@ -1203,7 +1210,7 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-2 (eval=297) if depth >= 4
 
-    std::cout << "\nTests Mate-in-3 #1" << std::endl;
+    std::cout << "\nTests Mate-in-3" << std::endl;
 
     board_clear();
     set_up_kings(7, 2, 0, 2);
@@ -1216,13 +1223,22 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-3 (eval=295) if depth >= 6
 
-    std::cout << "\nTests Stalemate" << std::endl;
+    std::cout << "\nTests Mate-in-4 (and stalemate)" << std::endl;
 
     board_clear();
     set_up_kings(0, 2, 0, 0);
     board[2*8+1] = WHITE + PAWN;
     pprint();
     std::cout << calc_move(true) << std::endl;  // Kc7 is stalemate, b7+ promotes
+
+    std::cout << "\nTests 2 queens mate-in-3 (should stop early)" << std::endl;
+
+    board_clear();
+    set_up_kings(7, 6, 5, 2);
+    board[0*8+4] = WHITE + QUEEN;
+    board[3*8+5] = WHITE + QUEEN;
+    pprint();
+    std::cout << calc_move(true) << std::endl;  // should not be slow
 
     std::cout << "\nTests Promotion" << std::endl;
 

@@ -21,11 +21,12 @@
 // typedef int_fast8_t int;
 typedef int_fast16_t num;
 
-#define SIMPLE_EVAL  // TODO: just-material eval
+#define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
 #define DEBUG 0
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
+#define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 
@@ -926,6 +927,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
 
     NODE_DEPTH = depth;
+    bool try_null_window = false;  // opposite of "bSearchPV"
 
     if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
     // TODO: Different sorting function for quies vs non-quies?
@@ -949,16 +951,35 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         PiecePlusCatling ppc = make_move(mv);
         LASTMOVE = mv;  // only needed for genlegals so okay to only set here
 
-        ValuePlusMove rec = alphabeta(
-            COLOR == WHITE ? BLACK : WHITE,
-            alpha,
-            beta,
-            adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies),
-            is_quies,
-            depth + 1,
-            lines,
-            lines_accurate
-        );
+        ValuePlusMove rec;
+        num adaptive_new = adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies);
+
+        // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
+        // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
+        if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or (not try_null_window))
+            rec = alphabeta(
+                COLOR == WHITE ? BLACK : WHITE,
+                alpha,
+                beta,
+                adaptive_new, is_quies, depth + 1, lines, lines_accurate
+            );
+        else {
+            // https://www.chessprogramming.org/Principal_Variation_Search
+            rec = alphabeta(  // try a null-window search that saves time if everything is below alpha
+                COLOR == WHITE ? BLACK : WHITE,
+                COLOR == WHITE ? alpha : (beta - 1),
+                COLOR == WHITE ? (alpha + 1) : beta,
+                adaptive_new, is_quies, depth + 1, lines, lines_accurate
+            );
+
+            if (COLOR == WHITE ? rec.value > alpha: rec.value < beta)  // costly re-search
+                rec = alphabeta(
+                    COLOR == WHITE ? BLACK : WHITE,
+                    alpha,
+                    beta,
+                    adaptive_new, is_quies, depth + 1, lines, lines_accurate
+                );
+        }
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
@@ -975,10 +996,14 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         }
 
         if (not is_quies and not (lines_accurate and depth == 0)) {
-            if (COLOR == WHITE and best.value > alpha)  // lo bound
+            if (COLOR == WHITE and best.value > alpha) {  // lo bound
                 alpha = best.value;
-            if (COLOR == BLACK and best.value < beta)  // hi bound
+                try_null_window = true;
+            }
+            if (COLOR == BLACK and best.value < beta) {  // hi bound
                 beta = best.value;
+                try_null_window = true;
+            }
             if (beta <= alpha) {  // alpha-beta cutoff
                 if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
                     for (num i = 0; i < MAX_KILLER_MOVES; i++)

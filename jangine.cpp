@@ -202,9 +202,9 @@ struct Pair {
     num b;
 };
 
-Pair** PIECEDIRS = NULL;
-num* PIECERANGE = NULL;
-num* PIECEVALS = NULL;
+Pair PIECEDIRS[65][9] = {0};
+num PIECERANGE[65] = {0};
+num PIECEVALS[65] = {0};
 
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
@@ -1128,11 +1128,6 @@ void init_data(void) {
     board_initial_position();
     init_zobrint();
 
-    PIECEDIRS = (Pair**)calloc(65, sizeof(Pair*));
-    PIECERANGE = (num*)calloc(65, sizeof(num));
-    PIECEVALS = (num*)calloc(65, sizeof(num));
-
-    PIECEDIRS[KNIGHT] = (Pair*)malloc(9 * sizeof(Pair));
     PIECEDIRS[KNIGHT][0] = {1, 2};
     PIECEDIRS[KNIGHT][1] = {2, 1};
     PIECEDIRS[KNIGHT][2] = {-1, 2};
@@ -1143,32 +1138,29 @@ void init_data(void) {
     PIECEDIRS[KNIGHT][7] = {-2, 1};
     PIECEDIRS[KNIGHT][8] = {0, 0};
 
-    PIECEDIRS[BISHOP] = (Pair*)malloc(5 * sizeof(Pair));
     PIECEDIRS[BISHOP][0] = {1, 1};
     PIECEDIRS[BISHOP][1] = {1, -1};
     PIECEDIRS[BISHOP][2] = {-1, 1};
     PIECEDIRS[BISHOP][3] = {-1, -1};
     PIECEDIRS[BISHOP][4] = {0, 0};
 
-    PIECEDIRS[ROOK] = (Pair*)malloc(5 * sizeof(Pair));
     PIECEDIRS[ROOK][0] = {0, 1};
     PIECEDIRS[ROOK][1] = {1, 0};
     PIECEDIRS[ROOK][2] = {0, -1};
     PIECEDIRS[ROOK][3] = {-1, 0};
     PIECEDIRS[ROOK][4] = {0, 0};
 
-    PIECEDIRS[QUEEN] = (Pair*)malloc(9 * sizeof(Pair));
-    PIECEDIRS[QUEEN][0] = {0, 1};
-    PIECEDIRS[QUEEN][1] = {1, 0};
-    PIECEDIRS[QUEEN][2] = {0, -1};
-    PIECEDIRS[QUEEN][3] = {-1, 0};
-    PIECEDIRS[QUEEN][4] = {1, 1};
-    PIECEDIRS[QUEEN][5] = {1, -1};
-    PIECEDIRS[QUEEN][6] = {-1, 1};
-    PIECEDIRS[QUEEN][7] = {-1, -1};
-    PIECEDIRS[QUEEN][8] = {0, 0};
-
-    PIECEDIRS[KING] = PIECEDIRS[QUEEN];
+    for (num piece = QUEEN; piece <= KING; piece += KING - QUEEN) {  // what
+        PIECEDIRS[piece][0] = {0, 1};
+        PIECEDIRS[piece][1] = {1, 0};
+        PIECEDIRS[piece][2] = {0, -1};
+        PIECEDIRS[piece][3] = {-1, 0};
+        PIECEDIRS[piece][4] = {1, 1};
+        PIECEDIRS[piece][5] = {1, -1};
+        PIECEDIRS[piece][6] = {-1, 1};
+        PIECEDIRS[piece][7] = {-1, -1};
+        PIECEDIRS[piece][8] = {0, 0};
+    }
 
     PIECERANGE[KNIGHT] = 1;
     PIECERANGE[BISHOP] = 7;

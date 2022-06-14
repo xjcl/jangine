@@ -198,6 +198,8 @@ Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
 Move TRANSPOS_TABLE[1048576] = {0};  // 20 bits, use & 0xfffff  -> 20 * 2**20 bytes = 20 MiB
+int64_t TRANSPOS_TABLE_ZOB[1048576] = {0};
+std::set<int64_t> TRANSPOS_TABLE_GROUND;
 
 struct Pair {
     num a;
@@ -217,6 +219,7 @@ bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
 
+int64_t GENLEGALS = 0;
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
 std::clock_t SEARCH_START_CLOCK;
@@ -703,6 +706,8 @@ bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of t
 
 ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 
+    GENLEGALS++;
+
     Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves
         // also inits to NULLptrs
     Move** mvsend = mvs;
@@ -905,44 +910,69 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         }
     }
 
-    ValuePlusMoves gl = genlegals(COLOR, is_quies);
-    Move** gl_moves_backup = gl.moves;
+    Move mv = {0};
+    ValuePlusMoves gl = {0};
+    Move** gl_moves_backup = NULL;
+    num alpha_raised_n_times = 0;
+    bool pv_in_hash_table = false;
 
-    num mvs_len = gl.movesend - gl.moves;
-
-    // TODO: if we have no moves this could be no captures
-    // TODO: stalemate/checkmate detection here or in evaluation?
-    // TODO: depth-adjusted checkmating value missing in quies search
-    // qsort apparently cannot handle empty arrays (nmemb=0) so handle them here
-    if (!is_quies and !mvs_len) {
-        free(gl_moves_backup);
-
-        if (not king_in_check(COLOR))
-            return {0, {0}, std::deque<Move>()};  // stalemate
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
-    }
-
-    if (is_quies and !mvs_len) {
-        free(gl_moves_backup);
-        return best;
-    }
-
-    NODE_DEPTH = depth;
-    bool try_null_window = false;  // opposite of "bSearchPV"
-
-    if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
-    // TODO: Different sorting function for quies vs non-quies?
-    qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);
-    if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
-
-    while (gl.moves != gl.movesend)
+    // try best move (hash/pv move) from previous search (iterative deepening) -> skip move generation
+    if ((not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash))
     {
+        mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
+        pv_in_hash_table = true;
+        goto jump_into_loop_with_hash_move;
+    }
+
+    while (true)
+    {
+        if (gl.moves == NULL)
+        {
+            gl = genlegals(COLOR, is_quies);
+            gl_moves_backup = gl.moves;
+            num mvs_len = gl.movesend - gl.moves;
+
+            // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth
+            // qsort apparently cannot handle empty arrays (nmemb=0) so handle them here
+            if (!is_quies and !mvs_len) {  // "no legal moves" during normal search
+                free(gl_moves_backup);
+
+                if (not king_in_check(COLOR))
+                    return {0, {0}, std::deque<Move>()};  // stalemate
+                return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
+            }
+
+            if (is_quies and !mvs_len) {  // "no captures" in quiescence search
+                free(gl_moves_backup);
+                return best;
+            }
+
+            NODE_DEPTH = depth;
+
+            if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
+            // TODO: Different sorting function for quies vs non-quies?
+            // TODO: selection-type sort instead ?
+            qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);
+            if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
+        }
+
+        if (gl.moves == gl.movesend)  // end of move list
+            break;
+
         if (!*(gl.moves)) {
             gl.moves++;
             continue;
         }
 
-        Move mv = **(gl.moves);
+        mv = **(gl.moves);
+
+        // skip hash move that we already did before genlegals
+        if (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv) {
+            gl.moves++;
+            continue;  // already checked hash move
+        }
+
+        jump_into_loop_with_hash_move: 0;
 
         if (depth < 2 and DEBUG) {
             for (int i = 0; i < depth; i++) printf("    ");
@@ -957,7 +987,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
         // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
-        if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or (not try_null_window))
+        if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or not (pv_in_hash_table and (alpha_raised_n_times == 1)))
             rec = alphabeta(
                 COLOR == WHITE ? BLACK : WHITE,
                 alpha,
@@ -999,11 +1029,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         if (not is_quies and not (lines_accurate and depth == 0)) {
             if (COLOR == WHITE and best.value > alpha) {  // lo bound
                 alpha = best.value;
-                try_null_window = true;
+                alpha_raised_n_times++;
             }
             if (COLOR == BLACK and best.value < beta) {  // hi bound
                 beta = best.value;
-                try_null_window = true;
+                alpha_raised_n_times++;
             }
             if (beta <= alpha) {  // alpha-beta cutoff
                 if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
@@ -1059,18 +1089,29 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 beta = best.value;
         }
 
-        gl.moves++;
+        if (gl.moves != NULL)
+            gl.moves++;
     }
 
-    if ((depth <= 5) and (not is_quies))
+    if (gl_moves_backup) {
+        for (int i = 0; i < 128; ++i)
+            if (gl_moves_backup[i])
+                free(gl_moves_backup[i]);
+        free(gl_moves_backup);
+    }
+
+    break_out_of_loop: 0;
+
+    // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
+    // 20-bit transpos table cannot handle much more than depth 5 (2% collisions)
+    //if ((depth <= 5) and not (best.move == NULLMOVE)) {
+    if ((depth <= 5) and (not is_quies) and not (best.move == NULLMOVE)) {
         TRANSPOS_TABLE[zobrint_hash & 0xfffff] = best.move;
+        TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] = zobrint_hash;  // verify we got the right one
+        TRANSPOS_TABLE_GROUND.insert(zobrint_hash);
+    }
 
-    for (int i = 0; i < 128; ++i)
-        if (gl_moves_backup[i])
-            free(gl_moves_backup[i]);
-    free(gl_moves_backup);
-
-    if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
+    if (not (best.move == NULLMOVE))
         best.variation.push_front(best.move);
 
     if (is_quies and COLOR == WHITE)
@@ -1094,6 +1135,8 @@ std::string calc_move(bool lines = false)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
     memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
+    memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
+    // no need to reset the TRANSPOS_TABLE_ZOB
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
@@ -1123,6 +1166,8 @@ std::string calc_move(bool lines = false)
     num search_depth_requested = time_control_to_depth(TIME_CONTROL_TO_USE);
     Move mv = {0};
 
+    TRANSPOS_TABLE_GROUND.clear();
+
     printf("Starting iterative deepening pre-search to fill the PV table\n");
     // TODO: stop at search_depth_requested - 1 or search_depth_requested etc. ?
     for (num search_depth = 1; search_depth < search_depth_requested; search_depth++) {
@@ -1149,6 +1194,17 @@ std::string calc_move(bool lines = false)
         printf_move(mv);
         printf_move_eval(bestmv, true);
     }
+
+    std::cout << "Expected size " << TRANSPOS_TABLE_GROUND.size() << std::endl;
+
+    size_t sz = 0;
+    for (size_t i = 0; i < 1048576; ++i) {
+        Move mv = TRANSPOS_TABLE[i];
+        sz += (mv.f0 != 0) or (mv.f1 != 0) or (mv.t0 != 0) or (mv.t1 != 0);
+    }
+
+    std::cout << "Actual size " << sz << std::endl;
+    std::cout << "Collisions " << (TRANSPOS_TABLE_GROUND.size() - sz) << std::endl;
 
     make_move(mv);
 
@@ -1437,6 +1493,7 @@ void test() {
 
     printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     std::cout << calc_move(true) << std::endl;
+    std::cout << GENLEGALS << std::endl;
     std::exit(0);
 }
 

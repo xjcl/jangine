@@ -1451,11 +1451,11 @@ int main(int argc, char const *argv[])
         }
         if (startswith("time", line)) {
             int time_left = std::stoi(line_cpp.substr(5));
-            TIME_CONTROL_REQUESTED = HYPERHYPERHYPERBULLET;                    // just move when under 2 seconds
-            if (time_left >=   200) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when 2 seconds left
-            if (time_left >=   500) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when 5 seconds left
-            if (time_left >=  1500) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when 15 seconds left
-            if (time_left >=  4500) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 45 seconds left
+            TIME_CONTROL_REQUESTED = HYPERHYPERHYPERBULLET;                    // just move when under 3 seconds
+            if (time_left >=   300) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when 3 seconds left
+            if (time_left >=   800) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when 8 seconds left
+            if (time_left >=  2000) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when 20 seconds left
+            if (time_left >=  6000) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 60 seconds left
             if (time_left >= 18000) TIME_CONTROL_REQUESTED = RAPID;            // play rapid-like when 3+ minutes left
             if (time_left >= 48000) TIME_CONTROL_REQUESTED = CLASSICAL;        // play classical-like when 8+ mins left
         }

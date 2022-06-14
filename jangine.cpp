@@ -343,8 +343,8 @@ void board_clear() {  // setting up random positions
     CASTLINGBLACK = {false, false, false};
 }
 
-num SEARCH_DEPTH = 5;  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
-num SEARCH_ADAPTIVE_DEPTH = 21;  // how deep to search in adaptive search (combines with SEARCH_DEPTH)
+num SEARCH_DEPTH = 99;  // how many plies to search  // -t: 4 -> 19s,  5 -> 69s
+num SEARCH_ADAPTIVE_DEPTH = 6;  // how deep to search in adaptive search (combines with SEARCH_DEPTH)
 
 num HYPERHYPERHYPERBULLET = 1;
 num HYPERHYPERBULLET = 2;
@@ -355,48 +355,27 @@ num RAPID = 6;
 num CLASSICAL = 7;
 num CLASSICAL_PLUS = 8;
 num CLASSICAL_PLUS_PLUS = 9;
-num TIME_CONTROL_REQUESTED = BLITZ;
+num TIME_CONTROL_REQUESTED = RAPID;
 void set_time_control(num TIME_CONTROL) {
-    //TIME_CONTROL++;
-    if (TIME_CONTROL == HYPERHYPERHYPERBULLET) {  // -t: 0.3s  // lines=false: 0.10s
-        SEARCH_DEPTH = 4;
-        SEARCH_ADAPTIVE_DEPTH = 13;
-    }
-    // HYPERHYPERBULLET  1.5 --0W3D17L-- 18.5  BULLET  (implied rating BULLET-300)
-    if (TIME_CONTROL == HYPERHYPERBULLET) {  // -t: 1.3s  // lines=false: 0.32s
-        SEARCH_DEPTH = 4;
-        SEARCH_ADAPTIVE_DEPTH = 21;
-    }
-    // HYPERBULLET  5 --3W4D13L-- 15  BULLET  (implied rating BULLET-200)
-    if (TIME_CONTROL == HYPERBULLET) {  // -t: 6.2s  // lines=false: 1.2s
-        SEARCH_DEPTH = 5;
-        SEARCH_ADAPTIVE_DEPTH = 25;
-    }
-    if (TIME_CONTROL == BULLET) {  // -t: 14s  // lines=false: 3.1s
-        SEARCH_DEPTH = 6;
-        SEARCH_ADAPTIVE_DEPTH = 29;
-    }
-    // BLITZ  62 -- 38  BULLET  (implied rating BULLET+85)
-    if (TIME_CONTROL == BLITZ) {  // -t: 40s  // lines=false: 6.5s
-        SEARCH_DEPTH = 6;
-        SEARCH_ADAPTIVE_DEPTH = 33;
-    }
-    if (TIME_CONTROL == RAPID) {  // -t: 120s  // lines=false: 15.5s
-        SEARCH_DEPTH = 7;
-        SEARCH_ADAPTIVE_DEPTH = 35;
-    }
-    if (TIME_CONTROL == CLASSICAL) {  // lines=false: 29s
-        SEARCH_DEPTH = 7;
-        SEARCH_ADAPTIVE_DEPTH = 39;
-    }
-    if (TIME_CONTROL == CLASSICAL_PLUS) {
-        SEARCH_DEPTH = 8;
-        SEARCH_ADAPTIVE_DEPTH = 41;
-    }
-    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS) {
-        SEARCH_DEPTH = 8;
-        SEARCH_ADAPTIVE_DEPTH = 45;
-    }
+    SEARCH_DEPTH = 99;
+    if (TIME_CONTROL <= HYPERHYPERHYPERBULLET)  // 0.2s
+        SEARCH_ADAPTIVE_DEPTH = 3;
+    if (TIME_CONTROL == HYPERHYPERBULLET)  // 0.6s
+        SEARCH_ADAPTIVE_DEPTH = 4;
+    if (TIME_CONTROL == HYPERBULLET)  // 2.8s
+        SEARCH_ADAPTIVE_DEPTH = 5;
+    if (TIME_CONTROL == BULLET)  // 6.0s
+        SEARCH_ADAPTIVE_DEPTH = 6;
+    if (TIME_CONTROL == BLITZ)  // 13.5s
+        SEARCH_ADAPTIVE_DEPTH = 6;
+    if (TIME_CONTROL == RAPID)  // 36s
+        SEARCH_ADAPTIVE_DEPTH = 7;
+    if (TIME_CONTROL == CLASSICAL)  // 62s
+        SEARCH_ADAPTIVE_DEPTH = 7;
+    if (TIME_CONTROL == CLASSICAL_PLUS)
+        SEARCH_ADAPTIVE_DEPTH = 8;
+    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS)
+        SEARCH_ADAPTIVE_DEPTH = 8;
 }
 
 typedef struct ValuePlusMoves {
@@ -443,8 +422,8 @@ void printf_move(Move mv) {
 
 void printf_move_eval(ValuePlusMove rec, bool accurate) {
     double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
-    printf(" EVAL %7.2f %c | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
-        (float)(rec.value) / 100, accurate ? ' ' : '?', NODES_NORMAL, NODES_QUIES, time_expired);
+    printf(" EVAL %7.2f %c | D %1ld | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
+        (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
 
     // TODO: not entirely accurate cos move_to_str reads current board state
     for (int i = 0; i < rec.variation.size(); i++)
@@ -825,23 +804,20 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
 }
 
 
-// adaptive quiescence-like value of a move AFTER it is already on the board. Low values indicate importance
+// adaptive search-extensions-like value of a move AFTER it is already on the board.
 num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
     if (skip)  // skip for quiescence search, simply not needed
         return 0;
 
     num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
 
-    if (hit_piece or mv.prom != '\0' and mv.prom != 'c')  // capture or promotion or en passant
+    if (king_in_check(OTHER_COLOR))  // https://www.chessprogramming.org/Check_Extensions
         return 0;
 
-    if (king_in_check(OTHER_COLOR) or board[8*mv.t0+mv.t1] & KING)  // check or was king move
+    if ((mv.t0 == 1 or mv.t0 == 6) and (board[8*mv.t0+mv.t1] & PAWN))  // passed pawn extension
         return 0;
 
-    if (COLOR == WHITE ? mv.f0 > mv.t0 : mv.f0 < mv.t0)  // "forward" move -> less quiescent
-        return 6;
-
-    return 10;
+    return 1;
 }
 
 
@@ -902,7 +878,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
     else
         // Main search is done, do quiescence search at the leaf nodes
-        if (adaptive < 0 or depth >= SEARCH_DEPTH)
+        if (adaptive <= 0 or depth >= SEARCH_DEPTH)
             return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
 
     ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
@@ -1123,7 +1099,7 @@ std::string calc_move(bool lines = false)
 
     printf("Starting iterative deepening pre-search to fill the PV table\n");
     // TODO: stop at TIME_CONTROL_TO_USE, TIME_CONTROL_TO_USE - 1, TIME_CONTROL_TO_USE - 2, etc. ?
-    for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 2; TIME_CONTROL++) {
+    for (num TIME_CONTROL = HYPERHYPERHYPERBULLET; TIME_CONTROL < TIME_CONTROL_TO_USE - 1; TIME_CONTROL++) {
         set_time_control(TIME_CONTROL);
         LASTMOVE = LASTMOVE_GAME;
         ValuePlusMove best_lo = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);

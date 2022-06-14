@@ -195,7 +195,7 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits, use & 0xffffff  -> 20 * 2**24 bytes = 320 MiB
+Move TRANSPOS_TABLE[1048576] = {0};  // 20 bits, use & 0xfffff  -> 20 * 2**20 bytes = 20 MiB
 
 struct Pair {
     num a;
@@ -829,7 +829,7 @@ num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
 int_fast32_t move_order_key(Move mv)
 {
     // try best move (pv move) from previous search (iterative deepening)
-    if (TRANSPOS_TABLE[zobrint_hash & 0xffffff] == mv)
+    if (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv)
         //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
         return 90000020;
 
@@ -1038,8 +1038,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         gl.moves++;
     }
 
-    if (depth <= 5 and not is_quies)
-        TRANSPOS_TABLE[zobrint_hash & 0xffffff] = best.move;
+    if ((depth <= 5) and (not is_quies))
+        TRANSPOS_TABLE[zobrint_hash & 0xfffff] = best.move;
 
     for (int i = 0; i < 128; ++i)
         if (gl_moves_backup[i])
@@ -1069,7 +1069,7 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));
+    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));  // TODO: This takes 6ms to reset, try to do this on opponent time
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();

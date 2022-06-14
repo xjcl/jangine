@@ -1168,12 +1168,13 @@ void init_data(void) {
     PIECERANGE[QUEEN] = 7;
     PIECERANGE[KING] = 1;
 
+    // https://lichess.org/@/ubdip/blog/finding-the-value-of-pieces/PByOBlNB
     PIECEVALS[0] = 0;
     PIECEVALS[PAWN] = 100;
-    PIECEVALS[KNIGHT] = 300;
-    PIECEVALS[BISHOP] = 325;  // Fischer
-    PIECEVALS[ROOK] = 500;
-    PIECEVALS[QUEEN] = 900;
+    PIECEVALS[KNIGHT] = 305;
+    PIECEVALS[BISHOP] = 325;  // Should not trade bishop for a knight, unless it wins a pawn or king pawn structure becomes damaged
+    PIECEVALS[ROOK] = 470;  // Engine keeps trading its knight+bishop for a rook+pawn, thinking it is a good trade, which it is not
+    PIECEVALS[QUEEN] = 950;  // Engine also trades into having 2 rooks for a queen, this is usually also not worth it
     PIECEVALS[KING] = inf;
 }
 

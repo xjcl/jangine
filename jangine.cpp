@@ -18,7 +18,6 @@
 #include <algorithm>
 
 
-// typedef int_fast8_t int;
 typedef int_fast16_t num;
 
 #define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
@@ -29,6 +28,7 @@ typedef int_fast16_t num;
 #define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
+#pragma GCC diagnostic ignored "-Wnarrowing"
 
 bool input_is_move(const char* s) {
     if (strlen(s) < 5 || strlen(s) > 6)  // newline character
@@ -167,10 +167,10 @@ typedef struct CASTLINGRIGHTS {
 } CASTLINGRIGHTS;
 
 typedef struct Move {
-    num f0;  // from
-    num f1;
-    num t0;  // to
-    num t1;
+    int8_t f0;  // from
+    int8_t f1;
+    int8_t t0;  // to
+    int8_t t1;
     char prom;  // promote to piece
 
     // needed for std::map
@@ -1092,7 +1092,7 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    memset(TRANSPOS_TABLE, 0, sizeof(TRANSPOS_TABLE));  // TODO: This takes 3ms to reset, try to do this on opponent time
+    memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();

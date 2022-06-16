@@ -38,22 +38,6 @@ bool input_is_move(const char* s) {
             '1' <= s[1] && s[1] <= '8' and '1' <= s[3] && s[3] <= '8';
 }
 
-// TODO TODO TODO replace with vector push_back OR AT LEAST fewer indirect mallocs
-#define store(a, b, c, d, e) \
-    { *mvsend = (Move*)malloc(sizeof(Move)); \
-    Move x = {a, b, c, d, e}; \
-    memcpy(*mvsend, &x, sizeof(Move)); \
-    mvsend++; }
-#define store_maybe_promote(a, b, c, d)   \
-    { if (i == PROMRANK) {                   \
-        store(a, b, c, d, 'q'); /* best */   \
-        store(a, b, c, d, 'n'); /* likely */ \
-        store(a, b, c, d, 'r');              \
-        store(a, b, c, d, 'b');              \
-    } else                                   \
-        store(a, b, c, d, '\0');             \
-    }
-
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num KING_EARLYGAME = 8001, KING_ENDGAME = 8002, PAWN_EARLYGAME = 9001, PAWN_ENDGAME = 9002;
 num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
@@ -218,7 +202,7 @@ bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
 
-int64_t GENLEGALS = 0;
+int64_t GENMOVES = 0;
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
 std::clock_t SEARCH_START_CLOCK;
@@ -486,7 +470,7 @@ num initial_eval() {
 PiecePlusCatling make_move(Move mv)
 {
     if (mv == NULLMOVE)
-        printf("XXX DANGEROUS! NULL MOVE");
+        printf("XXX DANGEROUS! NULL MOVE\n");
 
     num piece = board[8*mv.f0+mv.f1];
     num hit_piece = board[8*mv.t0+mv.t1];
@@ -702,13 +686,31 @@ bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of t
 }
 
 
+// TODO TODO TODO replace with vector push_back OR AT LEAST fewer indirect mallocs
+inline Move** move_store(Move** mvsend, num COLOR, num a, num b, num c, num d, num e)
+{
+    *mvsend = (Move*)malloc(sizeof(Move));
+    (*mvsend)->f0 = a; (*mvsend)->f1 = b; (*mvsend)->t0 = c; (*mvsend)->t1 = d; (*mvsend)->prom = e;
+    return ++mvsend;
+}
 
-ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
+inline Move** move_store_maybe_promote(Move** mvsend, num COLOR, bool is_promrank, num a, num b, num c, num d)
+{
+    if (is_promrank) {
+        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'q'); /* best */
+        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'n'); /* likely */
+        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'r');
+        return   move_store(mvsend, COLOR, a, b, c, d, 'b');
+    } else
+        return   move_store(mvsend, COLOR, a, b, c, d, '\0');
+}
 
-    GENLEGALS++;
 
-    Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves
-        // also inits to NULLptrs
+ValuePlusMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
+{
+    GENMOVES++;
+
+    Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves  // also inits to NULLptrs
     Move** mvsend = mvs;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
@@ -726,24 +728,24 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
         if (bij & PAWN) {  // pawn moves
             // diagonal captures
             if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
-                store_maybe_promote(i, j, i+ADD, j+1);
+                mvsend = move_store_maybe_promote(mvsend, COLOR, i == PROMRANK, i, j, i+ADD, j+1);
             if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
-                store_maybe_promote(i, j, i+ADD, j-1);
+                mvsend = move_store_maybe_promote(mvsend, COLOR, i == PROMRANK, i, j, i+ADD, j-1);
 
             if (i == EPRANK) {  // en passant capture
                 if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1 and board[8*i+j-1] & PAWN)
-                    store(i, j, i+ADD, j-1, 'e');
+                    mvsend = move_store(mvsend, COLOR, i, j, i+ADD, j-1, 'e');
                 if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1 and board[8*i+j+1] & PAWN)
-                    store(i, j, i+ADD, j+1, 'e');
+                    mvsend = move_store(mvsend, COLOR, i, j, i+ADD, j+1, 'e');
             }
 
             if (only_captures)
                 continue;
 
             if (not board[8*(i+ADD)+j]) {  // 1 square forward
-                store_maybe_promote(i, j, i+ADD, j);
+                mvsend = move_store_maybe_promote(mvsend, COLOR, i == PROMRANK, i, j, i+ADD, j);
                 if (i == STARTRANK and not board[8*(i+ADD+ADD)+j]) {  // 2 squares forward
-                    store(i, j, i+ADD+ADD, j, '\0');
+                    mvsend = move_store(mvsend, COLOR, i, j, i+ADD+ADD, j, '\0');
                 }
             }
         }
@@ -758,11 +760,11 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
                     if (board[8*(i+a*k)+j+b*k] & COLOR)  // move to square with own piece (illegal)
                         break;
                     if (board[8*(i+a*k)+j+b*k] & NCOLOR) {  // move to square with enemy piece (capture)
-                        store(i, j, i+a*k, j+b*k, '\0');
+                        mvsend = move_store(mvsend, COLOR, i, j, i+a*k, j+b*k, '\0');
                         break;
                     }
                     if (not only_captures and not board[8*(i+a*k)+j+b*k])  // move to empty square
-                        store(i, j, i+a*k, j+b*k, '\0');
+                        mvsend = move_store(mvsend, COLOR, i, j, i+a*k, j+b*k, '\0');
                 }
             }
         }
@@ -776,33 +778,44 @@ ValuePlusMoves genlegals(num COLOR, bool only_captures = false) {
         if (castlingrights.k and castlingrights.rr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
             if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
                     not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
-                store(CASTLERANK, 4, CASTLERANK, 6, 'c');
+                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 6, 'c');
         }
         if (castlingrights.k and castlingrights.lr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK] == COLOR + ROOK) {  // long castle O-O-O
             if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
                     not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
-                store(CASTLERANK, 4, CASTLERANK, 2, 'c');
+                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 2, 'c');
         }
     }
 
-    // Remove moves which would leave the king in check (i.e. illegal moves)
-    Move** mvscpy = mvs;
-    while (mvscpy != mvsend) {
-        PiecePlusCatling ppc = make_move(**mvscpy);
+/*
+    // Remove moves which would leave the king in check (i.e. illegal moves), and copy forwards
+    // TODO: why not check during store() method??
+    Move** mvs_new = mvs;
+    Move** mvs_old = mvs;
+
+    while (mvs_old != mvsend) {
+        PiecePlusCatling ppc = make_move(**mvs_old);
         bool illegal = king_in_check(COLOR);
-        unmake_move(**mvscpy, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+        unmake_move(**mvs_old, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if (illegal) {
-            free(*mvscpy);
-            *mvscpy = NULL;
+        if (illegal)
+            free(*mvs_old);
+        else {
+            *mvs_new = *mvs_old;
+            mvs_new++;
         }
 
-        mvscpy++;
+        mvs_old++;
     }
 
-    // remove trailing NULLs
-    while (mvsend > mvs and !*(mvsend - 1))
-        mvsend--;
+    Move** mvs_rest = mvs_new;
+    while (mvs_rest != mvsend) {
+        *mvs_rest = NULL;
+        mvs_rest++;
+    }
+
+    return {0, mvs, mvs_new};
+    */
 
     return {0, mvs, mvsend};
 }
@@ -857,10 +870,25 @@ int move_order_cmp(const void* a, const void* b)
 {
     Move **move_a = (Move **)a;
     Move **move_b = (Move **)b;
-    if (!*move_b)  return -1;  // -1 = pick a as left value
-    if (!*move_a)  return 1;   // +1 = pick b as left value
-
     return move_order_key(**move_b) - move_order_key(**move_a);  // invert comparison so biggest-valued move is at start of list
+}
+
+
+void select_front_move(Move** front, Move** back)
+{
+    Move** cur = front;
+    int_fast32_t front_val = move_order_key(**front);
+
+    while (++cur != back) {
+        int_fast32_t cur_val = move_order_key(**cur);
+
+        if (cur_val > front_val) {
+            Move* tmp = *front;
+            *front = *cur;
+            *cur = tmp;
+            front_val = cur_val;
+        }
+    }
 }
 
 
@@ -910,15 +938,20 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
 
     Move mv = {0};
+    PiecePlusCatling ppc;
     ValuePlusMoves gl = {0};
     Move** gl_moves_backup = NULL;
+    num legal_moves_found = 0;
+
     num alpha_raised_n_times = 0;
     bool pv_in_hash_table = false;
 
-    // try best move (hash/pv move) from previous search (iterative deepening) -> skip move generation
+    // try best move (hash/pv move) from previous search iterative deepening search first
+    //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
     if ((not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash))
     {
         mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
+        ppc = make_move(mv);
         pv_in_hash_table = true;
         goto jump_into_loop_with_hash_move;
     }
@@ -927,59 +960,50 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     {
         if (gl.moves == NULL)
         {
-            gl = genlegals(COLOR, is_quies);
+            gl = gen_moves_maybe_legal(COLOR, is_quies);
             gl_moves_backup = gl.moves;
-            num mvs_len = gl.movesend - gl.moves;
-
-            // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth
-            // qsort apparently cannot handle empty arrays (nmemb=0) so handle them here
-            if (!is_quies and !mvs_len) {  // "no legal moves" during normal search
-                free(gl_moves_backup);
-
-                if (not king_in_check(COLOR))
-                    return {0, {0}, std::deque<Move>()};  // stalemate
-                return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
-            }
-
-            if (is_quies and !mvs_len) {  // "no captures" in quiescence search
-                free(gl_moves_backup);
-                return best;
-            }
+            num mvs_len = gl.movesend - gl.moves;  // can only be 0 in illegal positions
 
             NODE_DEPTH = depth;
 
             if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
             // TODO: Different sorting function for quies vs non-quies?
             // TODO: selection-type sort instead ?
-            qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);
+            qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);  // >=15% of runtime spent in qsort
             if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
         }
 
         if (gl.moves == gl.movesend)  // end of move list
             break;
 
-        if (!*(gl.moves)) {
-            gl.moves++;
-            continue;
-        }
+        //select_front_move(gl.moves, gl.movesend);
 
         mv = **(gl.moves);
 
-        // skip hash move that we already did before genlegals
+        // skip hash move that we already did before gen_moves_maybe_legal
         if (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv) {
             gl.moves++;
             continue;  // already checked hash move
         }
 
+        ppc = make_move(mv);
+
+        if (king_in_check(COLOR)) {  // illegal move  // king_in_check takes 11s of the 30s program time!!
+            unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+            gl.moves++;
+            continue;
+        }
+
         jump_into_loop_with_hash_move: 0;
+
+        legal_moves_found++;
 
         if (depth < 2 and DEBUG) {
             for (int i = 0; i < depth; i++) printf("    ");
             printf_move(mv); printf(" ADAPT %ld \n", adaptive);
         }
 
-        PiecePlusCatling ppc = make_move(mv);
-        LASTMOVE = mv;  // only needed for genlegals so okay to only set here
+        LASTMOVE = mv;  // only needed for gen_moves_maybe_legal so okay to only set here
 
         ValuePlusMove rec;
         num adaptive_new = adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies);
@@ -1057,9 +1081,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (best.value >= beta) {
                 best.value = beta;
 
-                for (int i = 0; i < 128; ++i)
-                    if (gl_moves_backup[i])
-                        free(gl_moves_backup[i]);
+                for (int i = 0; i < 128; ++i) {
+                    if (not gl_moves_backup[i])
+                        break;
+                    free(gl_moves_backup[i]);
+                }
                 free(gl_moves_backup);
 
                 if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
@@ -1074,9 +1100,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (best.value <= alpha) {
                 best.value = alpha;
 
-                for (int i = 0; i < 128; ++i)
-                    if (gl_moves_backup[i])
-                        free(gl_moves_backup[i]);
+                for (int i = 0; i < 128; ++i) {
+                    if (not gl_moves_backup[i])
+                        break;
+                    free(gl_moves_backup[i]);
+                }
                 free(gl_moves_backup);
 
                 if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
@@ -1093,13 +1121,23 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
 
     if (gl_moves_backup) {
-        for (int i = 0; i < 128; ++i)
-            if (gl_moves_backup[i])
-                free(gl_moves_backup[i]);
+        for (int i = 0; i < 128; ++i) {
+            if (not gl_moves_backup[i])
+                break;
+            free(gl_moves_backup[i]);
+        }
         free(gl_moves_backup);
     }
 
-    break_out_of_loop: 0;
+    // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth
+    if (!is_quies and !legal_moves_found) {  // "no legal moves" during normal search
+        if (not king_in_check(COLOR))
+            return {0, {0}, std::deque<Move>()};  // stalemate
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
+    }
+
+    if (is_quies and !legal_moves_found)  // "no captures" in quiescence search
+        return best;
 
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
     // 20-bit transpos table cannot handle much more than depth 5 (2% collisions)
@@ -1478,7 +1516,7 @@ void test() {
 
     printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     std::cout << calc_move(true) << std::endl;
-    std::cout << GENLEGALS << std::endl;
+    std::cout << GENMOVES << std::endl;
     std::exit(0);
 }
 

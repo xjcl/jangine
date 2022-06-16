@@ -21,7 +21,7 @@
 typedef int_fast16_t num;
 
 #define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
-#define DEBUG 0
+#define DEBUG 0  // 1: debug PV, 2: tons of output
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
@@ -373,7 +373,6 @@ typedef struct ValuePlusMoves {
 typedef struct ValuePlusMove {
     num value;
     Move move;
-    std::deque<Move> variation;
 } ValuePlusMove;
 
 
@@ -398,39 +397,6 @@ std::string move_to_str(Move mv, bool algebraic = false) {
 
     std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
     return ret;
-}
-
-void printf_move(Move mv) {
-    std::string move_str = move_to_str(mv, true);
-    const char* cstr = move_str.c_str();
-    printf("MOVE %15s |", cstr);
-}
-
-void printf_move_eval(ValuePlusMove rec, bool accurate) {
-    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
-    printf(" EVAL %7.2f %c | D %1ld | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
-        (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
-
-    // TODO: not entirely accurate cos move_to_str reads current board state
-    for (int i = 0; i < rec.variation.size(); i++)
-        std::cout << move_to_str(rec.variation[i], true) << " ";
-
-    std::cout << std::endl;
-}
-
-void printf_moves(Move** mvs, num count, std::string header) {
-    std::cout << header;
-    for (long int i = 0; i < count; ++i)
-    {
-        if (mvs[i] != NULL) {
-            printf("%ld ", i);
-            printf_move(*(mvs[i]));
-            printf("\n");
-        }
-        else{
-            printf("%ld MISSING\n", i);
-        }
-    }
 }
 
 
@@ -607,7 +573,6 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
 
-
 void make_move_str(const char* mv) {
 
     num a = 8 - (mv[1] - '0');
@@ -628,6 +593,63 @@ void make_move_str(const char* mv) {
     LASTMOVE_GAME = to_mv;  // copies the struct
 
     board_positions_seen.insert(board_to_zobrint_hash());
+}
+
+void printf_move(Move mv) {
+    std::string move_str = move_to_str(mv, true);
+    const char* cstr = move_str.c_str();
+    printf("MOVE %15s |", cstr);
+}
+
+void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (before call to make_move)
+{
+    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+    printf(" EVAL %7.2f %c | D %1ld | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
+        (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
+
+    // reveal PV from hash table, this saves work of returning a std::deque
+    std::deque<Move> moves;
+    std::deque<PiecePlusCatling> ppcs;
+
+    PiecePlusCatling ppc = make_move(rec.move);
+    moves.push_back(rec.move);
+    ppcs.push_back(ppc);
+    num i = 0;  // prevent infinite repetition
+
+    // TODO: revealing PV from hash table is faster but cuts off parts of it
+    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash) && (i < 20)) {
+        Move mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
+        std::cout << move_to_str(mv, true) << " ";
+
+        ppc = make_move(mv);  // updates zobrist_hash
+        moves.push_back(mv);
+        ppcs.push_back(ppc);
+        ++i;
+    }
+
+    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != zobrint_hash) and not (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == NULLMOVE))
+        std::cout << "[HASH COLLISION] ";
+
+    for (int i = moves.size() - 1; i >= 0; i--) {
+        ppc = ppcs[i];
+        unmake_move(moves[i], ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+    }
+
+    std::cout << std::endl;
+}
+
+void printf_moves(Move** mvs, num count, std::string header) {
+    std::cout << header;
+    for (long int i = 0; i < count; ++i)
+    {
+        if (mvs[i] != NULL) {
+            printf("%ld ", i);
+            printf_move(*(mvs[i]));
+            printf("\n");
+        }
+        else
+            printf("%ld MISSING\n", i);
+    }
 }
 
 
@@ -661,7 +683,6 @@ bool square_in_check(num COLOR, num i, num j) {
 
     return false;
 }
-
 
 bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of time spent in this function
     // keeping track of king position enables a HUGE speedup!
@@ -901,23 +922,23 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
     // treat all repeated positions as an instant draw to avoid repetitions when winning and encourage when losing
     if ((depth == 1 or depth == 2) and board_positions_seen.count(zobrint_hash))
-        return {0, {0}, std::deque<Move>()};
+        return {0, {0}};
 
     if (is_quies) {
         // TODO: limit quiescence search depth somehow
         if (NO_QUIES)
-            return {board_eval, {0}, std::deque<Move>()};
+            return {board_eval, {0}};
     }
     else
         // Main search is done, do quiescence search at the leaf nodes
         if (adaptive <= 0)
             return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
 
-    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}, std::deque<Move>()};
+    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
     if (is_quies) {
         // "standing pat": to compensate for not considering non-capture moves, at least one move should be
         //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
-        best = {board_eval, {0}, std::deque<Move>()};
+        best = {board_eval, {0}};
 
         if (COLOR == WHITE) {
             if (best.value >= beta) {
@@ -942,6 +963,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     ValuePlusMoves gl = {0};
     Move** gl_moves_backup = NULL;
     num legal_moves_found = 0;
+    Move LASTMOVE_BAK = LASTMOVE;
 
     num alpha_raised_n_times = 0;
     bool pv_in_hash_table = false;
@@ -960,17 +982,19 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     {
         if (gl.moves == NULL)
         {
+            LASTMOVE = LASTMOVE_BAK;
+
             gl = gen_moves_maybe_legal(COLOR, is_quies);
             gl_moves_backup = gl.moves;
             num mvs_len = gl.movesend - gl.moves;  // can only be 0 in illegal positions
 
             NODE_DEPTH = depth;
 
-            if (DEBUG) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
+            if (DEBUG >= 2) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
             // TODO: Different sorting function for quies vs non-quies?
             // TODO: selection-type sort instead ?
-            qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);  // >=15% of runtime spent in qsort
-            if (DEBUG) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
+            qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);  // >=25% of runtime spent in qsort
+            if (DEBUG >= 2) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
         }
 
         if (gl.moves == gl.movesend)  // end of move list
@@ -998,7 +1022,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         legal_moves_found++;
 
-        if (depth < 2 and DEBUG) {
+        if ((depth < 2) and (DEBUG >= 2)) {
             for (int i = 0; i < depth; i++) printf("    ");
             printf_move(mv); printf(" ADAPT %ld \n", adaptive);
         }
@@ -1035,18 +1059,19 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 );
         }
 
+        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
+            best = {rec.value, mv};
+
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
-            best = {rec.value, mv, rec.variation};
-
-        if ((depth == 0 and lines) or DEBUG) {
+        if ((depth == 0 and lines) or (DEBUG >= 2)) {
             for (int i = 0; i < depth; i++)
                 printf("    ");
             printf_move(mv);
             // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines_accurate=true
             bool accurate = (best.move == mv) or lines_accurate;
-            printf_move_eval(rec, accurate);
+            ValuePlusMove mv_printable = {rec.value, mv};
+            printf_move_eval(mv_printable, accurate);
         }
 
         if (not is_quies and not (lines_accurate and depth == 0)) {
@@ -1088,9 +1113,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 }
                 free(gl_moves_backup);
 
-                if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
-                    best.variation.push_front(best.move);
-
                 return best;
             }
             if (best.value > alpha)
@@ -1106,9 +1128,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                     free(gl_moves_backup[i]);
                 }
                 free(gl_moves_backup);
-
-                if (best.move.f0 or best.move.f1 or best.move.t0 or best.move.t1)
-                    best.variation.push_front(best.move);
 
                 return best;
             }
@@ -1132,8 +1151,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth
     if (!is_quies and !legal_moves_found) {  // "no legal moves" during normal search
         if (not king_in_check(COLOR))
-            return {0, {0}, std::deque<Move>()};  // stalemate
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}, std::deque<Move>()};  // checkmate
+            return {0, {0}};  // stalemate
+        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate
     }
 
     if (is_quies and !legal_moves_found)  // "no captures" in quiescence search
@@ -1142,13 +1161,10 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
     // 20-bit transpos table cannot handle much more than depth 5 (2% collisions)
     //if ((depth <= 5) and not (best.move == NULLMOVE)) {
-    if ((depth <= 5) and (not is_quies) and not (best.move == NULLMOVE)) {
+    if (not (best.move == NULLMOVE) and (((depth <= 5) and (not is_quies)) or DEBUG)) {
         TRANSPOS_TABLE[zobrint_hash & 0xfffff] = best.move;
         TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] = zobrint_hash;  // verify we got the right one
     }
-
-    if (not (best.move == NULLMOVE))
-        best.variation.push_front(best.move);
 
     if (is_quies and COLOR == WHITE)
         best.value = alpha;

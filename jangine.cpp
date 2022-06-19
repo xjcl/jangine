@@ -1194,17 +1194,19 @@ std::string calc_move(bool lines = false)
 
     num TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     num my_color = IM_WHITE ? WHITE : BLACK;
-    num queens_on_board = 0;
-    num own_pieces_on_board = 0;
-    gentuples { queens_on_board += !!(board[8*i+j] & QUEEN); }
-    gentuples { own_pieces_on_board += !!((board[8*i+j] & my_color) and (board[8*i+j] & (ROOK | BISHOP | KNIGHT))); }
 
-    if (queens_on_board == 0 and own_pieces_on_board <= 2) {
+    num game_phase = 0;   // game phase based on pieces traded. initial pos: 24, rook endgame: 8
+    gentuples {
+        num p = board[8*i+j];
+        game_phase += 1 * !!(p & KNIGHT) + 1 * !!(p & BISHOP) + 2 * !!(p & ROOK) + 4 * !!(p & QUEEN);
+    }
+
+    if (game_phase <= 8) {
         printf("Late endgame: Bringing in pawns and king\n");
         set_piece_square_table(true);
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 2;  // without queens search is faster, so search more nodes
-    } else if (queens_on_board == 0) {
-        printf("Early endgame: Queens traded, taking longer thinks\n");
+    } else if (game_phase <= 14) {
+        printf("Early endgame: Likely queens traded(?), taking longer thinks\n");
         set_piece_square_table();
         TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 1;  // without queens search is faster, so search more nodes
     } else {

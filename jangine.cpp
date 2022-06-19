@@ -202,7 +202,6 @@ bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
 
-int64_t GENMOVES = 0;
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
 std::clock_t SEARCH_START_CLOCK;
@@ -729,8 +728,6 @@ inline Move** move_store_maybe_promote(Move** mvsend, num COLOR, bool is_promran
 
 ValuePlusMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
 {
-    GENMOVES++;
-
     Move** mvs = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves  // also inits to NULLptrs
     Move** mvsend = mvs;
 
@@ -966,11 +963,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     Move LASTMOVE_BAK = LASTMOVE;
 
     num alpha_raised_n_times = 0;
-    bool pv_in_hash_table = false;
+    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash);
 
     // try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
-    if ((not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash))
+    if (pv_in_hash_table)
     {
         mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
         ppc = make_move(mv);
@@ -1005,7 +1002,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         mv = **(gl.moves);
 
         // skip hash move that we already did before gen_moves_maybe_legal
-        if (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv) {
+        if (pv_in_hash_table and (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv)) {
             gl.moves++;
             continue;  // already checked hash move
         }
@@ -1532,7 +1529,56 @@ void test() {
 
     printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     std::cout << calc_move(true) << std::endl;
-    std::cout << GENMOVES << std::endl;
+
+    std::cout << "\nTests Rc8 blunder caused by wrong continue https://lichess.org/1NIkB4Dg/black#48" << std::endl;
+    IM_WHITE = false;
+    board_initial_position();
+    make_move_str("c2c4"); make_move_str("g8f6");  // 1.
+    make_move_str("d2d4"); make_move_str("e7e6");
+    make_move_str("g1f3"); make_move_str("b7b6");
+    make_move_str("b1c3"); make_move_str("f8b4");
+    make_move_str("e2e3"); make_move_str("c8b7");  // 5.
+    make_move_str("f1d3"); make_move_str("e8g8");
+    make_move_str("c1d2"); make_move_str("d7d5");
+    make_move_str("c4d5"); make_move_str("e6d5");
+    make_move_str("e1g1"); make_move_str("b8d7");
+    make_move_str("g2g3"); make_move_str("d8e7");  // 10.
+    make_move_str("f3h4"); make_move_str("c7c5");
+    make_move_str("h4f5"); make_move_str("e7e8");
+    make_move_str("c3b5"); make_move_str("b4d2");
+    make_move_str("d1d2"); make_move_str("e8d8");
+    make_move_str("b5d6"); make_move_str("b7c6");  // 15.
+    make_move_str("d2c3"); make_move_str("c5c4");
+    make_move_str("b2b3"); make_move_str("c4d3");
+    make_move_str("c3c6"); make_move_str("g7g6");
+    make_move_str("f5h6"); make_move_str("g8g7");
+    make_move_str("h6f7"); make_move_str("f8f7");  // 20.
+    make_move_str("d6f7"); make_move_str("g7f7");
+    make_move_str("a1c1"); make_move_str("d8e8");
+    make_move_str("f1d1"); make_move_str("f7g8");
+    make_move_str("d1d3");
+    pprint();
+    std::cout << calc_move(true) << std::endl;  // should be ~0.75ish, not -3.90 as in the game
+/*
+    IM_WHITE = true;
+    board_initial_position();
+    make_move_str("e2e4"); make_move_str("e7e5");  // 1.
+    make_move_str("g1f3"); make_move_str("g8f6");
+    make_move_str("d2d4"); make_move_str("f6e4");
+    make_move_str("f1d3"); make_move_str("d7d5");
+    make_move_str("f3e5"); make_move_str("b8c6");  // 5.
+    make_move_str("e5c6"); make_move_str("b7c6");
+    make_move_str("e1g1"); make_move_str("f8e7");
+    make_move_str("d3e4"); make_move_str("d5e4");
+    make_move_str("b1c3"); make_move_str("f7f5");
+    make_move_str("d1h5"); make_move_str("g7g6");
+    make_move_str("h5d1"); make_move_str("c8b7");
+    make_move_str("c1e3"); make_move_str("e8g8");
+    make_move_str("d1e2"); make_move_str("d8e8");
+    //make_move_str("e3h6"); make_move_str("f8f7");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+*/
     std::exit(0);
 }
 

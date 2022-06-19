@@ -626,7 +626,8 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
         ++i;
     }
 
-    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != zobrint_hash) and not (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == NULLMOVE))
+    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != zobrint_hash) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != 0)
+            and not (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == NULLMOVE))
         std::cout << "[HASH COLLISION] ";
 
     for (int i = moves.size() - 1; i >= 0; i--) {

@@ -806,36 +806,6 @@ ValuePlusMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
         }
     }
 
-/*
-    // Remove moves which would leave the king in check (i.e. illegal moves), and copy forwards
-    // TODO: why not check during store() method??
-    Move** mvs_new = mvs;
-    Move** mvs_old = mvs;
-
-    while (mvs_old != mvsend) {
-        PiecePlusCatling ppc = make_move(**mvs_old);
-        bool illegal = king_in_check(COLOR);
-        unmake_move(**mvs_old, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
-
-        if (illegal)
-            free(*mvs_old);
-        else {
-            *mvs_new = *mvs_old;
-            mvs_new++;
-        }
-
-        mvs_old++;
-    }
-
-    Move** mvs_rest = mvs_new;
-    while (mvs_rest != mvsend) {
-        *mvs_rest = NULL;
-        mvs_rest++;
-    }
-
-    return {0, mvs, mvs_new};
-    */
-
     return {0, mvs, mvsend};
 }
 

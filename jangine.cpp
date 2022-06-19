@@ -341,22 +341,22 @@ num RAPID = 6;
 num CLASSICAL = 7;
 num CLASSICAL_PLUS = 8;
 num CLASSICAL_PLUS_PLUS = 9;
-num TIME_CONTROL_REQUESTED = RAPID;
+num TIME_CONTROL_REQUESTED = BLITZ;
 num time_control_to_depth(num TIME_CONTROL) {
-    if (TIME_CONTROL <= HYPERHYPERHYPERBULLET)  // 0.2s
+    if (TIME_CONTROL <= HYPERHYPERHYPERBULLET)
         return 3;
-    if (TIME_CONTROL == HYPERHYPERBULLET)  // 0.6s
+    if (TIME_CONTROL == HYPERHYPERBULLET)
         return 4;
-    if (TIME_CONTROL == HYPERBULLET)  // 2.8s
+    if (TIME_CONTROL == HYPERBULLET)
         return 5;
-    if (TIME_CONTROL == BULLET)  // 6.0s
+    if (TIME_CONTROL == BULLET)
         return 6;
-    if (TIME_CONTROL == BLITZ)  // 13.5s
-        return 6;
-    if (TIME_CONTROL == RAPID)  // 36s
+    if (TIME_CONTROL == BLITZ)
         return 7;
-    if (TIME_CONTROL == CLASSICAL)  // 62s
+    if (TIME_CONTROL == RAPID)
         return 7;
+    if (TIME_CONTROL == CLASSICAL)
+        return 8;
     if (TIME_CONTROL == CLASSICAL_PLUS)
         return 8;
     if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS)

@@ -332,36 +332,8 @@ void board_clear() {  // setting up random positions
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
-num HYPERHYPERHYPERBULLET = 1;
-num HYPERHYPERBULLET = 2;
-num HYPERBULLET = 3;
-num BULLET = 4;
-num BLITZ = 5;
-num RAPID = 6;
-num CLASSICAL = 7;
-num CLASSICAL_PLUS = 8;
-num CLASSICAL_PLUS_PLUS = 9;
-num TIME_CONTROL_REQUESTED = BLITZ;
-num time_control_to_depth(num TIME_CONTROL) {
-    if (TIME_CONTROL <= HYPERHYPERHYPERBULLET)
-        return 3;
-    if (TIME_CONTROL == HYPERHYPERBULLET)
-        return 4;
-    if (TIME_CONTROL == HYPERBULLET)
-        return 5;
-    if (TIME_CONTROL == BULLET)
-        return 6;
-    if (TIME_CONTROL == BLITZ)
-        return 7;
-    if (TIME_CONTROL == RAPID)
-        return 7;
-    if (TIME_CONTROL == CLASSICAL)
-        return 8;
-    if (TIME_CONTROL == CLASSICAL_PLUS)
-        return 8;
-    if (TIME_CONTROL >= CLASSICAL_PLUS_PLUS)
-        return 8;
-}
+num MAX_SEARCH_DEPTH = 99999;
+num OWN_CLOCK_REMAINING = 18000;
 
 typedef struct ValuePlusMoves {
     num value;
@@ -603,7 +575,7 @@ void printf_move(Move mv) {
 void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (before call to make_move)
 {
     double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
-    printf(" EVAL %7.2f %c | D %1ld | NN %8ld | NQ %8ld | t %6.3f | VAR  ... ",
+    printf(" EVAL %7.2f %c | D%2ld | NN%9ld | NQ%9ld | t%7.3f | VAR  ... ",
         (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
 
     // reveal PV from hash table, this saves work of returning a std::deque
@@ -1144,6 +1116,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
 
 // find and play the best move in the position
+// TODO: lines
 std::string calc_move(bool lines = false)
 {
     SEARCH_START_CLOCK = std::clock();
@@ -1161,9 +1134,9 @@ std::string calc_move(bool lines = false)
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();
     zobrint_hash = board_to_zobrint_hash();
-
-    num TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
     num my_color = IM_WHITE ? WHITE : BLACK;
+    num OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
+    Move mv = {0};
 
     num game_phase = 0;   // game phase based on pieces traded. initial pos: 24, rook endgame: 8
     gentuples {
@@ -1171,48 +1144,31 @@ std::string calc_move(bool lines = false)
         game_phase += 1 * !!(p & KNIGHT) + 1 * !!(p & BISHOP) + 2 * !!(p & ROOK) + 4 * !!(p & QUEEN);
     }
 
-    if (game_phase <= 8) {
-        printf("Late endgame: Bringing in pawns and king\n");
-        set_piece_square_table(true);
-        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 2;  // without queens search is faster, so search more nodes
-    } else if (game_phase <= 14) {
-        printf("Early endgame: Likely queens traded(?), taking longer thinks\n");
-        set_piece_square_table();
-        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED + 1;  // without queens search is faster, so search more nodes
-    } else {
-        printf("Earlygame (opening or middlegame): Queens still on board\n");
-        set_piece_square_table();
-        TIME_CONTROL_TO_USE = TIME_CONTROL_REQUESTED;
-    }
+    printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");
+    set_piece_square_table(game_phase <= 8);
 
-    num search_depth_requested = time_control_to_depth(TIME_CONTROL_TO_USE);
-    Move mv = {0};
-
-    printf("Starting iterative deepening pre-search to fill the PV table\n");
-    // TODO: stop at search_depth_requested - 1 or search_depth_requested etc. ?
-    for (num search_depth = 1; search_depth < search_depth_requested; search_depth++) {
+    printf("Starting iterative deepening alphabeta search at ZOB %ld\n", zobrint_hash);
+    for (num search_depth = 1; search_depth <= MAX_SEARCH_DEPTH; search_depth++)
+    {
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
+
         ValuePlusMove best_at_depth = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
+
         printf_move(best_at_depth.move);
         printf_move_eval(best_at_depth, true);
+        mv = best_at_depth.move;
+
         if ((best_at_depth.value < -inf/2) or (best_at_depth.value > inf/2)) {
             printf("Found mate score already so stopping iterative deepening early\n");
-            mv = best_at_depth.move;
             break;
         }
-    }
 
-    if (mv == NULLMOVE) {
-        SEARCH_ADAPTIVE_DEPTH = search_depth_requested;
-        LASTMOVE = LASTMOVE_GAME;
-        printf("Starting alphabeta at ZOB %ld with depth %ld\n", zobrint_hash, SEARCH_ADAPTIVE_DEPTH);
-        ValuePlusMove bestmv = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, lines, false);
-        mv = bestmv.move;
-
-        printf("**** BEST ****\n");
-        printf_move(mv);
-        printf_move_eval(bestmv, true);
+        double time_expired = 100.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+        if (time_expired * 5 > OWN_TIME_TO_USE_MAX) {  // assume next depth takes 5 times as long
+            printf("Used up time budget of %7ldcs allocated to finding this move\n", OWN_TIME_TO_USE_MAX);
+            break;
+        }
     }
 
     make_move(mv);
@@ -1279,6 +1235,8 @@ void init_data(void) {
 
 
 void test() {
+    MAX_SEARCH_DEPTH = 7;
+    OWN_CLOCK_REMAINING = 9999999;  // 31s   // 237 dev - 187 (jangine -- expected winner spending more time)
     std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
 
     IM_WHITE = true;
@@ -1592,13 +1550,7 @@ int main(int argc, char const *argv[])
         }
         if (startswith("time", line)) {
             int time_left = std::stoi(line_cpp.substr(5));
-            TIME_CONTROL_REQUESTED = HYPERHYPERHYPERBULLET;                    // just move when under 3 seconds
-            if (time_left >=   300) TIME_CONTROL_REQUESTED = HYPERHYPERBULLET; // play hyperhyperbullet-like when 3 seconds left
-            if (time_left >=   800) TIME_CONTROL_REQUESTED = HYPERBULLET;      // play hyperbullet-like when 8 seconds left
-            if (time_left >=  2000) TIME_CONTROL_REQUESTED = BULLET;           // play bullet-like when 20 seconds left
-            if (time_left >=  6000) TIME_CONTROL_REQUESTED = BLITZ;            // play blitz-like when 60 seconds left
-            if (time_left >= 18000) TIME_CONTROL_REQUESTED = RAPID;            // play rapid-like when 3+ minutes left
-            if (time_left >= 48000) TIME_CONTROL_REQUESTED = CLASSICAL;        // play classical-like when 8+ mins left
+            OWN_CLOCK_REMAINING = time_left;  // time left in centiseconds
         }
 
         /*** UCI ***/

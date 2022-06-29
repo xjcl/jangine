@@ -20,12 +20,15 @@
 
 typedef int_fast16_t num;
 
-#define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
 #define DEBUG 0  // 1: debug PV, 2: all lines, 3: tons of output
+#define OUTPUT_TIME 1
+
+#define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
 #define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
+
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
 #define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 #pragma GCC diagnostic ignored "-Wnarrowing"
@@ -575,7 +578,7 @@ void printf_move(Move mv) {
 
 void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (before call to make_move)
 {
-    double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+    double time_expired = OUTPUT_TIME ? (1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC) : 0;
     printf(" EVAL %7.2f %c | D%2ld | NN%9ld | NQ%9ld | t%7.3f | VAR  ... ",
         (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
 

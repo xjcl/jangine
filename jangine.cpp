@@ -21,7 +21,7 @@
 typedef int_fast16_t num;
 
 #define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
-#define DEBUG 0  // 1: debug PV, 2: tons of output
+#define DEBUG 0  // 1: debug PV, 2: all lines, 3: tons of output
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 2
@@ -931,11 +931,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
             NODE_DEPTH = depth;
 
-            if (DEBUG >= 2) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
+            if (DEBUG >= 3) printf_moves(gl.moves, mvs_len, "BEFORE QSORT\n");
             // TODO: Different sorting function for quies vs non-quies?
             // TODO: selection-type sort instead ?
             qsort(gl.moves, mvs_len, sizeof(Move *), move_order_cmp);  // >=25% of runtime spent in qsort
-            if (DEBUG >= 2) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
+            if (DEBUG >= 3) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
         }
 
         if (gl.moves == gl.movesend)  // end of move list
@@ -963,7 +963,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         legal_moves_found++;
 
-        if ((depth < 2) and (DEBUG >= 2)) {
+        if ((depth < 2) and (DEBUG >= 3)) {
             for (int i = 0; i < depth; i++) printf("    ");
             printf_move(mv); printf(" ADAPT %ld \n", adaptive);
         }
@@ -1005,7 +1005,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if ((depth == 0 and lines) or (DEBUG >= 2)) {
+        if ((depth == 0 and lines) or (DEBUG >= 3)) {
             for (int i = 0; i < depth; i++)
                 printf("    ");
             printf_move(mv);
@@ -1015,7 +1015,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             printf_move_eval(mv_printable, accurate);
         }
 
-        if (not is_quies and not (lines_accurate and depth == 0)) {
+        if (not is_quies and not (lines_accurate and depth == 0)) {  // alpha-raising and alpha-beta-cutoffs
             if (COLOR == WHITE and best.value > alpha) {  // lo bound
                 alpha = best.value;
                 alpha_raised_n_times++;
@@ -1154,7 +1154,7 @@ std::string calc_move(bool lines = false)
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, false, false);
+        ValuePlusMove best_at_depth = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, (DEBUG >= 2), (DEBUG >= 2));
 
         printf_move(best_at_depth.move);
         printf_move_eval(best_at_depth, true);
@@ -1171,6 +1171,7 @@ std::string calc_move(bool lines = false)
             break;
         }
     }
+    printf("|End|ing iterative deepening alphabeta search at ZOB %ld\n", zobrint_hash);
 
     make_move(mv);
 

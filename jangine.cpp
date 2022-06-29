@@ -333,6 +333,46 @@ void board_clear() {  // setting up random positions
     CASTLINGBLACK = {false, false};
 }
 
+void board_from_fen(const char* fen) {  // setting up a game
+    const char* c = fen;
+    board_clear();
+    num i = 0;
+    num j = 0;
+
+    while (*c != ' ') {
+        if (*c == '/') { i++; j = -1; }
+        if (*c == '1')  j += 0;
+        if (*c == '2')  j += 1;
+        if (*c == '3')  j += 2;
+        if (*c == '4')  j += 3;
+        if (*c == '5')  j += 4;
+        if (*c == '6')  j += 5;
+        if (*c == '7')  j += 6;
+        if (*c == '8')  j += 7;
+        if (*c == 'P')  board[8*i+j] = WHITE + PAWN;
+        if (*c == 'p')  board[8*i+j] = BLACK + PAWN;
+        if (*c == 'N')  board[8*i+j] = WHITE + KNIGHT;
+        if (*c == 'n')  board[8*i+j] = BLACK + KNIGHT;
+        if (*c == 'B')  board[8*i+j] = WHITE + BISHOP;
+        if (*c == 'b')  board[8*i+j] = BLACK + BISHOP;
+        if (*c == 'R')  board[8*i+j] = WHITE + ROOK;
+        if (*c == 'r')  board[8*i+j] = BLACK + ROOK;
+        if (*c == 'Q')  board[8*i+j] = WHITE + QUEEN;
+        if (*c == 'q')  board[8*i+j] = BLACK + QUEEN;
+        if (*c == 'K')  board[8*i+j] = WHITE + KING;
+        if (*c == 'k')  board[8*i+j] = BLACK + KING;
+        j++;
+        *c++;
+    }
+
+    *c++;
+    IM_WHITE = (*c == 'w');
+
+    // ignore castling for now
+    // ignore en passant and halfmove/fullmove clocks for now
+    zobrint_hash = board_to_zobrint_hash();
+}
+
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
 num MAX_SEARCH_DEPTH = 99999;

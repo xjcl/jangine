@@ -181,8 +181,9 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
 Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-Move TRANSPOS_TABLE[1048576] = {0};  // 20 bits, use & 0xfffff  -> 20 * 2**20 bytes = 20 MiB
-int64_t TRANSPOS_TABLE_ZOB[1048576] = {0};
+Move TRANSPOS_TABLE[4194304] = {0};  // 22 bits, use & 0x3fffff  -> 5 * 2**22 bytes = 20 MiB
+int64_t TRANSPOS_TABLE_ZOB[4194304] = {0};
+#define ZOB_MASK 0x3fffff
 
 struct Pair {
     num a;
@@ -395,7 +396,7 @@ num initial_eval() {
     }
 
     // https://www.chessprogramming.org/Piece-Square_Tables
-    // piece positioning using piece-square-tabkes
+    // piece positioning using piece-square-tables
     gentuples {
         eval += eval_piece_on_square(board[8*i+j], i, j);
     }
@@ -588,8 +589,8 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
     num i = 0;  // prevent infinite repetition
 
     // TODO: revealing PV from hash table is faster but cuts off parts of it
-    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash) && (i < 20)) {
-        Move mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
+    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash) && (i < 14)) {
+        Move mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         std::cout << move_to_str(mv, true) << " ";
 
         ppc = make_move(mv);  // updates zobrist_hash
@@ -598,8 +599,8 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
         ++i;
     }
 
-    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != zobrint_hash) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] != 0)
-            and not (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == NULLMOVE))
+    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] != zobrint_hash) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] != 0)
+            and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == NULLMOVE))
         std::cout << "[HASH COLLISION] ";
 
     for (int i = moves.size() - 1; i >= 0; i--) {
@@ -807,7 +808,7 @@ num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
 int_fast32_t move_order_key(Move mv)
 {
     // try best move (pv move) from previous search (iterative deepening)
-    if (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv)
+    if (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == mv)
         //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
         return 90000020;
 
@@ -906,13 +907,13 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     Move LASTMOVE_BAK = LASTMOVE;
 
     num alpha_raised_n_times = 0;
-    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] == zobrint_hash);
+    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
 
     // try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
     if (pv_in_hash_table)
     {
-        mv = TRANSPOS_TABLE[zobrint_hash & 0xfffff];
+        mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         ppc = make_move(mv);
         pv_in_hash_table = true;
         goto jump_into_loop_with_hash_move;
@@ -945,7 +946,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         mv = **(gl.moves);
 
         // skip hash move that we already did before gen_moves_maybe_legal
-        if (pv_in_hash_table and (TRANSPOS_TABLE[zobrint_hash & 0xfffff] == mv)) {
+        if (pv_in_hash_table and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == mv)) {
             gl.moves++;
             continue;  // already checked hash move
         }
@@ -1102,8 +1103,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     // 20-bit transpos table cannot handle much more than depth 5 (2% collisions)
     //if ((depth <= 5) and not (best.move == NULLMOVE)) {
     if (not (best.move == NULLMOVE) and (((depth <= 5) and (not is_quies)) or DEBUG)) {
-        TRANSPOS_TABLE[zobrint_hash & 0xfffff] = best.move;
-        TRANSPOS_TABLE_ZOB[zobrint_hash & 0xfffff] = zobrint_hash;  // verify we got the right one
+        TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = best.move;
+        TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] = zobrint_hash;  // verify we got the right one
     }
 
     if (is_quies and COLOR == WHITE)
@@ -1502,7 +1503,7 @@ void test() {
     make_move_str("e1g1"); make_move_str("f8e7");
     make_move_str("d3e4"); make_move_str("d5e4");
     make_move_str("b1c3"); make_move_str("f7f5");
-    make_move_str("d1h5"); make_move_str("g7g6");
+    make_move_str("d1h5"); make_move_str("g7g6");  // 10.
     make_move_str("h5d1"); make_move_str("c8b7");
     make_move_str("c1e3"); make_move_str("e8g8");
     make_move_str("d1e2"); make_move_str("d8e8");

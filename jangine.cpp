@@ -1196,13 +1196,13 @@ std::string calc_move(bool lines = false)
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = alphabeta(my_color, -inf+1, inf-1, SEARCH_ADAPTIVE_DEPTH, false, 0, (DEBUG >= 2), (DEBUG >= 2));
+        ValuePlusMove best_at_depth = alphabeta(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, 0, (DEBUG >= 2), (DEBUG >= 2));
 
         printf_move(best_at_depth.move);
         printf_move_eval(best_at_depth, true);
         mv = best_at_depth.move;
 
-        if ((best_at_depth.value < -inf/2) or (best_at_depth.value > inf/2)) {
+        if ((best_at_depth.value <= -inf/2) or (best_at_depth.value >= inf/2)) {
             printf("Found mate score already so stopping iterative deepening early\n");
             break;
         }

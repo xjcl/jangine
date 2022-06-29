@@ -148,9 +148,8 @@ std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES_SOURCE = {
 };
 
 typedef struct CASTLINGRIGHTS {
-    bool lr;  // left rook has not been moved
-    bool k;   // king has not been moved
-    bool rr;  // right rook has not been moved
+    bool lc;  // left-castling still possible (long castling)
+    bool rc;  // right-castling still possible (short castling)
 } CASTLINGRIGHTS;
 
 typedef struct Move {
@@ -178,8 +177,8 @@ typedef struct PiecePlusCatling {
     CASTLINGRIGHTS c_rights_b;
 } PiecePlusCatling;
 
-CASTLINGRIGHTS CASTLINGWHITE = {true, true, true};
-CASTLINGRIGHTS CASTLINGBLACK = {true, true, true};
+CASTLINGRIGHTS CASTLINGWHITE = {true, true};
+CASTLINGRIGHTS CASTLINGBLACK = {true, true};
 
 Move NULLMOVE = {0};
 Move LASTMOVE = {0};
@@ -314,8 +313,8 @@ void board_initial_position() {  // setting up a game
     set_piece_square_table();
 
     set_up_kings(7, 4, 0, 4);
-    CASTLINGWHITE = {true, true, true};
-    CASTLINGBLACK = {true, true, true};
+    CASTLINGWHITE = {true, true};
+    CASTLINGBLACK = {true, true};
     board_eval = 0;
 
     zobrint_hash = board_to_zobrint_hash();
@@ -330,8 +329,8 @@ void board_clear() {  // setting up random positions
     for (int i = 0; i < 64; ++i)
         board[i] = 0;
 
-    CASTLINGWHITE = {false, false, false};
-    CASTLINGBLACK = {false, false, false};
+    CASTLINGWHITE = {false, false};
+    CASTLINGBLACK = {false, false};
 }
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
@@ -467,8 +466,8 @@ PiecePlusCatling make_move(Move mv)
 
     CASTLINGRIGHTS cr = (piece & WHITE ? CASTLINGWHITE : CASTLINGBLACK);
 
-    if (mv.f0 == CASTLERANK) {
-        cr = {mv.f1 != 0 and cr.lr, mv.f1 != 4 and cr.k,  mv.f1 != 7 and cr.rr};
+    if (mv.f0 == CASTLERANK) {  // lose right to castle if king or rook moves
+        cr = {mv.f1 != 0 and mv.f1 != 4 and cr.lc, mv.f1 != 7 and mv.f1 != 4 and cr.rc};
         if (piece & WHITE)  CASTLINGWHITE = cr;
         else                CASTLINGBLACK = cr;
     }
@@ -715,6 +714,23 @@ ValuePlusMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
     num EPRANK = COLOR == WHITE ? 3 : 4;
     num CASTLERANK = COLOR == WHITE ? 7 : 0;
 
+    if (not only_captures) {  // castling moves
+        //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
+        //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
+        //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
+        CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
+        if (castlingrights.rc and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
+            if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
+                    not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
+                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 6, 'c');
+        }
+        if (castlingrights.lc and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+0] == COLOR + ROOK) {  // long castle O-O-O
+            if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
+                    not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
+                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 2, 'c');
+        }
+    }
+
     gentuples {
         num bij = board[8*i+j];
         num bijpiece = bij & COLORBLIND;
@@ -762,23 +778,6 @@ ValuePlusMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
                         mvsend = move_store(mvsend, COLOR, i, j, i+a*k, j+b*k, '\0');
                 }
             }
-        }
-    }
-
-    if (not only_captures) {
-        //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
-        //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
-        //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
-        CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
-        if (castlingrights.k and castlingrights.rr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
-            if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
-                    not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
-                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 6, 'c');
-        }
-        if (castlingrights.k and castlingrights.lr and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK] == COLOR + ROOK) {  // long castle O-O-O
-            if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
-                    not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
-                mvsend = move_store(mvsend, COLOR, CASTLERANK, 4, CASTLERANK, 2, 'c');
         }
     }
 

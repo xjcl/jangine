@@ -1280,52 +1280,34 @@ void init_data(void) {
 
 void test() {
     MAX_SEARCH_DEPTH = 7;
-    OWN_CLOCK_REMAINING = 9999999;  // 31s   // 237 dev - 187 (jangine -- expected winner spending more time)
-    std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
+    OWN_CLOCK_REMAINING = 9999999;
 
-    IM_WHITE = true;
-    board_clear();
-    set_up_kings(0, 2, 0, 0);
-    board[63] = WHITE + ROOK;
+    std::cout << "TODO" << std::endl;
+    board_from_fen("8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
+    board_from_fen("k1K5/8/8/8/8/8/8/7R w - - 0 1");
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
 
     std::cout << "\nTests Mate-in-2" << std::endl;
-
-    board_clear();
-    set_up_kings(7, 2, 0, 1);
-    board[7] = BLACK + ROOK;
-    board[8+0] = BLACK + PAWN;
-    board[8+1] = BLACK + PAWN;
-    board[8+2] = BLACK + PAWN;
-    board[5*8+3] = WHITE + QUEEN;
-    board[7*8+3] = WHITE + ROOK;
+    board_from_fen("1k5r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-2 (eval=297) if depth >= 4
 
     std::cout << "\nTests Mate-in-3" << std::endl;
-
-    board_clear();
-    set_up_kings(7, 2, 0, 2);
-    board[7] = BLACK + ROOK;
-    board[8+0] = BLACK + PAWN;
-    board[8+1] = BLACK + PAWN;
-    board[8+2] = BLACK + PAWN;
-    board[5*8+3] = WHITE + QUEEN;
-    board[7*8+3] = WHITE + ROOK;
+    board_from_fen("2k4r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find mate-in-3 (eval=295) if depth >= 6
 
-    std::cout << "\nTests Mate-in-4 (and stalemate)" << std::endl;
-
-    board_clear();
-    set_up_kings(0, 2, 0, 0);
-    board[2*8+1] = WHITE + PAWN;
+    std::cout << "\nTests Mate-in-4 (and promotion)" << std::endl;
+    board_from_fen("k1K5/8/1P6/8/8/8/8/8 w - - 0 1");
     pprint();
     std::cout << calc_move(true) << std::endl;  // Kc7 is stalemate, b7+ promotes
 
     std::cout << "\nTests 2 queens mate-in-3 (should stop early)" << std::endl;
-
     board_clear();
     set_up_kings(7, 6, 5, 2);
     board[0*8+4] = WHITE + QUEEN;
@@ -1334,15 +1316,16 @@ void test() {
     std::cout << calc_move(true) << std::endl;  // should not be slow
 
     std::cout << "\nTests Promotion" << std::endl;
-
-    board_clear();
-    set_up_kings(0, 2, 0, 0);
-    board[1*8+6] = WHITE + PAWN;
+    board_from_fen("k1K5/6P1/8/8/8/8/8/8 w - - 0 1");
     pprint();
     std::cout << calc_move(true) << std::endl;
 
-    std::cout << "\nTests En-Passant" << std::endl;
+    std::cout << "\nTests Stalemate tactics from https://lichess.org/VdE6aggQ/black#74" << std::endl;
+    board_from_fen("4Q3/6pk/6Np/7P/3P4/8/PPq2PK1/6R1 b - - 4 36");
+    pprint();
+    std::cout << calc_move(true) << std::endl;  // Qxg3+ leads to forced stalemate at depth 3
 
+    std::cout << "\nTests En-Passant" << std::endl;
     board_initial_position();
     make_move_str("e2e4"); make_move_str("a7a6");
     make_move_str("e4e5"); make_move_str("d7d5");
@@ -1350,7 +1333,6 @@ void test() {
     std::cout << calc_move(true) << std::endl;
 
     std::cout << "\nTests Castling" << std::endl;
-
     board_initial_position();
     board[7*8+5] = 0;
     board[7*8+6] = 0;
@@ -1359,7 +1341,6 @@ void test() {
     std::cout << calc_move(true) << std::endl;
 
     std::cout << "\nTests detecting/avoiding repetitions" << std::endl;
-
     board_initial_position();
     IM_WHITE = true;
     zobrint_hash ^= zobrint_random_table[board[3]][3];
@@ -1372,7 +1353,6 @@ void test() {
     std::cout << calc_move(true) << std::endl;  // Should see that f3g1 would be 3-fold
 
     std::cout << "\nTests Lasker Trap in Albin Countergambit" << std::endl;
-
     board_initial_position();
     IM_WHITE = false;
     make_move_str("d2d4"); make_move_str("d7d5");
@@ -1385,111 +1365,33 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should find knight promotion as best
 
-    std::cout << "\nTests missed fork from a game" << std::endl;
-
-    board_initial_position();
-    IM_WHITE = false;
-    make_move_str("d2d4"); make_move_str("b8c6");
-    make_move_str("c2c4"); make_move_str("g8f6");
-    make_move_str("d4d5"); make_move_str("c6e5");
-    make_move_str("d1c2"); make_move_str("e5g6");
-    make_move_str("b1c3"); make_move_str("e7e5");
-    make_move_str("e2e4"); make_move_str("f8d6");
-    make_move_str("g1f3"); make_move_str("c7c6");
-    make_move_str("c1g5"); make_move_str("c6d5");
-    make_move_str("e4d5"); make_move_str("g6f4");
-    make_move_str("g2g3"); make_move_str("f4g6");
-    make_move_str("f1g2"); make_move_str("e8g8");
-    make_move_str("c3e4"); make_move_str("d6b4");
-    make_move_str("e4c3"); make_move_str("d7d6");
-    make_move_str("e1g1"); make_move_str("b4c5");
-    make_move_str("a2a3"); make_move_str("h7h6");
-    make_move_str("g5f6"); make_move_str("d8f6");
-    make_move_str("c3e4"); make_move_str("f6f5");
-    make_move_str("a1c1"); make_move_str("c8d7");
-    make_move_str("e4c5"); make_move_str("d6c5");
-    make_move_str("f1e1"); make_move_str("f5c2");
-    make_move_str("c1c2"); make_move_str("d7f5");
-    make_move_str("c2c3"); make_move_str("a8e8");
-    make_move_str("b2b4"); make_move_str("b7b6");
-    make_move_str("f3d2"); make_move_str("c5b4");
-    make_move_str("a3b4"); make_move_str("e8d8");
-    make_move_str("d2e4"); make_move_str("f8e8");
-    make_move_str("c3e3");
+    std::cout << "\nTests going into a fork https://lichess.org/A1Jn5Z5s#53" << std::endl;
+    board_from_fen("3rr1k1/p4pp1/1p4np/3Ppb2/1PP1N3/4R1P1/5PBP/4R1K1 b - - 4 27");
     pprint();
     std::cout << calc_move(true) << std::endl;  // should NOT play Rc8??
-    // Reason for this bug was searching forward moves LESS than backwards moves (intended the other way)
+    // ^ Reason for this bug was searching forward moves LESS than backwards moves (intended the other way)
 
     std::cout << "\nTests missed en-passant https://lichess.org/4bSSvnGS/white#60" << std::endl;
-    board_initial_position();
-    IM_WHITE = true;
-    make_move_str("c2c4"); make_move_str("e7e6");  // 1.
-    make_move_str("d2d4"); make_move_str("g8f6");
-    make_move_str("b1c3"); make_move_str("f8b4");
-    make_move_str("f2f3"); make_move_str("c7c5");
-    make_move_str("d4d5"); make_move_str("b7b5");  // 5.
-    make_move_str("e2e4"); make_move_str("b5c4");
-    make_move_str("f1c4"); make_move_str("f6d5");
-    make_move_str("c4d5"); make_move_str("e6d5");
-    make_move_str("d1d5"); make_move_str("b8c6");
-    make_move_str("c1g5"); make_move_str("d8a5");  // 10.
-    make_move_str("g1e2"); make_move_str("h7h6");
-    make_move_str("g5d2"); make_move_str("c8b7");
-    make_move_str("a2a3"); make_move_str("c6d8");
-    make_move_str("d5a2"); make_move_str("b4c3");
-    make_move_str("d2c3"); make_move_str("a5b6");  // 15.
-    make_move_str("c3g7"); make_move_str("h8g8");
-    make_move_str("g7e5"); make_move_str("g8g2");
-    make_move_str("e1f1"); make_move_str("g2g5");
-    make_move_str("e5f4"); make_move_str("g5g6");
-    make_move_str("h1g1"); make_move_str("g6g1");  // 20.
-    make_move_str("f1g1"); make_move_str("c5c4");
-    make_move_str("g1g2"); make_move_str("d7d5");
-    make_move_str("e4d5"); make_move_str("b7d5");
-    make_move_str("e2c3"); make_move_str("b6g6");
-    make_move_str("f4g3"); make_move_str("g6c2");  // 25.
-    make_move_str("g3f2"); make_move_str("d5e6");
-    make_move_str("a1e1"); make_move_str("e8f8");
-    make_move_str("e1e2"); make_move_str("c2f5");
-    make_move_str("f2g3"); make_move_str("d8c6");
-    make_move_str("e2e4"); make_move_str("f8g8");  // 30.
+    board_from_fen("r5k1/p4p2/2n1b2p/5q2/2p1R3/P1N2PB1/QP4KP/8 w - - 14 31");
     pprint();
     std::cout << calc_move(true) << std::endl; // should NOT play 31. b4??
 
     std::cout << "\nTests missed knight move https://lichess.org/jOQqZlqM#42" << std::endl;
-    board_initial_position();
-    IM_WHITE = true;
-    make_move_str("e2e4"); make_move_str("c7c6");  // 1.
-    make_move_str("d2d4"); make_move_str("d7d5");
-    make_move_str("e4d5"); make_move_str("c6d5");
-    make_move_str("c2c4"); make_move_str("g8f6");
-    make_move_str("b1c3"); make_move_str("b8c6");  // 5.
-    make_move_str("c1g5"); make_move_str("d5c4");
-    make_move_str("f1c4"); make_move_str("h7h6");
-    make_move_str("g5f6"); make_move_str("e7f6");
-    make_move_str("g1e2"); make_move_str("f8d6");
-    make_move_str("c4b5"); make_move_str("c8d7");  // 10.
-    make_move_str("d1d3"); make_move_str("e8g8");
-    make_move_str("e1g1"); make_move_str("a7a6");
-    make_move_str("b5c6"); make_move_str("d7c6");
-    make_move_str("a1d1"); make_move_str("d6c7");
-    make_move_str("a2a3"); make_move_str("f8e8");  // 15.
-    make_move_str("e2g3"); make_move_str("d8d6");
-    make_move_str("b2b4"); make_move_str("h6h5");
-    make_move_str("b4b5"); make_move_str("a6b5");
-    make_move_str("d4d5"); make_move_str("h5h4");
-    make_move_str("d5c6"); make_move_str("d6d3");  // 20.
-    make_move_str("d1d3"); make_move_str("h4g3");
+    board_from_fen("r3r1k1/1pb2pp1/2P2p2/1p6/8/P1NR2p1/5PPP/5RK1 w - - 0 22");
     pprint();
     std::cout << calc_move(true) << std::endl; // should NOT play 22. hxg3?, rather Nxb5 or Nd5
 
     board_initial_position();
-    IM_WHITE = true;
     printf("\nINITIAL BOARD EVAL: %ld\n", board_eval);
-
     make_move_str("e2e4");
-    printf("\n1. e4 EVAL: %ld\n", board_eval);
+    printf("1. e4 EVAL: %ld\n", board_eval);
+    IM_WHITE = false; std::cout << calc_move(true) << std::endl;
+    make_move_str("b1c3");
+    IM_WHITE = false; std::cout << calc_move(true) << std::endl;
+    make_move_str("g1f3");
+    IM_WHITE = false; std::cout << calc_move(true) << std::endl;
 
+    printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     IM_WHITE = true;
     board_initial_position();
     make_move_str("h2h4"); make_move_str("b7b6");
@@ -1501,59 +1403,33 @@ void test() {
     make_move_str("b3b5"); make_move_str("b7c6");
     make_move_str("b5h5"); make_move_str("f8b4");
     pprint();
-
-    printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
     std::cout << calc_move(true) << std::endl;
 
     std::cout << "\nTests Rc8 blunder caused by wrong continue https://lichess.org/1NIkB4Dg/black#48" << std::endl;
-    IM_WHITE = false;
-    board_initial_position();
-    make_move_str("c2c4"); make_move_str("g8f6");  // 1.
-    make_move_str("d2d4"); make_move_str("e7e6");
-    make_move_str("g1f3"); make_move_str("b7b6");
-    make_move_str("b1c3"); make_move_str("f8b4");
-    make_move_str("e2e3"); make_move_str("c8b7");  // 5.
-    make_move_str("f1d3"); make_move_str("e8g8");
-    make_move_str("c1d2"); make_move_str("d7d5");
-    make_move_str("c4d5"); make_move_str("e6d5");
-    make_move_str("e1g1"); make_move_str("b8d7");
-    make_move_str("g2g3"); make_move_str("d8e7");  // 10.
-    make_move_str("f3h4"); make_move_str("c7c5");
-    make_move_str("h4f5"); make_move_str("e7e8");
-    make_move_str("c3b5"); make_move_str("b4d2");
-    make_move_str("d1d2"); make_move_str("e8d8");
-    make_move_str("b5d6"); make_move_str("b7c6");  // 15.
-    make_move_str("d2c3"); make_move_str("c5c4");
-    make_move_str("b2b3"); make_move_str("c4d3");
-    make_move_str("c3c6"); make_move_str("g7g6");
-    make_move_str("f5h6"); make_move_str("g8g7");
-    make_move_str("h6f7"); make_move_str("f8f7");  // 20.
-    make_move_str("d6f7"); make_move_str("g7f7");
-    make_move_str("a1c1"); make_move_str("d8e8");
-    make_move_str("f1d1"); make_move_str("f7g8");
-    make_move_str("d1d3");
+    board_from_fen("r3q1k1/p2n3p/1pQ2np1/3p4/3P4/1P1RP1P1/P4P1P/2R3K1 b - - 0 24");
     pprint();
     std::cout << calc_move(true) << std::endl;  // should be ~0.75ish, not -3.90 as in the game
-/*
-    IM_WHITE = true;
-    board_initial_position();
-    make_move_str("e2e4"); make_move_str("e7e5");  // 1.
-    make_move_str("g1f3"); make_move_str("g8f6");
-    make_move_str("d2d4"); make_move_str("f6e4");
-    make_move_str("f1d3"); make_move_str("d7d5");
-    make_move_str("f3e5"); make_move_str("b8c6");  // 5.
-    make_move_str("e5c6"); make_move_str("b7c6");
-    make_move_str("e1g1"); make_move_str("f8e7");
-    make_move_str("d3e4"); make_move_str("d5e4");
-    make_move_str("b1c3"); make_move_str("f7f5");
-    make_move_str("d1h5"); make_move_str("g7g6");  // 10.
-    make_move_str("h5d1"); make_move_str("c8b7");
-    make_move_str("c1e3"); make_move_str("e8g8");
-    make_move_str("d1e2"); make_move_str("d8e8");
-    //make_move_str("e3h6"); make_move_str("f8f7");
+
+    std::cout << "\nTests iliachess game https://www.chess.com/analysis/game/live/50110768933" << std::endl;
+    board_from_fen("r3r1k1/pbq2p1R/1p2nQp1/8/6P1/2PBpPP1/PP4K1/4R3 b - - 0 22");
     pprint();
     std::cout << calc_move(true) << std::endl;
-*/
+
+    std::cout << "Bf5 blunder from https://lichess.org/Cwt4L3df/black#81" << std::endl;
+    board_from_fen("8/6pk/6bp/p7/P7/2R1R1P1/1P6/2KB1q2 b - - 3 41");
+//    make_move_str("g6f5"); make_move_str("e3f3");
+//    make_move_str("f1h3"); make_move_str("f3f5");
+//    make_move_str("h3f5");
+//    IM_WHITE = true;
+    pprint();
+    std::cout << calc_move(true) << std::endl;  // finds Bf5 at depth 7 which is a blunder :/
+
+    std::cout << "\nTests pawn loss tactics https://lichess.org/5pQ86dA7/white#42" << std::endl;
+    board_from_fen("2k1rb2/1bpp1p2/p6p/1p1N4/2P5/1P6/1P1N1PPP/5RK1 w - - 1 22");
+    board_from_fen("2k1r3/1bpp1p2/p6p/1pb5/2P5/1P2N3/1P1N1PPP/5RK1 w - - 3 23");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
     std::exit(0);
 }
 

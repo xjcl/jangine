@@ -1170,9 +1170,10 @@ std::string calc_move(bool lines = false)
     // TODO: mode where a random/suboptimal move can get picked?
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
-    for (num i = 0; i < 20; i++)
+    // re-use killer moves from previous move (2 plies ago) -> very small speed improvement
+    for (num i = 0; i < 18; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
-            KILLER_TABLE[i][j] = {0};
+            KILLER_TABLE[i][j] = KILLER_TABLE[i+2][j];
     // Since game positions are correlated and the TABLE_ZOB is checked we actually go faster if we do not clear this
     //memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
     //memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);

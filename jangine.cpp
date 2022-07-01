@@ -942,7 +942,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     Move mv = {0};
     PiecePlusCatling ppc;
     ValuePlusMoves gl = {0};
-    Move** gl_moves_backup = NULL;
+    Move** cur_mv = NULL;
+
     num legal_moves_found = 0;
     Move LASTMOVE_BAK = LASTMOVE;
 
@@ -979,16 +980,16 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             if (DEBUG >= 3) printf_moves(gl.moves, mvs_len, "AFTER QSORT\n");
         }
 
-        if (gl.moves == gl.movesend)  // end of move list
+        if (cur_mv == gl.movesend)  // end of move list
             break;
 
-        //select_front_move(gl.moves, gl.movesend);
+        //select_front_move(cur_mv, gl.movesend);
 
-        mv = **(gl.moves);
+        mv = **(cur_mv);
 
         // skip hash move that we already did before gen_moves_maybe_legal
         if (pv_in_hash_table and (pv_mv == mv)) {
-            gl.moves++;
+            cur_mv++;
             continue;  // already checked hash move
         }
 
@@ -996,7 +997,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         if (king_in_check(COLOR)) {  // illegal move  // king_in_check takes 11s of the 30s program time!!
             unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
-            gl.moves++;
+            cur_mv++;
             continue;
         }
 
@@ -1092,11 +1093,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 best.value = beta;
 
                 for (int i = 0; i < 128; ++i) {
-                    if (not gl_moves_backup[i])
+                    if (not gl.moves[i])
                         break;
-                    free(gl_moves_backup[i]);
+                    free(gl.moves[i]);
                 }
-                free(gl_moves_backup);
+                free(gl.moves);
 
                 return best;
             }
@@ -1108,11 +1109,11 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 best.value = alpha;
 
                 for (int i = 0; i < 128; ++i) {
-                    if (not gl_moves_backup[i])
+                    if (not gl.moves[i])
                         break;
-                    free(gl_moves_backup[i]);
+                    free(gl.moves[i]);
                 }
-                free(gl_moves_backup);
+                free(gl.moves);
 
                 return best;
             }
@@ -1120,17 +1121,17 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 beta = best.value;
         }
 
-        if (gl.moves != NULL)
-            gl.moves++;
+        if (cur_mv != NULL)
+            cur_mv++;
     }
 
-    if (gl_moves_backup) {
+    if (gl.moves) {
         for (int i = 0; i < 128; ++i) {
-            if (not gl_moves_backup[i])
+            if (not gl.moves[i])
                 break;
-            free(gl_moves_backup[i]);
+            free(gl.moves[i]);
         }
-        free(gl_moves_backup);
+        free(gl.moves);
     }
 
     // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth

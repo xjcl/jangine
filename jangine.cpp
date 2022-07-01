@@ -1288,6 +1288,16 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;
 
+    std::cout << "Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66" << std::endl;
+    board_from_fen("1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64" << std::endl;
+    board_from_fen("1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
     std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
     board_from_fen("k1K5/8/8/8/8/8/8/7R w - - 0 1");
     pprint();

@@ -424,8 +424,6 @@ num eval_piece_on_square(num piece_with_color, num i, num j) {
     return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+j];
 }
 
-// TODO: test Nb4 incident  https://lichess.org/Y7wbd6Jn04IP
-// https://chessprogramming.wikispaces.com/Turochamp#Evaluation%20Features
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
 // Returns centipawn value to a given board position, from WHITE's perspective
 // TODO: breakdown into component numbers for better testability
@@ -631,7 +629,7 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
     num i = 0;  // prevent infinite repetition
 
     // TODO: revealing PV from hash table is faster but cuts off parts of it
-    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash) && (i < 14)) {
+    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash) && (i < 12)) {
         Move mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         std::cout << move_to_str(mv, true) << " ";
 
@@ -970,7 +968,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
             gl = gen_moves_maybe_legal(COLOR, is_quies);
             gl_moves_backup = gl.moves;
-            num mvs_len = gl.movesend - gl.moves;  // can only be 0 in illegal positions
+            num mvs_len = gl.movesend - gl.moves;  // can only be 0 in illegal positions -> add assert statement
 
             NODE_DEPTH = depth;
 
@@ -1019,6 +1017,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
         // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
         if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or not (pv_in_hash_table and (alpha_raised_n_times == 1)))
+            // Normal alpha-beta search
             rec = alphabeta(
                 COLOR == WHITE ? BLACK : WHITE,
                 alpha,
@@ -1027,6 +1026,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             );
         else {
             // https://www.chessprogramming.org/Principal_Variation_Search
+            // Idea of PV: assume hash move will already be best move, so use null window to aggressively prune other moves
+            // Should be active when (alpha_raised_n_times == 1) (PV move raised alpha and no move beat PV move yet)
             rec = alphabeta(  // try a null-window search that saves time if everything is below alpha
                 COLOR == WHITE ? BLACK : WHITE,
                 COLOR == WHITE ? alpha : (beta - 1),
@@ -1034,7 +1035,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 adaptive_new, is_quies, depth + 1, lines, lines_accurate
             );
 
-            if (COLOR == WHITE ? rec.value > alpha: rec.value < beta)  // costly re-search
+            if (COLOR == WHITE ? rec.value > alpha : rec.value < beta)  // costly re-search if above search fails
                 rec = alphabeta(
                     COLOR == WHITE ? BLACK : WHITE,
                     alpha,

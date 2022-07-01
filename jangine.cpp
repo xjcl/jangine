@@ -849,10 +849,10 @@ num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
 // https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
 int_fast32_t move_order_key(Move mv)
 {
-    // try best move (pv move) from previous search (iterative deepening)
-    if (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == mv)
-        //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
-        return 90000020;
+//    // try best move (pv move) from previous search (iterative deepening)
+//    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == mv))
+//        //{printf_move(LASTMOVE); printf_move(mv); printf("\n"); return 90000003;}
+//        return 90000020;
 
     // MVV-LVA (most valuable victim, least valuable attacker)
     if (board[8*mv.t0+mv.t1])
@@ -950,6 +950,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
     num alpha_raised_n_times = 0;
     bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
+    Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
 
     // try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
@@ -988,7 +989,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         mv = **(gl.moves);
 
         // skip hash move that we already did before gen_moves_maybe_legal
-        if (pv_in_hash_table and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == mv)) {
+        if (pv_in_hash_table and (pv_mv == mv)) {
             gl.moves++;
             continue;  // already checked hash move
         }

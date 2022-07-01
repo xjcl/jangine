@@ -183,9 +183,9 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true};
 Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-Move TRANSPOS_TABLE[4194304] = {0};  // 22 bits, use & 0x3fffff  -> 5 * 2**22 bytes = 20 MiB
-int64_t TRANSPOS_TABLE_ZOB[4194304] = {0};
-#define ZOB_MASK 0x3fffff
+Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits -> (8+4) * 2**24 bytes = 192 MiB
+int64_t TRANSPOS_TABLE_ZOB[16777216] = {0};
+#define ZOB_MASK 0xffffff
 
 struct Pair {
     num a;
@@ -1143,9 +1143,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         return best;
 
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
-    // 20-bit transpos table cannot handle much more than depth 5 (2% collisions)
+    // TODO: calculate expected number of collisions
     //if ((depth <= 5) and not (best.move == NULLMOVE)) {
-    if (not (best.move == NULLMOVE) and (((depth <= 5) and (not is_quies)) or DEBUG)) {
+    if (not (best.move == NULLMOVE) and (((depth <= 9) and (not is_quies)) or DEBUG)) {
         TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = best.move;
         TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] = zobrint_hash;  // verify we got the right one
     }
@@ -1171,9 +1171,9 @@ std::string calc_move(bool lines = false)
     for (num i = 0; i < 20; i++)
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = {0};
-    memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
-    memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
-    // no need to reset the TRANSPOS_TABLE_ZOB
+    // Since game positions are correlated and the TABLE_ZOB is checked we actually go faster if we do not clear this
+    //memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
+    //memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
     board_eval = initial_eval();

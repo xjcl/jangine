@@ -854,12 +854,12 @@ int_fast32_t move_order_key(Move mv)
 
     // MVV-LVA (most valuable victim, least valuable attacker)
     if (board[8*mv.t0+mv.t1])
-        return 1000 * PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] - PIECEVALS[board[8*mv.f0+mv.f1] & COLORBLIND];
+        return 1000 * PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] - PIECEVALS[board[8*mv.f0+mv.f1] & COLORBLIND];  // min: 68_000
 
     // try "killer moves"
     for (num i = 0; i < MAX_KILLER_MOVES; i++)
         if (KILLER_TABLE[NODE_DEPTH][i] == mv)
-            return 99000 - i;
+            return 49000 - i;
 
     if (mv.prom)
         return 1;

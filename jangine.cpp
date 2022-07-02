@@ -740,12 +740,12 @@ inline Move** move_store_maybe_promote(Move** mvsend, num COLOR, bool is_promran
         return   move_store(mvsend, COLOR, a, b, c, d, '\0');
 }
 
-
-GenMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
+// generates all captures if captures=true, generates all quiet moves if captures=false
+GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)
 {
-    Move** captures = (Move**)calloc(128, sizeof(Move*));  // Maximum should be 218 moves  // array of NULLptrs
+    Move** captures = do_captures ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // Maximum should be 218 moves  // array of NULLptrs
     Move** captures_end = captures;
-    Move** quiets = only_captures ? NULL : (Move**)calloc(128, sizeof(Move*));  // array of NULLptrs
+    Move** quiets = do_quiets ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // array of NULLptrs
     Move** quiets_end = quiets;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
@@ -755,7 +755,7 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
     num EPRANK = COLOR == WHITE ? 3 : 4;
     num CASTLERANK = COLOR == WHITE ? 7 : 0;
 
-    if (not only_captures) {  // castling moves
+    if (do_quiets) {  // castling moves
         //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
         //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
         //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
@@ -777,27 +777,26 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
         if (not (bij & COLOR))
             continue;
         if (bij & PAWN) {  // pawn moves
-            // diagonal captures
-            if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
-                captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j+1);
-            if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
-                captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j-1);
+            if (do_captures) {
+                // diagonal captures
+                if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
+                    captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j+1);
+                if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
+                    captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j-1);
 
-            if (i == EPRANK) {  // en passant capture
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1 and board[8*i+j-1] & PAWN)
-                    captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j-1, 'e');
-                if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1 and board[8*i+j+1] & PAWN)
-                    captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j+1, 'e');
+                if (i == EPRANK) {  // en passant capture
+                    if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1 and board[8*i+j-1] & PAWN)
+                        captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j-1, 'e');
+                    if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1 and board[8*i+j+1] & PAWN)
+                        captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j+1, 'e');
+                }
             }
-
-            if (only_captures)
-                continue;
-
-            if (not board[8*(i+ADD)+j]) {  // 1 square forward
-                quiets_end = move_store_maybe_promote(quiets_end, COLOR, i == PROMRANK, i, j, i+ADD, j);
-                if (i == STARTRANK and not board[8*(i+ADD+ADD)+j])  // 2 squares forward
-                    quiets_end = move_store(quiets_end, COLOR, i, j, i+ADD+ADD, j, '\0');
-            }
+            if (do_quiets)
+                if (not board[8*(i+ADD)+j]) {  // 1 square forward
+                    quiets_end = move_store_maybe_promote(quiets_end, COLOR, i == PROMRANK, i, j, i+ADD, j);
+                    if (i == STARTRANK and not board[8*(i+ADD+ADD)+j])  // 2 squares forward
+                        quiets_end = move_store(quiets_end, COLOR, i, j, i+ADD+ADD, j, '\0');
+                }
         } else {  // piece moves
             num bijpiece = bij & COLORBLIND;
             for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
@@ -810,10 +809,11 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool only_captures = false)
                     if (board[8*(i+a*k)+j+b*k] & COLOR)  // move to square with own piece (illegal)
                         break;
                     if (board[8*(i+a*k)+j+b*k] & NCOLOR) {  // move to square with enemy piece (capture)
-                        captures_end = move_store(captures_end, COLOR, i, j, i+a*k, j+b*k, '\0');
+                        if (do_captures)
+                            captures_end = move_store(captures_end, COLOR, i, j, i+a*k, j+b*k, '\0');
                         break;
                     }
-                    if (not only_captures and not board[8*(i+a*k)+j+b*k])  // move to empty square
+                    if (do_quiets and not board[8*(i+a*k)+j+b*k])  // move to empty square
                         quiets_end = move_store(quiets_end, COLOR, i, j, i+a*k, j+b*k, '\0');
                 }
             }
@@ -943,18 +943,14 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         best = {board_eval, {0}};
 
         if (COLOR == WHITE) {
-            if (best.value >= beta) {
-                best.value = beta;
-                return best;
-            }
+            if (best.value >= beta)
+                return {beta, {0}};
             if (alpha < best.value)
                 alpha = best.value;
         }
         if (COLOR == BLACK) {
-            if (best.value <= alpha) {
-                best.value = alpha;
-                return best;
-            }
+            if (best.value <= alpha)
+                return {alpha, {0}};
             if (beta > best.value)
                 beta = best.value;
         }
@@ -985,27 +981,35 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
     while (true)
     {
-        if (gl.captures == NULL)
+        if ((gl.captures == NULL) and (gl.quiets == NULL))
         {
             LASTMOVE = LASTMOVE_BAK;
-
-            gl = gen_moves_maybe_legal(COLOR, is_quies);
+            gl = gen_moves_maybe_legal(COLOR, true, false);
             cur_mv = gl.captures;
 
             // TODO: selection-type sort instead ? Or custom qsort?
             num caps_len = gl.captures_end - gl.captures;  // can only be 0 in illegal positions -> add assert statement
-            if (caps_len > 0)
-                qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);
+            if (caps_len > 1)
+                qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);  // TODO: use std::sort  // 1-2%
         }
 
         if (cur_mv == gl.captures_end) {  // end of captures part of move list
+            if (is_quies)
+                break;
+
+            free_GenMoves(gl);
+            LASTMOVE = LASTMOVE_BAK;
+            gl = gen_moves_maybe_legal(COLOR, false, true);
+
             cur_mv = gl.quiets;
 
             NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
             num quiets_len = gl.quiets_end - gl.quiets;
-            if (quiets_len > 0)
+            if (quiets_len > 1) {
                 // note that WHEN we sort also plays a role because the KILLER_TABLE will be filled differently
-                qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);
+                // TODO: avoid sorting entirely and just probe KILLER_TABLE directly?
+                qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8%
+            }
         }
 
         if (cur_mv == gl.quiets_end)  // end of move list

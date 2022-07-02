@@ -965,6 +965,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     GenMoves gl = {0};
     Move** cur_mv = NULL;
 
+    num adaptive_new = 0;
     num legal_moves_found = 0;
     Move LASTMOVE_BAK = LASTMOVE;
 
@@ -1013,17 +1014,22 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         mv = **(cur_mv);
 
         // skip hash move that we already did before gen_moves_maybe_legal
-        if (pv_in_hash_table and (pv_mv == mv)) {
-            cur_mv++;
-            continue;  // already checked hash move
+        if (pv_in_hash_table and (pv_mv == mv))
+            goto continue_proper;  // already checked hash move
+
+        // Delta pruning -- do not make_move for captures that can never raise alpha
+        if (is_quies) {
+            num eval_max_improve = board_eval + (COLOR == WHITE ? 1 : -1) * (PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] + 200);
+
+            if ((COLOR == WHITE ? eval_max_improve < alpha : eval_max_improve > beta) and not mv.prom)
+                goto continue_proper;
         }
 
         ppc = make_move(mv);
 
         if (king_in_check(COLOR)) {  // illegal move  // king_in_check takes 11s of the 30s program time!!
             unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
-            cur_mv++;
-            continue;
+            goto continue_proper;
         }
 
         jump_into_loop_with_hash_move: 0;
@@ -1038,7 +1044,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         LASTMOVE = mv;  // only needed for gen_moves_maybe_legal so okay to only set here
 
         ValuePlusMove rec;
-        num adaptive_new = adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies);
+        adaptive_new = adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies);
 
         // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
         // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
@@ -1132,6 +1138,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 beta = best.value;
         }
 
+        continue_proper:
         if (cur_mv != NULL)
             cur_mv++;
     }

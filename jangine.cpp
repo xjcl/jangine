@@ -698,7 +698,8 @@ bool square_in_check(num COLOR, num i, num j) {
     return false;
 }
 
-bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 90^ of time spent in this function
+bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 36% of time spent in this function
+
     // keeping track of king position enables a HUGE speedup!
     num i_likely = COLOR == WHITE ? KINGPOS_WHITE_i : KINGPOS_BLACK_i;
     num j_likely = COLOR == WHITE ? KINGPOS_WHITE_j : KINGPOS_BLACK_j;
@@ -741,7 +742,7 @@ inline Move** move_store_maybe_promote(Move** mvsend, num COLOR, bool is_promran
 }
 
 // generates all captures if captures=true, generates all quiet moves if captures=false
-GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)
+GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 27% of time spent here
 {
     Move** captures = do_captures ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // Maximum should be 218 moves  // array of NULLptrs
     Move** captures_end = captures;
@@ -772,6 +773,8 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)
         }
     }
 
+    // I made the mistake of using mailbox addressing here in 2015, so looping over all 64 squares (most empty) will always be slow
+    // This engine could realistically be switched to 12x10 boards, but for bitboards I would probably do a new engine
     gentuples {
         num bij = board[8*i+j];
         if (not (bij & COLOR))
@@ -969,21 +972,21 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
     Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
 
-    // try best move (hash/pv move) from previous search iterative deepening search first
+    // [1/3] try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
     if (pv_in_hash_table)
     {
-        mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
+        mv = pv_mv;
         ppc = make_move(mv);
-        pv_in_hash_table = true;
         goto jump_into_loop_with_hash_move;
-    }
+    } else
+        pv_mv = NULLMOVE;
 
     while (true)
     {
-        if ((gl.captures == NULL) and (gl.quiets == NULL))
+        if ((gl.captures == NULL) and (gl.quiets == NULL))  // [2/3] after hash move, try captures
         {
-            LASTMOVE = LASTMOVE_BAK;
+            LASTMOVE = LASTMOVE_BAK;  // needs to be set for en passant captures in gen_moves_maybe_legal
             gl = gen_moves_maybe_legal(COLOR, true, false);
             cur_mv = gl.captures;
 
@@ -993,22 +996,21 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);  // TODO: use std::sort  // 1-2%
         }
 
-        if (cur_mv == gl.captures_end) {  // end of captures part of move list
+        if (cur_mv == gl.captures_end)  // [3/3] after captures, try quiet moves
+        {
             if (is_quies)
                 break;
 
             free_GenMoves(gl);
-            LASTMOVE = LASTMOVE_BAK;
             gl = gen_moves_maybe_legal(COLOR, false, true);
-
             cur_mv = gl.quiets;
 
-            NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
             num quiets_len = gl.quiets_end - gl.quiets;
             if (quiets_len > 1) {
+                NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
                 // note that WHEN we sort also plays a role because the KILLER_TABLE will be filled differently
                 // TODO: avoid sorting entirely and just probe KILLER_TABLE directly?
-                qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8%
+                qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8% of runtime
             }
         }
 
@@ -1018,7 +1020,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         mv = **(cur_mv);
 
         // skip hash move that we already did before gen_moves_maybe_legal
-        if (pv_in_hash_table and (pv_mv == mv))
+        if (mv == pv_mv)
             goto continue_proper;  // already checked hash move
 
         // Delta pruning -- do not make_move for captures that can never raise alpha
@@ -1167,10 +1169,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] = zobrint_hash;  // verify we got the right one
     }
 
-    if (is_quies and COLOR == WHITE)
-        best.value = alpha;
-    if (is_quies and COLOR == BLACK)
-        best.value = beta;
+    if (is_quies)
+        best.value = COLOR == WHITE ? alpha : beta;
 
     return best;
 }

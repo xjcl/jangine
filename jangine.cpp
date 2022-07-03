@@ -241,10 +241,8 @@ num default_board[64] = {
         WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK
 };
 
-num KINGPOS_WHITE_i = 7;
-num KINGPOS_WHITE_j = 4;
-num KINGPOS_BLACK_i = 0;
-num KINGPOS_BLACK_j = 4;
+num KINGPOS_WHITE = 60;
+num KINGPOS_BLACK = 4;
 
 int64_t zobrint_random_table[161][64] = {0};
 std::set<int64_t> board_positions_seen;
@@ -288,10 +286,8 @@ int64_t board_to_zobrint_hash() {
 void set_up_kings(num wi, num wj, num bi, num bj) {
     board[8*wi+wj] = KING + WHITE;
     board[8*bi+bj] = KING + BLACK;
-    KINGPOS_WHITE_i = wi;
-    KINGPOS_WHITE_j = wj;
-    KINGPOS_BLACK_i = bi;
-    KINGPOS_BLACK_j = bj;
+    KINGPOS_WHITE = 8*wi + wj;
+    KINGPOS_BLACK = 8*bi + bj;
 }
 
 void set_piece_square_table(bool is_endgame = false) {
@@ -511,14 +507,10 @@ PiecePlusCatling make_move(Move mv)
         else                CASTLINGBLACK = cr;
     }
 
-    if (piece == WHITE + KING) {
-        KINGPOS_WHITE_i = mv.t0;
-        KINGPOS_WHITE_j = mv.t1;
-    }
-    else if (piece == BLACK + KING) {
-        KINGPOS_BLACK_i = mv.t0;
-        KINGPOS_BLACK_j = mv.t1;
-    }
+    if (piece == WHITE + KING)
+        KINGPOS_WHITE = 8*mv.t0+mv.t1;
+    else if (piece == BLACK + KING)
+        KINGPOS_BLACK = 8*mv.t0+mv.t1;
 
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 
@@ -574,14 +566,10 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
     CASTLINGWHITE = c_rights_w;
     CASTLINGBLACK = c_rights_b;
 
-    if (piece == WHITE + KING) {
-        KINGPOS_WHITE_i = mv.f0;
-        KINGPOS_WHITE_j = mv.f1;
-    }
-    else if (piece == BLACK + KING) {
-        KINGPOS_BLACK_i = mv.f0;
-        KINGPOS_BLACK_j = mv.f1;
-    }
+    if (piece == WHITE + KING)
+        KINGPOS_WHITE = 8*mv.f0+mv.f1;
+    else if (piece == BLACK + KING)
+        KINGPOS_BLACK = 8*mv.f0+mv.f1;
 
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
@@ -667,7 +655,8 @@ void printf_moves(Move** mvs, num count, std::string header) {
 }
 
 
-bool square_in_check(num COLOR, num i, num j) {
+bool square_in_check(num COLOR, num i, num j)
+{
     num OPPONENT_COLOR = COLOR == WHITE ? BLACK : WHITE;
     num UP = COLOR == WHITE ? -1 : 1;
 
@@ -698,27 +687,11 @@ bool square_in_check(num COLOR, num i, num j) {
     return false;
 }
 
-bool king_in_check(num COLOR, bool allow_illegal_position = true) {  // 36% of time spent in this function
-
+bool king_in_check(num COLOR)  // 36% of time spent in this function
+{
     // keeping track of king position enables a HUGE speedup!
-    num i_likely = COLOR == WHITE ? KINGPOS_WHITE_i : KINGPOS_BLACK_i;
-    num j_likely = COLOR == WHITE ? KINGPOS_WHITE_j : KINGPOS_BLACK_j;
-
-    if (board[8 * i_likely + j_likely] == KING + COLOR)
-        return square_in_check(COLOR, i_likely, j_likely);
-
-    gentuples {
-        if (board[8 * i + j] == KING + COLOR)
-            return square_in_check(COLOR, i, j);
-    }
-
-    if (allow_illegal_position)
-        return true;  // no king on board -> used for illegal move detection
-
-    // TODO: Find out why this happens anyways in unexpected moments :/
-    std::cout << "no king on board, should never happen" << std::endl;
-    pprint();
-    std::exit(0);
+    num KINGPOS = COLOR == WHITE ? KINGPOS_WHITE : KINGPOS_BLACK;
+    return square_in_check(COLOR, KINGPOS / 8, KINGPOS % 8);
 }
 
 
@@ -1203,6 +1176,11 @@ std::string calc_move(bool lines = false)
     gentuples {
         num p = board[8*i+j];
         game_phase += 1 * !!(p & KNIGHT) + 1 * !!(p & BISHOP) + 2 * !!(p & ROOK) + 4 * !!(p & QUEEN);
+
+        if (p == WHITE + KING)
+            KINGPOS_WHITE = 8*i+j;
+        if (p == BLACK + KING)
+            KINGPOS_BLACK = 8*i+j;
     }
 
     printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");

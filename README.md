@@ -25,9 +25,10 @@ Chess engine I wrote in 2022 (some parts in 2015)
         No specialized strategies either, so mating up one queen is difficult. 
  
 - Strength (Ryzen 3600X single-core):
-    - [33d1b644] Was able to beat my NM friend 6-0 in Blitz (3+0) and 37½-2½ (35W 3D 1L) in Bullet (1+0)
-    - [TODO] Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but it scored
+    - [33d1b644 2022-06-20] Was able to beat my NM friend 6-0 in Blitz (3+0) and 37½-2½ (35W 3D 1L) in Bullet (1+0)
+    - [e2108b47 2022-07-01] Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but it scored
       30-78 (28%) in a match against Honzovy Šachy 2.0 (2061), indicating CCRL strength of around 1900 (1895)
+    - [bdd29a35 2022-07-02] 86-14 (86%) vs zeekat on Lichess
 
 - Time management:
   - Iterative deepening, keep deepening while trying to use under 5% of the remaining time 

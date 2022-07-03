@@ -26,7 +26,7 @@ typedef int_fast16_t num;
 #define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
-#define MAX_KILLER_MOVES 2
+#define MAX_KILLER_MOVES 1
 #define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
 
 #define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
@@ -442,7 +442,7 @@ num initial_eval() {
 }
 
 
-PiecePlusCatling make_move(Move mv)
+PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and unmake
 {
     if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE\n");
@@ -893,7 +893,7 @@ void select_front_move(Move** front, Move** back)
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)
+ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
 {
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
@@ -941,6 +941,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     num legal_moves_found = 0;
     Move LASTMOVE_BAK = LASTMOVE;
 
+    num try_killer_move = -1;
     num alpha_raised_n_times = 0;
     bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
     Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
@@ -980,11 +981,31 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
             num quiets_len = gl.quiets_end - gl.quiets;
             if (quiets_len > 1) {
-                NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
                 // note that WHEN we sort also plays a role because the KILLER_TABLE will be filled differently
-                // TODO: avoid sorting entirely and just probe KILLER_TABLE directly?
-                qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8% of runtime
+                // TODO: write to separate list during gen_moves?
+
+                // NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
+                // qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8% of runtime
+
+                try_killer_move = 0;
             }
+        }
+
+        if (try_killer_move > -1 and try_killer_move < MAX_KILLER_MOVES)
+        {
+            // try moves in killer table first
+            // use selection sort instead of qsort because only 1 or 2 values in the list matter
+
+            for (Move** swap = cur_mv; swap < gl.quiets_end; swap++) {
+                if (**swap == KILLER_TABLE[depth][try_killer_move]) {  // triangle swap
+                    Move* tmp = *gl.quiets;
+                    *gl.quiets = *swap;
+                    *swap = tmp;
+                    break;
+                }
+            }
+
+            try_killer_move++;
         }
 
         if (cur_mv == gl.quiets_end)  // end of move list

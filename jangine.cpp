@@ -1032,14 +1032,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             goto continue_proper;
         }
 
-        jump_into_loop_with_hash_move: 0;
+        jump_into_loop_with_hash_move:
 
         legal_moves_found++;
-
-        if ((depth < 2) and (DEBUG >= 3)) {
-            for (int i = 0; i < depth; i++) printf("    ");
-            printf_move(mv); printf(" ADAPT %ld \n", adaptive);
-        }
 
         LASTMOVE = mv;  // only needed for gen_moves_maybe_legal so okay to only set here
 
@@ -1299,21 +1294,6 @@ void test() {
     MAX_SEARCH_DEPTH = 7;
     OWN_CLOCK_REMAINING = 9999999;
 
-    std::cout << "TODO" << std::endl;
-    board_from_fen("8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66" << std::endl;
-    board_from_fen("1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64" << std::endl;
-    board_from_fen("1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
     std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
     board_from_fen("k1K5/8/8/8/8/8/8/7R w - - 0 1");
     pprint();
@@ -1454,6 +1434,21 @@ void test() {
     std::cout << "\nTests pawn loss tactics https://lichess.org/5pQ86dA7/white#42" << std::endl;
     board_from_fen("2k1rb2/1bpp1p2/p6p/1p1N4/2P5/1P6/1P1N1PPP/5RK1 w - - 1 22");
     board_from_fen("2k1r3/1bpp1p2/p6p/1pb5/2P5/1P2N3/1P1N1PPP/5RK1 w - - 3 23");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66" << std::endl;
+    board_from_fen("1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64" << std::endl;
+    board_from_fen("1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+
+    std::cout << "TODO" << std::endl;
+    board_from_fen("8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");
     pprint();
     std::cout << calc_move(true) << std::endl;
 

@@ -283,13 +283,6 @@ int64_t board_to_zobrint_hash() {
     return zobrint_hash_;
 }
 
-void set_up_kings(num wi, num wj, num bi, num bj) {
-    board[8*wi+wj] = KING + WHITE;
-    board[8*bi+bj] = KING + BLACK;
-    KINGPOS_WHITE = 8*wi + wj;
-    KINGPOS_BLACK = 8*bi + bj;
-}
-
 void set_piece_square_table(bool is_endgame = false) {
     for (int j = 0; j < 64; j++) {
         PIECE_SQUARE_TABLES[KNIGHT][j] = PIECE_SQUARE_TABLES_SOURCE[KNIGHT][j];
@@ -308,7 +301,8 @@ void board_initial_position() {  // setting up a game
 
     set_piece_square_table();
 
-    set_up_kings(7, 4, 0, 4);
+    KINGPOS_WHITE = 60;
+    KINGPOS_BLACK = 4;
     CASTLINGWHITE = {true, true};
     CASTLINGBLACK = {true, true};
     board_eval = 0;
@@ -872,25 +866,6 @@ int move_order_mvv_lva(const void* a, const void* b)
 }
 
 
-
-void select_front_move(Move** front, Move** back)
-{
-    Move** cur = front;
-    int_fast32_t front_val = move_order_key(**front);
-
-    while (++cur != back) {
-        int_fast32_t cur_val = move_order_key(**cur);
-
-        if (cur_val > front_val) {
-            Move* tmp = *front;
-            *front = *cur;
-            *cur = tmp;
-            front_val = cur_val;
-        }
-    }
-}
-
-
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
 ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
@@ -1289,48 +1264,27 @@ void init_data(void) {
 }
 
 
+void test_fen(const char* desc, const char* fen)
+{
+    std::cout << desc << std::endl;
+    board_from_fen(fen);
+    pprint();
+    std::cout << calc_move(true) << std::endl;
+}
 
-void test() {
+void test()
+{
     MAX_SEARCH_DEPTH = 7;
     OWN_CLOCK_REMAINING = 9999999;
 
-    std::cout << "Tests Mate-in-1 (and stalemate)" << std::endl;
-    board_from_fen("k1K5/8/8/8/8/8/8/7R w - - 0 1");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
-
-    std::cout << "\nTests Mate-in-2" << std::endl;
-    board_from_fen("1k5r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Should find mate-in-2 (eval=297) if depth >= 4
-
-    std::cout << "\nTests Mate-in-3" << std::endl;
-    board_from_fen("2k4r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Should find mate-in-3 (eval=295) if depth >= 6
-
-    std::cout << "\nTests Mate-in-4 (and promotion)" << std::endl;
-    board_from_fen("k1K5/8/1P6/8/8/8/8/8 w - - 0 1");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Kc7 is stalemate, b7+ promotes
-
-    std::cout << "\nTests 2 queens mate-in-3 (should stop early)" << std::endl;
-    board_clear();
-    set_up_kings(7, 6, 5, 2);
-    board[0*8+4] = WHITE + QUEEN;
-    board[3*8+5] = WHITE + QUEEN;
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // should not be slow
-
-    std::cout << "\nTests Promotion" << std::endl;
-    board_from_fen("k1K5/6P1/8/8/8/8/8/8 w - - 0 1");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "\nTests Stalemate tactics from https://lichess.org/VdE6aggQ/black#74" << std::endl;
-    board_from_fen("4Q3/6pk/6Np/7P/3P4/8/PPq2PK1/6R1 b - - 4 36");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Qxg3+ leads to forced stalemate at depth 3
+    // Should find Ra1 being mate (eval=299) and Rh7 being stalemate (eval=0)
+    test_fen("Tests Mate-in-1 (and stalemate)", "k1K5/8/8/8/8/8/8/7R w - - 0 1");
+    test_fen("\nTests Mate-in-2", "1k5r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
+    test_fen("\nTests Mate-in-3", "2k4r/ppp5/8/8/8/3Q4/8/2KR4 w - - 0 1");
+    test_fen("\nTests Mate-in-4 (and promotion)", "k1K5/8/1P6/8/8/8/8/8 w - - 0 1");
+    test_fen("\nTests 2 queens mate-in-3 (should stop early)", "4Q3/8/8/5Q2/8/2K5/8/6k1 w - - 0 1");
+    test_fen("\nTests Promotion", "k1K5/6P1/8/8/8/8/8/8 w - - 0 1");
+    test_fen("\nTests Stalemate tactics from https://lichess.org/VdE6aggQ/black#74", "4Q3/6pk/6Np/7P/3P4/8/PPq2PK1/6R1 b - - 4 36");  // Qxg3+ leads to forced stalemate at depth 3
 
     std::cout << "\nTests En-Passant" << std::endl;
     board_initial_position();
@@ -1345,6 +1299,7 @@ void test() {
     board[7*8+6] = 0;
     board[6*8+4] = 0;
     pprint();
+    IM_WHITE = true;
     std::cout << calc_move(true) << std::endl;
 
     std::cout << "\nTests detecting/avoiding repetitions" << std::endl;
@@ -1359,34 +1314,11 @@ void test() {
     pprint();
     std::cout << calc_move(true) << std::endl;  // Should see that f3g1 would be 3-fold
 
-    std::cout << "\nTests Lasker Trap in Albin Countergambit" << std::endl;
-    board_initial_position();
-    IM_WHITE = false;
-    make_move_str("d2d4"); make_move_str("d7d5");
-    make_move_str("c2c4"); make_move_str("e7e5");
-    make_move_str("d4e5"); make_move_str("d5d4");
-    make_move_str("e2e3"); make_move_str("f8b4");
-    make_move_str("c1d2"); make_move_str("d4e3");
-    make_move_str("d2b4"); make_move_str("e3f2");
-    make_move_str("e1e2");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // Should find knight promotion as best
-
-    std::cout << "\nTests going into a fork https://lichess.org/A1Jn5Z5s#53" << std::endl;
-    board_from_fen("3rr1k1/p4pp1/1p4np/3Ppb2/1PP1N3/4R1P1/5PBP/4R1K1 b - - 4 27");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // should NOT play Rc8??
-    // ^ Reason for this bug was searching forward moves LESS than backwards moves (intended the other way)
-
-    std::cout << "\nTests missed en-passant https://lichess.org/4bSSvnGS/white#60" << std::endl;
-    board_from_fen("r5k1/p4p2/2n1b2p/5q2/2p1R3/P1N2PB1/QP4KP/8 w - - 14 31");
-    pprint();
-    std::cout << calc_move(true) << std::endl; // should NOT play 31. b4??
-
-    std::cout << "\nTests missed knight move https://lichess.org/jOQqZlqM#42" << std::endl;
-    board_from_fen("r3r1k1/1pb2pp1/2P2p2/1p6/8/P1NR2p1/5PPP/5RK1 w - - 0 22");
-    pprint();
-    std::cout << calc_move(true) << std::endl; // should NOT play 22. hxg3?, rather Nxb5 or Nd5
+    test_fen("\nTests Lasker Trap in Albin Countergambit", "rnbqk1nr/ppp2ppp/8/4P3/1BP5/8/PP2KpPP/RN1Q1BNR b kq - 1 7");
+    test_fen("\nTests Lasker Trap in Albin Countergambit", "rnbqk1nr/ppp2ppp/8/4P3/1bPp4/4P3/PP1B1PPP/RN1QKBNR b KQkq - 2 5");
+    test_fen("\nTests going into a fork https://lichess.org/A1Jn5Z5s#53", "3rr1k1/p4pp1/1p4np/3Ppb2/1PP1N3/4R1P1/5PBP/4R1K1 b - - 4 27");  // should NOT play Rc8??
+    test_fen("\nTests missed en-passant https://lichess.org/4bSSvnGS/white#60", "r5k1/p4p2/2n1b2p/5q2/2p1R3/P1N2PB1/QP4KP/8 w - - 14 31");  // should NOT play 31. b4??
+    test_fen("\nTests missed knight move https://lichess.org/jOQqZlqM#42", "r3r1k1/1pb2pp1/2P2p2/1p6/8/P1NR2p1/5PPP/5RK1 w - - 0 22");  // should NOT play 22. hxg3?, rather Nxb5 or Nd5
 
     board_initial_position();
     printf("\nINITIAL BOARD EVAL: %ld\n", board_eval);
@@ -1398,59 +1330,16 @@ void test() {
     make_move_str("g1f3");
     IM_WHITE = false; std::cout << calc_move(true) << std::endl;
 
-    printf("\nLIST OF MOVES IN RESPONSE TO QUEEN\n");
-    IM_WHITE = true;
-    board_initial_position();
-    make_move_str("h2h4"); make_move_str("b7b6");
-    make_move_str("g1f3"); make_move_str("c8a6");
-    make_move_str("d2d4"); make_move_str("e7e6");
-    make_move_str("b1d2"); make_move_str("d8e7");
-    make_move_str("c2c4"); make_move_str("a6b7");
-    make_move_str("d1b3"); make_move_str("e7f6");
-    make_move_str("b3b5"); make_move_str("b7c6");
-    make_move_str("b5h5"); make_move_str("f8b4");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
+    test_fen("\nTests Rc8 blunder caused by wrong continue https://lichess.org/1NIkB4Dg/black#48", "r3q1k1/p2n3p/1pQ2np1/3p4/3P4/1P1RP1P1/P4P1P/2R3K1 b - - 0 24");  // should be ~0.75ish, not -3.90 as in the game
+    test_fen("\nTests iliachess game https://www.chess.com/analysis/game/live/50110768933", "r3r1k1/pbq2p1R/1p2nQp1/8/6P1/2PBpPP1/PP4K1/4R3 b - - 0 22");
+    test_fen("\nBf5 blunder from https://lichess.org/Cwt4L3df/black#81", "8/6pk/6bp/p7/P7/2R1R1P1/1P6/2KB1q2 b - - 3 41");  // found Bf5 at depth 7 which is a blunder :/
+    test_fen("\nTests pawn loss tactics https://lichess.org/5pQ86dA7/white#42", "2k1rb2/1bpp1p2/p6p/1p1N4/2P5/1P6/1P1N1PPP/5RK1 w - - 1 22");
+    //test_fen("\nTests pawn loss tactics https://lichess.org/5pQ86dA7/white#42", "2k1r3/1bpp1p2/p6p/1pb5/2P5/1P2N3/1P1N1PPP/5RK1 w - - 3 23");
+    test_fen("Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66", "1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
+    test_fen("Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64", "1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
 
-    std::cout << "\nTests Rc8 blunder caused by wrong continue https://lichess.org/1NIkB4Dg/black#48" << std::endl;
-    board_from_fen("r3q1k1/p2n3p/1pQ2np1/3p4/3P4/1P1RP1P1/P4P1P/2R3K1 b - - 0 24");
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // should be ~0.75ish, not -3.90 as in the game
-
-    std::cout << "\nTests iliachess game https://www.chess.com/analysis/game/live/50110768933" << std::endl;
-    board_from_fen("r3r1k1/pbq2p1R/1p2nQp1/8/6P1/2PBpPP1/PP4K1/4R3 b - - 0 22");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "Bf5 blunder from https://lichess.org/Cwt4L3df/black#81" << std::endl;
-    board_from_fen("8/6pk/6bp/p7/P7/2R1R1P1/1P6/2KB1q2 b - - 3 41");
-//    make_move_str("g6f5"); make_move_str("e3f3");
-//    make_move_str("f1h3"); make_move_str("f3f5");
-//    make_move_str("h3f5");
-//    IM_WHITE = true;
-    pprint();
-    std::cout << calc_move(true) << std::endl;  // finds Bf5 at depth 7 which is a blunder :/
-
-    std::cout << "\nTests pawn loss tactics https://lichess.org/5pQ86dA7/white#42" << std::endl;
-    board_from_fen("2k1rb2/1bpp1p2/p6p/1p1N4/2P5/1P6/1P1N1PPP/5RK1 w - - 1 22");
-    board_from_fen("2k1r3/1bpp1p2/p6p/1pb5/2P5/1P2N3/1P1N1PPP/5RK1 w - - 3 23");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66" << std::endl;
-    board_from_fen("1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64" << std::endl;
-    board_from_fen("1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
-
-    std::cout << "TODO" << std::endl;
-    board_from_fen("8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");
-    pprint();
-    std::cout << calc_move(true) << std::endl;
+//    MAX_SEARCH_DEPTH = 12;
+//    test_fen("TODO", "8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");  // produces WEIRDNESS on DEPTH 12 -> 64bit hash collision?
 
     std::exit(0);
 }

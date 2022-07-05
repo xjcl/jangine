@@ -26,9 +26,12 @@ Chess engine I wrote in 2022 (some parts in 2015)
  
 - Strength (Ryzen 3600X single-core):
     - [33d1b644 2022-06-20] Was able to beat my NM friend 6-0 in Blitz (3+0) and 37½-2½ (35W 3D 1L) in Bullet (1+0)
-    - [e2108b47 2022-07-01] Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but it scored
-      30-78 (28%) in a match against Honzovy Šachy 2.0 (2061), indicating CCRL strength of around 1900 (1895)
-    - [bdd29a35 2022-07-02] 86-14 (86%) vs zeekat on Lichess
+    - Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but here are estimates based on Lichess:
+    ```
+    - [e2108b47 2022-07-01] 30 -78  (28  %) vs Honzovy Šachy 2.0 (2061) (implied CCRL 1900)   PREDICT: 43%
+    - [8f7c031a 2022-07-03] 25½-74½ (25.5%) vs Fornax (2296)            (implied CCRL 2010)
+    - [8f7c031a 2022-07-03] 91 - 9  (91  %) vs zeekat (?)               (implied rating zeekat+400)
+    ```
 
 - Time management:
   - Iterative deepening, keep deepening while trying to use under 5% of the remaining time 
@@ -53,7 +56,7 @@ Test suite running in console:
 
 Build:
 
-    g++ -O2 jangine.cpp -o jangine
+    g++ -Ofast jangine.cpp -o jangine
 
 Run tests for rules (checkmate, stalemate, castling, promotion, en passant, etc.) and benchmark speed:
 

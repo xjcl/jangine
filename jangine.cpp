@@ -667,10 +667,8 @@ bool square_in_check(num COLOR, num i)
     if (board[i+UP-1] == PAWN + OPPONENT_COLOR)
         return true;
 
-    for (int n = 1; n < 6; ++n) {  // enemy pieces incl king
-        num piece = 1 << n;
-
-        for (num l = 0; PIECEDIRS[piece][l] != 0; ++l) {
+    for (num piece = KNIGHT; piece <= KING; piece <<= 1)  // enemy pieces incl king
+        for (num l = 0; PIECEDIRS[piece][l] != 0; ++l)
             for (num sq = i;;)
             {
                 sq += PIECEDIRS[piece][l];
@@ -683,8 +681,6 @@ bool square_in_check(num COLOR, num i)
                 if (not PIECESLIDE[piece])
                     break;
             }
-        }
-    }
 
     return false;
 }

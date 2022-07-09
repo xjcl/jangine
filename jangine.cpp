@@ -815,23 +815,6 @@ void free_GenMoves(GenMoves gl)
 }
 
 
-// adaptive search-extensions-like value of a move AFTER it is already on the board.
-num eval_adaptive_depth(num COLOR, Move mv, num hit_piece, bool skip) {
-    if (skip)  // skip for quiescence search, simply not needed
-        return 0;
-
-    num OTHER_COLOR = (COLOR == WHITE ? BLACK : WHITE);
-
-    if (king_in_check(OTHER_COLOR))  // https://www.chessprogramming.org/Check_Extensions
-        return 0;
-
-    if ((mv.t0 == 1 or mv.t0 == 6) and (board[8*mv.t0+mv.t1] & PAWN))  // passed pawn extension
-        return 0;
-
-    return 1;
-}
-
-
 // https://www.chessprogramming.org/MVV-LVA
 // In this specific implementation, all captures are sorted before non-captures.
 // - For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
@@ -920,6 +903,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     num alpha_raised_n_times = 0;
     bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
     Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
+
+    // per-move variables
+    bool do_extend = false;
 
     // [1/3] try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
@@ -1014,7 +1000,15 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         LASTMOVE = mv;  // only needed for gen_moves_maybe_legal so okay to only set here
 
         ValuePlusMove rec;
-        adaptive_new = adaptive - eval_adaptive_depth(COLOR, mv, ppc.hit_piece, is_quies);
+
+        if (!is_quies) {  // "search extensions", i.e. searching checks or promoting pawns more deeply
+            num OTHER_COLOR = COLOR == WHITE ? BLACK : WHITE;
+            bool ext_check = king_in_check(OTHER_COLOR);  // https://www.chessprogramming.org/Check_Extensions
+            bool ext_seventh_rank_pawn = (mv.t0 == 1 or mv.t0 == 6) and (board[8 * mv.t0 + mv.t1] & PAWN);
+            do_extend = ext_check || ext_seventh_rank_pawn;
+        }
+
+        adaptive_new = adaptive - (1 - do_extend);
 
         // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
         // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table

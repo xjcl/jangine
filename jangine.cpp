@@ -29,8 +29,6 @@ typedef int_fast16_t num;
 #define MAX_KILLER_MOVES 1
 #define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
 
-#define is_inside(i, j) (0 <= i and i <= 7 and 0 <= j and j <= 7)
-#define gentuples for (num i = 0; i < 8; ++i) for (num j = 0; j < 8; ++j)
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
 bool input_is_move(const char* s) {
@@ -45,105 +43,128 @@ num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 6
 num KING_EARLYGAME = 8001, KING_ENDGAME = 8002, PAWN_EARLYGAME = 9001, PAWN_ENDGAME = 9002;
 num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
 num inf = 32000;
+num OOB = 256; num OOV = 0;  // out-of-bounds for "10x12" (12x10) boards and OOB value
 std::map<num, char> piece_to_letter = {{0, ' '}, {1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 std::map<num, std::string> id_to_unicode = {
         {  0, "."},
         { 65, "♙"}, { 66, "♘"}, { 68, "♗"}, { 72, "♖"}, { 80, "♕"}, { 96, "♔"},
         {129, "♟"}, {130, "♞"}, {132, "♝"}, {136, "♜"}, {144, "♛"}, {160, "♚"},
 };
-num PIECE_SQUARE_TABLES[161][64] = {0};  // C array is much faster to query than a C++ map
-std::map<num, std::array<num, 64>> PIECE_SQUARE_TABLES_SOURCE = {
-        {0, std::array<num, 64>{
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
+num PIECE_SQUARE_TABLES[257][120] = {0};  // C array is much faster to query than a C++ map
+std::map<num, std::array<num, 120>> PIECE_SQUARE_TABLES_SOURCE = {
+        {PAWN_EARLYGAME, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV,   0,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV,  60,  80,  80,  80,  80,  80,  80,  60, OOV,
+                OOV,  20,  40,  40,  40,  40,  40,  40,  40, OOV,
+                OOV,   0,   0,   0,  10,  10,  10,  10,  10, OOV,
+                OOV,   5,   0,  10,  30,  30,   0,   0,   0, OOV,
+                OOV,   5,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV,   0,   0,   0, -20, -20,  30,  30,  15, OOV,
+                OOV,   0,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
-        {PAWN_EARLYGAME, std::array<num, 64>{
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                 60,  80,  80,  80,  80,  80,  80,  60,
-                 20,  40,  40,  40,  40,  40,  40,  40,
-                  0,   0,   0,  10,  10,  10,  10,  10,
-                  5,   0,  10,  30,  30,   0,   0,   0,
-                  5,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0, -20, -20,  30,  30,  15,
-                  0,   0,   0,   0,   0,   0,   0,   0,
+        {PAWN_ENDGAME, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV,   0,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV,  80, 100, 100, 100, 100, 100, 100,  80, OOV,
+                OOV,  40,  60,  60,  60,  60,  60,  60,  40, OOV,
+                OOV,  30,  40,  40,  40,  40,  40,  40,  30, OOV,
+                OOV,  10,  20,  20,  20,  20,  20,  20,  10, OOV,
+                OOV,   5,  10,  10,  10,  10,  10,  10,   5, OOV,
+                OOV,   0,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV,   0,   0,   0,   0,   0,   0,   0,   0, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
-        {PAWN_ENDGAME, std::array<num, 64>{
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                 80, 100, 100, 100, 100, 100, 100,  80,
-                 40,  60,  60,  60,  60,  60,  60,  40,
-                 30,  40,  40,  40,  40,  40,  40,  30,
-                 10,  20,  20,  20,  20,  20,  20,  10,
-                  5,  10,  10,  10,  10,  10,  10,   5,
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,
-        }},
-        {KNIGHT, std::array<num, 64>{
-                -60,-40,-30,-30,-30,-30,-40,-60,
-                -40,-20,  0,  0,  0,  0,-20,-40,
-                -30,  0, 10, 15, 15, 10,  0,-30,
-                -30,  0, 15, 20, 20, 15,  0,-30,
-                -30,  0, 15, 20, 20, 15,  0,-30,
-                -30,  5, 15, 15, 15, 15,  5,-30,
-                -40,-20,  0, 10, 10,  0,-20,-40,
-                -60,-40,-30,-30,-30,-30,-40,-60,
+        {KNIGHT, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, -60, -40, -30, -30, -30, -30, -40, -60, OOV,
+                OOV, -40, -20,   0,   0,   0,   0, -20, -40, OOV,
+                OOV, -30,   0,  10,  15,  15,  10,   0, -30, OOV,
+                OOV, -30,   0,  15,  20,  20,  15,   0, -30, OOV,
+                OOV, -30,   0,  15,  20,  20,  15,   0, -30, OOV,
+                OOV, -30,   5,  15,  15,  15,  15,   5, -30, OOV,
+                OOV, -40, -20,   0,  10,  10,   0, -20, -40, OOV,
+                OOV, -60, -40, -30, -30, -30, -30, -40, -60, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
         // bishop isn't actually bad on the bad row but prevents castling
-        {BISHOP, std::array<num, 64>{
-                -20,-10,-10,-10,-10,-10,-10,-20,
-                -10,  0,  0,  0,  0,  0,  0,-10,
-                -10,  0,  5, 10, 10,  5,  0,-10,
-                -10, 15,  5, 10, 10,  5, 15,-10,
-                -10,  0, 15, 10, 10, 15,  0,-10,
-                -10, 10, 10, 10, 10, 10, 10,-10,
-                -10,  5,  0,  0,  0,  0,  5,-10,
-                -20,-10,-10,-10,-10,-20,-10,-20,
+        {BISHOP, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, -20, -10, -10, -10, -10, -10, -10, -20, OOV,
+                OOV, -10,   0,   0,   0,   0,   0,   0, -10, OOV,
+                OOV, -10,   0,   5,  10,  10,   5,   0, -10, OOV,
+                OOV, -10,  15,   5,  10,  10,   5,  15, -10, OOV,
+                OOV, -10,   0,  15,  10,  10,  15,   0, -10, OOV,
+                OOV, -10,  10,  10,  10,  10,  10,  10, -10, OOV,
+                OOV, -10,   5,   0,   0,   0,   0,   5, -10, OOV,
+                OOV, -20, -10, -10, -10, -10, -20, -10, -20, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
-        {ROOK, std::array<num, 64>{
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5, 20, 20, 20, 20, 20, 20, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
-                 -5,  0,  0, 10, 10,  0,  0, -5,
+        {ROOK, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV,  -5,   0,   0,   0,   0,   0,   0,  -5, OOV,
+                OOV,  -5,  20,  20,  20,  20,  20,  20,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV,  -5,   0,   0,  10,  10,   0,   0,  -5, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
         // TODO: avoid capturing b7?
-        {QUEEN, std::array<num, 64>{
-                -20,-10,-10, -5, -5,-10,-10,-20,
-                -10,  0,  0,  0,  0,  0,  0,-10,
-                -10,  0,  5,  5,  5,  5,  0,-10,
-                 -5,  0,  5,  5,  5,  5,  0, -5,
-                  0,  0,  5,  5,  5,  5,  0, -5,
-                -10,  5,  5,  5,  5,  5,  0,-10,
-                -10,  0,  5,  0,  0,  0,  0,-10,
-                -20,-10,-10, -5, -5,-10,-10,-20
+        {QUEEN, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, -20, -10, -10,  -5,  -5, -10, -10, -20, OOV,
+                OOV, -10,   0,   0,   0,   0,   0,   0, -10, OOV,
+                OOV, -10,   0,   5,   5,   5,   5,   0, -10, OOV,
+                OOV,  -5,   0,   5,   5,   5,   5,   0,  -5, OOV,
+                OOV,   0,   0,   5,   5,   5,   5,   0,  -5, OOV,
+                OOV, -10,   5,   5,   5,   5,   5,   0, -10, OOV,
+                OOV, -10,   0,   5,   0,   0,   0,   0, -10, OOV,
+                OOV, -20, -10, -10,  -5,  -5, -10, -10, -20, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
-        {KING_EARLYGAME, std::array<num, 64>{
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                -20,-20,-20,-20,-20,-20,-20,-20,
-                 20, 20, 10,  0,  0,  0, 40, 40,
-                 20, 30, 20,  0, 10,  0, 50, 40   // strongly encourage short castling
+        {KING_EARLYGAME, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV, -20, -20, -20, -20, -20, -20, -20, -20, OOV,
+                OOV,  20,  20,  10,   0,   0,   0,  40,  40, OOV,
+                OOV,  20,  30,  20,   0,  10,   0,  50,  40, OOV,    // strongly encourage short castling
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }},
-        {KING_ENDGAME, std::array<num, 64>{
-                 10, 20, 30, 40, 40, 30, 20, 10,
-                 20, 30, 40, 40, 40, 40, 30, 20,
-                 30, 40, 50, 50, 50, 50, 40, 30,
-                 20, 30, 40, 50, 50, 40, 30, 20,
-                 10, 10, 30, 40, 40, 30, 10, 10,
-                  0,  0, 20, 30, 30, 20,  0,  0,
-                -30,-30,  0,  0,  0,  0,-30,-30,
-                -30,-30,-30,-30,-30,-30,-30,-30   // encourage going to the center
+        {KING_ENDGAME, std::array<num, 120>{
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV,  10,  20,  30,  40,  40,  30,  20,  10, OOV,
+                OOV,  20,  30,  40,  40,  40,  40,  30,  20, OOV,
+                OOV,  30,  40,  50,  50,  50,  50,  40,  30, OOV,
+                OOV,  20,  30,  40,  50,  50,  40,  30,  20, OOV,
+                OOV,  10,  10,  30,  40,  40,  30,  10,  10, OOV,
+                OOV,   0,   0,  20,  30,  30,  20,   0,   0, OOV,
+                OOV, -30, -30,   0,   0,   0,   0, -30, -30, OOV,
+                OOV, -30, -30, -30, -30, -30, -30, -30, -30, OOV,   // encourage going to the center
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
+                OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV, OOV,
         }}
 };
 
@@ -153,20 +174,17 @@ typedef struct CASTLINGRIGHTS {
 } CASTLINGRIGHTS;
 
 typedef struct Move {
-    int8_t f0;  // from
-    int8_t f1;
-    int8_t t0;  // to
-    int8_t t1;
-    char prom;  // promote to piece
+    int8_t from;
+    int8_t to;
+    char prom;  // promote to piece, castle, or en-passant
 
     // needed for std::map
     bool operator<( const Move & that ) const {
-        return (64 * (8*this->t0 + this->t1) + 8*this->f0 + this->f1) << 8 + this->prom <
-            (64 * (8*that.t0 + that.t1) + 8*that.f0 + that.f1) << 8 + that.prom;
+        return (this->from << 16) + (this->to << 8) + this->prom <
+            (that.from << 16) + (that.to << 8) + that.prom;
     }
     bool operator==( const Move& that ) const {
-        return this->f0 == that.f0 and this->f1 == that.f1 and this->t0 == that.t0
-            and this->t1 == that.t1 and this->prom == that.prom;
+        return this->from == that.from and this->to == that.to and this->prom == that.prom;
     }
 } Move;
 
@@ -183,23 +201,19 @@ CASTLINGRIGHTS CASTLINGBLACK = {true, true};
 Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
-Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits -> (8+4) * 2**24 bytes = 192 MiB
+
+Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits -> 3 * 2**24 bytes = 192 MiB
 int64_t TRANSPOS_TABLE_ZOB[16777216] = {0};
 #define ZOB_MASK 0xffffff
 
-struct Pair {
-    num a;
-    num b;
-};
-
-Pair PIECEDIRS[65][9] = {0};
-num PIECERANGE[65] = {0};
-num PIECEVALS[65] = {0};
+num PIECEDIRS[65][9] = {0};
+bool PIECESLIDE[65] = {0};
+num PIECEVALS[257] = {0};
 
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
 
-num board[64] = {0};
+num board[120] = {0};
 num board_eval = 0;  // takes about 10% of compute time
 bool IM_WHITE = false;
 bool started = true;
@@ -213,7 +227,7 @@ void pprint() {
     for (num i = 0; i < 8; ++i) {
         printf("  %ld ", (8 - i));
         for (num j = 0; j < 8; ++j) {
-            std::string s = id_to_unicode[board[8 * i + j]];
+            std::string s = id_to_unicode[board[10*i+20+j+1]];
             printf("%s ", s.c_str());
         }
         printf(" \n");
@@ -226,25 +240,29 @@ bool startswith(const char *pre, const char *str) {
     return lenstr >= lenpre and strncmp(pre, str, lenpre) == 0;
 }
 
-num default_board[64] = {
-    BLACK + ROOK, BLACK + KNIGHT, BLACK + BISHOP, BLACK + QUEEN,
-        BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK,
-    BLACK + PAWN, BLACK + PAWN, BLACK + PAWN, BLACK + PAWN,
-        BLACK + PAWN, BLACK + PAWN, BLACK + PAWN, BLACK + PAWN,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    WHITE + PAWN, WHITE + PAWN, WHITE + PAWN, WHITE + PAWN,
-        WHITE + PAWN, WHITE + PAWN, WHITE + PAWN, WHITE + PAWN,
-    WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, WHITE + QUEEN,
-        WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK
+num default_board[120] = {  // https://www.chessprogramming.org/10x12_Board
+        OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB,
+        OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB,
+        OOB, BLACK + ROOK, BLACK + KNIGHT, BLACK + BISHOP, BLACK + QUEEN,
+            BLACK + KING, BLACK + BISHOP, BLACK + KNIGHT, BLACK + ROOK, OOB,
+        OOB, BLACK + PAWN, BLACK + PAWN, BLACK + PAWN, BLACK + PAWN,
+            BLACK + PAWN, BLACK + PAWN, BLACK + PAWN, BLACK + PAWN, OOB,
+        OOB, 0, 0, 0, 0, 0, 0, 0, 0, OOB,
+        OOB, 0, 0, 0, 0, 0, 0, 0, 0, OOB,
+        OOB, 0, 0, 0, 0, 0, 0, 0, 0, OOB,
+        OOB, 0, 0, 0, 0, 0, 0, 0, 0, OOB,
+        OOB, WHITE + PAWN, WHITE + PAWN, WHITE + PAWN, WHITE + PAWN,
+            WHITE + PAWN, WHITE + PAWN, WHITE + PAWN, WHITE + PAWN,  OOB,
+        OOB, WHITE + ROOK, WHITE + KNIGHT, WHITE + BISHOP, WHITE + QUEEN,
+            WHITE + KING, WHITE + BISHOP, WHITE + KNIGHT, WHITE + ROOK,  OOB,
+        OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB,
+        OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB, OOB
 };
 
-num KINGPOS_WHITE = 60;
-num KINGPOS_BLACK = 4;
+num KINGPOS_WHITE = 95;
+num KINGPOS_BLACK = 25;
 
-int64_t zobrint_random_table[161][64] = {0};
+int64_t zobrint_random_table[257][120] = {0};
 std::set<int64_t> board_positions_seen;
 int64_t zobrint_hash = 0;
 
@@ -258,18 +276,20 @@ void init_zobrint() {
         BLACK + PAWN, BLACK + KNIGHT, BLACK + BISHOP, BLACK + ROOK, BLACK + QUEEN, BLACK + KING,
     };
 
-    for (int i = 0; i < 64; ++i)
-        zobrint_random_table[0][i] = 0;  // fill level 0 with 0s to ensure empty squares have no effect
-
+    // note that "0" entries have no effect on the final result (for example in zrt[0] for empty squares)
     for (const num& piece : pieces)
         for (int i = 0; i < 64; ++i)
-            zobrint_random_table[piece][i] = dist(e2);
+            // for backwards compatability of hashes, assign hashes to their old values for now
+            //zobrint_random_table[piece][i] = dist(e2);
+            zobrint_random_table[piece][10*(i/8 + 2) + (i % 8) + 1] = dist(e2);
+
+    zobrint_random_table[1][0] = zobrint_random_table[1][21];  // for side-to-move
 }
 
 int64_t board_to_zobrint_hash() {
     int64_t zobrint_hash_ = 0;
 
-    for (int i = 0; i < 64; ++i)
+    for (int i = 0; i < 120; ++i)
         zobrint_hash_ ^= zobrint_random_table[board[i]][i];
 
     if (not IM_WHITE)
@@ -284,7 +304,10 @@ int64_t board_to_zobrint_hash() {
 }
 
 void set_piece_square_table(bool is_endgame = false) {
-    for (int j = 0; j < 64; j++) {
+    for (int j = 0; j < 120; j++) {
+        PIECE_SQUARE_TABLES[0][j] = 0;
+        PIECE_SQUARE_TABLES[OOB][j] = 0;
+
         PIECE_SQUARE_TABLES[KNIGHT][j] = PIECE_SQUARE_TABLES_SOURCE[KNIGHT][j];
         PIECE_SQUARE_TABLES[BISHOP][j] = PIECE_SQUARE_TABLES_SOURCE[BISHOP][j];
         PIECE_SQUARE_TABLES[  ROOK][j] = PIECE_SQUARE_TABLES_SOURCE[  ROOK][j];
@@ -296,13 +319,13 @@ void set_piece_square_table(bool is_endgame = false) {
 }
 
 void board_initial_position() {  // setting up a game
-    for (int i = 0; i < 64; ++i)
+    for (int i = 0; i < 120; ++i)
         board[i] = default_board[i];
 
     set_piece_square_table();
 
-    KINGPOS_WHITE = 60;
-    KINGPOS_BLACK = 4;
+    KINGPOS_WHITE = 95;
+    KINGPOS_BLACK = 25;
     CASTLINGWHITE = {true, true};
     CASTLINGBLACK = {true, true};
     board_eval = 0;
@@ -316,8 +339,9 @@ void board_clear() {  // setting up random positions
     board_initial_position();
     zobrint_hash = 0;
 
-    for (int i = 0; i < 64; ++i)
-        board[i] = 0;
+    for (int i = 2; i < 10; ++i)
+        for (int j = 1; j < 9; ++j)
+            board[10*i+j] = 0;
 
     CASTLINGWHITE = {false, false};
     CASTLINGBLACK = {false, false};
@@ -326,11 +350,11 @@ void board_clear() {  // setting up random positions
 void board_from_fen(const char* fen) {  // setting up a game
     const char* c = fen;
     board_clear();
-    num i = 0;
-    num j = 0;
+    num i = 2;
+    num j = 1;
 
     while (*c != ' ') {
-        if (*c == '/') { i++; j = -1; }
+        if (*c == '/') { i++; j = 0; }
         if (*c == '1')  j += 0;
         if (*c == '2')  j += 1;
         if (*c == '3')  j += 2;
@@ -339,18 +363,18 @@ void board_from_fen(const char* fen) {  // setting up a game
         if (*c == '6')  j += 5;
         if (*c == '7')  j += 6;
         if (*c == '8')  j += 7;
-        if (*c == 'P')  board[8*i+j] = WHITE + PAWN;
-        if (*c == 'p')  board[8*i+j] = BLACK + PAWN;
-        if (*c == 'N')  board[8*i+j] = WHITE + KNIGHT;
-        if (*c == 'n')  board[8*i+j] = BLACK + KNIGHT;
-        if (*c == 'B')  board[8*i+j] = WHITE + BISHOP;
-        if (*c == 'b')  board[8*i+j] = BLACK + BISHOP;
-        if (*c == 'R')  board[8*i+j] = WHITE + ROOK;
-        if (*c == 'r')  board[8*i+j] = BLACK + ROOK;
-        if (*c == 'Q')  board[8*i+j] = WHITE + QUEEN;
-        if (*c == 'q')  board[8*i+j] = BLACK + QUEEN;
-        if (*c == 'K')  board[8*i+j] = WHITE + KING;
-        if (*c == 'k')  board[8*i+j] = BLACK + KING;
+        if (*c == 'P')  board[10*i+j] = WHITE + PAWN;
+        if (*c == 'p')  board[10*i+j] = BLACK + PAWN;
+        if (*c == 'N')  board[10*i+j] = WHITE + KNIGHT;
+        if (*c == 'n')  board[10*i+j] = BLACK + KNIGHT;
+        if (*c == 'B')  board[10*i+j] = WHITE + BISHOP;
+        if (*c == 'b')  board[10*i+j] = BLACK + BISHOP;
+        if (*c == 'R')  board[10*i+j] = WHITE + ROOK;
+        if (*c == 'r')  board[10*i+j] = BLACK + ROOK;
+        if (*c == 'Q')  board[10*i+j] = WHITE + QUEEN;
+        if (*c == 'q')  board[10*i+j] = BLACK + QUEEN;
+        if (*c == 'K')  board[10*i+j] = WHITE + KING;
+        if (*c == 'k')  board[10*i+j] = BLACK + KING;
         j++;
         *c++;
     }
@@ -382,10 +406,10 @@ typedef struct ValuePlusMove {
 
 
 std::string move_to_str(Move mv, bool algebraic = false) {
-    char c0 = 'a' + (char) (mv.f1);
-    char c1 = '0' + (char) (8 - mv.f0);
-    char c2 = 'a' + (char) (mv.t1);
-    char c3 = '0' + (char) (8 - mv.t0);
+    char c0 = 'a' + (char) (mv.from % 10 - 1);
+    char c1 = '0' + (char) (10 - (mv.from / 10));  // 2..9 are valid rows
+    char c2 = 'a' + (char) (mv.to % 10 - 1);
+    char c3 = '0' + (char) (10 - (mv.to / 10));
     char c4 = (char)(mv.prom ? mv.prom : ' ');
 
     if (!algebraic) {
@@ -394,8 +418,8 @@ std::string move_to_str(Move mv, bool algebraic = false) {
         return std::string{c0, c1, c2, c3, c4};
     }
 
-    num piece = board[8*mv.f0+mv.f1];
-    num hit_piece = board[8*mv.t0+mv.t1];
+    num piece = board[mv.from];
+    num hit_piece = board[mv.to];
 
     char alg0 = piece_to_letter[piece & COLORBLIND];
     char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
@@ -410,9 +434,11 @@ num eval_material(num piece_with_color) {
     return piece_with_color & WHITE ? PIECEVALS[piece] : -PIECEVALS[piece];
 }
 
-num eval_piece_on_square(num piece_with_color, num i, num j) {
+// TODO XXX FAST PSQT ACCESS!!!!!!!
+num eval_piece_on_square(num piece_with_color, num i) {
     num piece = piece_with_color & COLORBLIND;
-    return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][8*i+j] : -PIECE_SQUARE_TABLES[piece][8*(7-i)+j];
+    //return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][i] : -PIECE_SQUARE_TABLES[piece][i];
+    return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][i] : -PIECE_SQUARE_TABLES[piece][10 * (11 - (i / 10)) + (i % 10)];
 }
 
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
@@ -422,15 +448,13 @@ num initial_eval() {
     num eval = 0;
 
     // material counting
-    gentuples {
-        eval += eval_material(board[8*i+j]);
-    }
+    for (num i = 0; i < 120; ++i)
+        eval += eval_material(board[i]);
 
     // https://www.chessprogramming.org/Piece-Square_Tables
     // piece positioning using piece-square-tables
-    gentuples {
-        eval += eval_piece_on_square(board[8*i+j], i, j);
-    }
+    for (num i = 0; i < 120; ++i)
+        eval += eval_piece_on_square(board[i], i);
 
     return eval;
 }
@@ -441,70 +465,59 @@ PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and u
     if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE\n");
 
-    num piece = board[8*mv.f0+mv.f1];
-    num hit_piece = board[8*mv.t0+mv.t1];
-    board[8*mv.f0+mv.f1] = 0;
-    board[8*mv.t0+mv.t1] = piece;
+    num piece = board[mv.from];
+    num hit_piece = board[mv.to];
+    board[mv.from] = 0;
+    board[mv.to] = piece;
 
-    num CASTLERANK = piece & WHITE ? 7 : 0;
+    board_eval -= eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.to);  // remove captured piece. ignores empty squares (0s)  // always empty for en passant
+    board_eval += eval_piece_on_square(piece, mv.to) - eval_piece_on_square(piece, mv.from);  // adjust position values of moved piece
 
-    board_eval -= eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // remove captured piece. ignores empty squares (0s)  // always empty for en passant
-    board_eval += eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
-
-    zobrint_hash ^= zobrint_random_table[piece][8*mv.f0+mv.f1];  // xor OUT piece at   initial   square
-    zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];  // xor  IN piece at destination square
-    zobrint_hash ^= zobrint_random_table[hit_piece][8*mv.t0+mv.t1];  // xor OUT captured piece (0 if square empty)
+    zobrint_hash ^= zobrint_random_table[piece][mv.from];  // xor OUT piece at   initial   square
+    zobrint_hash ^= zobrint_random_table[piece][mv.to];  // xor  IN piece at destination square
+    zobrint_hash ^= zobrint_random_table[hit_piece][mv.to];  // xor OUT captured piece (0 if square empty)
 
     if (mv.prom) {
         if (mv.prom == 'e') {  // en passant
-            board_eval -= eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get removed earlier
-            zobrint_hash ^= zobrint_random_table[board[8*mv.f0+mv.t1]][8*mv.f0+mv.t1];  // xor OUT captured pawn
-            board[8*mv.f0+mv.t1] = 0;
+            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn
+            board_eval -= eval_material(board[ep_square]) + eval_piece_on_square(board[ep_square], ep_square);  // captured pawn did not get removed earlier
+            zobrint_hash ^= zobrint_random_table[board[ep_square]][ep_square];  // xor OUT captured pawn
+            board[ep_square] = 0;
         } else if (mv.prom == 'c') {  // castling -- rook part
-            if (mv.t1 == 2) {  // long (left)
-                board[8*CASTLERANK+3] = board[8*CASTLERANK];
-                board[8*CASTLERANK] = 0;
-                board_eval += eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 3) - eval_piece_on_square(board[8*CASTLERANK+3], CASTLERANK, 0);  // rook positioning
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+3]][8*CASTLERANK  ];  // xor OUT old rook position
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+3]][8*CASTLERANK+3];  // xor  IN new rook position
-            } else {  // short (right)
-                board[8*CASTLERANK+5] = board[8*CASTLERANK+7];
-                board[8*CASTLERANK+7] = 0;
-                board_eval += eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 5) - eval_piece_on_square(board[8*CASTLERANK+5], CASTLERANK, 7);  // rook positioning
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+5]][8*CASTLERANK+7];  // xor OUT old rook position
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+5]][8*CASTLERANK+5];  // xor  IN new rook position
-            }
+            bool is_short_castling = mv.to > mv.from;  // otherwise long castling
+            num rookpos_new = is_short_castling ? (mv.from + 1) : (mv.from - 1);
+            num rookpos_old = is_short_castling ? (mv.from + 3) : (mv.from - 4);
+
+            board[rookpos_new] = board[rookpos_old];
+            board[rookpos_old] = 0;
+            board_eval += eval_piece_on_square(board[rookpos_new], rookpos_new) - eval_piece_on_square(board[rookpos_new], rookpos_old);  // rook positioning
+            zobrint_hash ^= zobrint_random_table[board[rookpos_new]][rookpos_old];  // xor OUT old rook position
+            zobrint_hash ^= zobrint_random_table[board[rookpos_new]][rookpos_new];  // xor  IN new rook position
         } else {  // pawn promotion
-            num p = (mv.t0 == 0 ? WHITE : BLACK);
+            num p = (mv.to < 30 ? WHITE : BLACK);
             switch (mv.prom) {
                 case 'q':  p += QUEEN;   break;
                 case 'r':  p += ROOK;    break;
                 case 'b':  p += BISHOP;  break;
                 case 'n':  p += KNIGHT;  break;
             }
-            board[8*mv.t0+mv.t1] = p;
+            board[mv.to] = p;
             board_eval += eval_material(p) - eval_material(piece);
-            board_eval += eval_piece_on_square(p, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.t0, mv.t1);  // t0/t1 to compensate for wrong pieceval earlier
-            zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];  // xor OUT promoting pawn
-            zobrint_hash ^= zobrint_random_table[    p][8*mv.t0+mv.t1];  // xor  IN promoted piece
+            board_eval += eval_piece_on_square(p, mv.to) - eval_piece_on_square(piece, mv.to);  // t0/t1 to compensate for wrong pieceval earlier
+            zobrint_hash ^= zobrint_random_table[piece][mv.to];  // xor OUT promoting pawn
+            zobrint_hash ^= zobrint_random_table[    p][mv.to];  // xor  IN promoted piece
         }
     }
 
     CASTLINGRIGHTS old_cr_w = CASTLINGWHITE;
     CASTLINGRIGHTS old_cr_b = CASTLINGBLACK;
 
-    CASTLINGRIGHTS cr = (piece & WHITE ? CASTLINGWHITE : CASTLINGBLACK);
+    // lose right to castle if king or rook moves
+    CASTLINGBLACK = {CASTLINGBLACK.lc and mv.from != 21 and mv.from != 25, CASTLINGBLACK.rc and mv.from != 25 and mv.from != 28};
+    CASTLINGWHITE = {CASTLINGWHITE.lc and mv.from != 91 and mv.from != 95, CASTLINGWHITE.rc and mv.from != 95 and mv.from != 98};
 
-    if (mv.f0 == CASTLERANK) {  // lose right to castle if king or rook moves
-        cr = {mv.f1 != 0 and mv.f1 != 4 and cr.lc, mv.f1 != 7 and mv.f1 != 4 and cr.rc};
-        if (piece & WHITE)  CASTLINGWHITE = cr;
-        else                CASTLINGBLACK = cr;
-    }
-
-    if (piece == WHITE + KING)
-        KINGPOS_WHITE = 8*mv.t0+mv.t1;
-    else if (piece == BLACK + KING)
-        KINGPOS_BLACK = 8*mv.t0+mv.t1;
+    if (piece == WHITE + KING)      KINGPOS_WHITE = mv.to;
+    else if (piece == BLACK + KING) KINGPOS_BLACK = mv.to;
 
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 
@@ -513,57 +526,51 @@ PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and u
 
 void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b)
 {
-    num piece = board[8*(mv.t0)+mv.t1];
-    board[8*(mv.t0)+mv.t1] = hit_piece;
-    board[8*(mv.f0)+mv.f1] = piece;
+    num piece = board[mv.to];
+    board[mv.to] = hit_piece;
+    board[mv.from] = piece;
 
     num CASTLERANK = piece & WHITE ? 7 : 0;
 
-    board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.t0, mv.t1);  // add captured piece back in
-    board_eval -= eval_piece_on_square(piece, mv.t0, mv.t1) - eval_piece_on_square(piece, mv.f0, mv.f1);  // adjust position values of moved piece
+    board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.to);  // add captured piece back in
+    board_eval -= eval_piece_on_square(piece, mv.to) - eval_piece_on_square(piece, mv.from);  // adjust position values of moved piece
 
-    zobrint_hash ^= zobrint_random_table[piece][8*mv.f0+mv.f1];
-    zobrint_hash ^= zobrint_random_table[piece][8*mv.t0+mv.t1];
-    zobrint_hash ^= zobrint_random_table[hit_piece][8*mv.t0+mv.t1];
+    zobrint_hash ^= zobrint_random_table[piece][mv.from];
+    zobrint_hash ^= zobrint_random_table[piece][mv.to];
+    zobrint_hash ^= zobrint_random_table[hit_piece][mv.to];
 
     if (mv.prom)
     {
         if (mv.prom == 'e') {  // en passant
-            board[8*mv.f0+mv.t1] = PAWN + (mv.t0 == 5 ? WHITE : BLACK);
-            board_eval += eval_material(board[8*mv.f0+mv.t1]) + eval_piece_on_square(board[8*mv.f0+mv.t1], mv.f0, mv.t1);  // captured pawn did not get added earlier
-            zobrint_hash ^= zobrint_random_table[board[8*mv.f0+mv.t1]][8*mv.f0+mv.t1];
+            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn
+            board[ep_square] = PAWN + (ep_square < 60 ? BLACK : WHITE);
+            board_eval += eval_material(board[ep_square]) + eval_piece_on_square(board[ep_square], ep_square);  // captured pawn did not get removed earlier
+            zobrint_hash ^= zobrint_random_table[board[ep_square]][ep_square];
         } else if (mv.prom == 'c') {  // castling -- undo rook move
-            if (mv.t1 == 2) {  // long (left)
-                board[8*mv.f0] = board[8*mv.f0+3];
-                board[8*mv.f0+3] = 0;
-                board_eval += eval_piece_on_square(board[8*mv.f0], mv.f0, 0) - eval_piece_on_square(board[8*mv.f0], mv.f0, 3);  // rook positioning
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK  ]][8*CASTLERANK  ];
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK  ]][8*CASTLERANK+3];
-            }
-            else {  // short (right)
-                board[8*mv.f0+7] = board[8*mv.f0+5];
-                board[8*mv.f0+5] = 0;
-                board_eval += eval_piece_on_square(board[8*mv.f0+7], mv.f0, 7) - eval_piece_on_square(board[8*mv.f0+7], mv.f0, 5);  // rook positioning
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+7]][8*CASTLERANK+7];
-                zobrint_hash ^= zobrint_random_table[board[8*CASTLERANK+7]][8*CASTLERANK+5];
-            }
+            bool is_short_castling = mv.to > mv.from;  // otherwise long castling
+            num rookpos_new = is_short_castling ? (mv.from + 1) : (mv.from - 1);
+            num rookpos_old = is_short_castling ? (mv.from + 3) : (mv.from - 4);
+
+            board[rookpos_old] = board[rookpos_new];
+            board[rookpos_new] = 0;
+            board_eval += eval_piece_on_square(board[rookpos_old], rookpos_old) - eval_piece_on_square(board[rookpos_old], rookpos_new);  // rook positioning
+            zobrint_hash ^= zobrint_random_table[board[rookpos_old]][rookpos_old];
+            zobrint_hash ^= zobrint_random_table[board[rookpos_old]][rookpos_new];
         } else {  // promotion
-            num old_pawn = PAWN + (mv.t0 == 0 ? WHITE : BLACK);
-            board[8*mv.f0+mv.f1] = old_pawn;
+            num old_pawn = PAWN + (mv.to < 30 ? WHITE : BLACK);
+            board[mv.from] = old_pawn;
             board_eval -= eval_material(piece) - eval_material(old_pawn);
-            board_eval -= eval_piece_on_square(piece, mv.f0, mv.f1) - eval_piece_on_square(old_pawn, mv.f0, mv.f1);  // t0/t1 to compensate for wrong pieceval earlier
-            zobrint_hash ^= zobrint_random_table[old_pawn][8*mv.f0+mv.f1];
-            zobrint_hash ^= zobrint_random_table[   piece][8*mv.f0+mv.f1];
+            board_eval -= eval_piece_on_square(piece, mv.from) - eval_piece_on_square(old_pawn, mv.from);  // to compensate for wrong pieceval earlier
+            zobrint_hash ^= zobrint_random_table[old_pawn][mv.from];
+            zobrint_hash ^= zobrint_random_table[   piece][mv.from];
         }
     }
 
     CASTLINGWHITE = c_rights_w;
     CASTLINGBLACK = c_rights_b;
 
-    if (piece == WHITE + KING)
-        KINGPOS_WHITE = 8*mv.f0+mv.f1;
-    else if (piece == BLACK + KING)
-        KINGPOS_BLACK = 8*mv.f0+mv.f1;
+    if (piece == WHITE + KING)      KINGPOS_WHITE = mv.from;
+    else if (piece == BLACK + KING) KINGPOS_BLACK = mv.from;
 
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
@@ -574,16 +581,16 @@ void make_move_str(const char* mv) {
     num b = (num)(mv[0] - 'a');
     num c = 8 - (mv[3] - '0');
     num d = (num)(mv[2] - 'a');
-
     char e = mv[4];
-    if (abs(d - b) > 1 and board[8*a+b] & KING)  // castling
+
+    if (abs(d - b) > 1 and board[10*a+20+b+1] & KING)  // castling
         e = 'c';
-    if (b != d and board[8*a+b] & PAWN and not board[8*c+d])  // en passant
+    if (b != d and board[10*a+20+b+1] & PAWN and not board[10*c+20+d+1])  // en passant (diagonal pawn move to empty square)
         e = 'e';
     if (e == '\n')
         e = '\0';
 
-    Move to_mv = {a, b, c, d, e};
+    Move to_mv = {10*a + 20 + b + 1, 10*c + 20 + d + 1, e};
     make_move(to_mv);
     LASTMOVE_GAME = to_mv;  // copies the struct
 
@@ -626,7 +633,7 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
             and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == NULLMOVE))
         std::cout << "[HASH COLLISION] ";
 
-    for (int i = moves.size() - 1; i >= 0; i--) {
+    for (i = moves.size() - 1; i >= 0; i--) {
         ppc = ppcs[i];
         unmake_move(moves[i], ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
     }
@@ -649,30 +656,31 @@ void printf_moves(Move** mvs, num count, std::string header) {
 }
 
 
-bool square_in_check(num COLOR, num i, num j)
+bool square_in_check(num COLOR, num i)
 {
     num OPPONENT_COLOR = COLOR == WHITE ? BLACK : WHITE;
-    num UP = COLOR == WHITE ? -1 : 1;
+    num UP = COLOR == WHITE ? -10 : 10;
 
     // enemy pawns
-    if (is_inside(i+UP, j+1) and board[8*(i+UP)+j+1] == PAWN + OPPONENT_COLOR)
+    if (board[i+UP+1] == PAWN + OPPONENT_COLOR)
         return true;
-    if (is_inside(i+UP, j-1) and board[8*(i+UP)+j-1] == PAWN + OPPONENT_COLOR)
+    if (board[i+UP-1] == PAWN + OPPONENT_COLOR)
         return true;
 
     for (int n = 1; n < 6; ++n) {  // enemy pieces incl king
         num piece = 1 << n;
 
-        for (num l = 0; PIECEDIRS[piece][l].a != 0 or PIECEDIRS[piece][l].b != 0; ++l) {
-            num a = PIECEDIRS[piece][l].a;
-            num b = PIECEDIRS[piece][l].b;
-            for (num k = 1; k <= PIECERANGE[piece]; ++k)
+        for (num l = 0; PIECEDIRS[piece][l] != 0; ++l) {
+            for (num sq = i;;)
             {
-                if (not is_inside(i+a*k, j+b*k))  // axis goes off board
+                sq += PIECEDIRS[piece][l];
+                if (board[sq] == OOB)  // axis goes off board
                     break;
-                if (board[8*(i+a*k)+j+b*k] == OPPONENT_COLOR + piece)  // opponent piece of right type on axis
+                if (board[sq] == OPPONENT_COLOR + piece)  // opponent piece of right type on axis
                     return true;
-                if (board[8*(i+a*k)+j+b*k])  // irrelevant piece along axis
+                if (board[sq])  // irrelevant piece along axis
+                    break;
+                if (not PIECESLIDE[piece])
                     break;
             }
         }
@@ -685,27 +693,27 @@ bool king_in_check(num COLOR)  // 36% of time spent in this function
 {
     // keeping track of king position enables a HUGE speedup!
     num KINGPOS = COLOR == WHITE ? KINGPOS_WHITE : KINGPOS_BLACK;
-    return square_in_check(COLOR, KINGPOS / 8, KINGPOS % 8);
+    return square_in_check(COLOR, KINGPOS);
 }
 
 
 // TODO TODO TODO replace with vector push_back OR AT LEAST fewer indirect mallocs
-inline Move** move_store(Move** mvsend, num COLOR, num a, num b, num c, num d, num e)
+inline Move** move_store(Move** mvsend, num a, num b, num c)
 {
     *mvsend = (Move*)malloc(sizeof(Move));
-    (*mvsend)->f0 = a; (*mvsend)->f1 = b; (*mvsend)->t0 = c; (*mvsend)->t1 = d; (*mvsend)->prom = e;
+    (*mvsend)->from = a; (*mvsend)->to = b; (*mvsend)->prom = c;
     return ++mvsend;
 }
 
-inline Move** move_store_maybe_promote(Move** mvsend, num COLOR, bool is_promrank, num a, num b, num c, num d)
+inline Move** move_store_maybe_promote(Move** mvsend, bool is_promrank, num a, num b)
 {
     if (is_promrank) {
-        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'q'); /* best */
-        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'n'); /* likely */
-        mvsend = move_store(mvsend, COLOR, a, b, c, d, 'r');
-        return   move_store(mvsend, COLOR, a, b, c, d, 'b');
+        mvsend = move_store(mvsend, a, b, 'q'); /* best */
+        mvsend = move_store(mvsend, a, b, 'n'); /* also likely */
+        mvsend = move_store(mvsend, a, b, 'r');
+        return   move_store(mvsend, a, b, 'b');
     } else
-        return   move_store(mvsend, COLOR, a, b, c, d, '\0');
+        return   move_store(mvsend, a, b, '\0');
 }
 
 // generates all captures if captures=true, generates all quiet moves if captures=false
@@ -716,75 +724,74 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 
     Move** quiets = do_quiets ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // array of NULLptrs
     Move** quiets_end = quiets;
 
-    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
-    num ADD = COLOR == WHITE ? -1 : 1;  // "up"
-    num STARTRANK = COLOR == WHITE ? 6 : 1;
-    num PROMRANK = COLOR == WHITE ? 1 : 6;
-    num EPRANK = COLOR == WHITE ? 3 : 4;
-    num CASTLERANK = COLOR == WHITE ? 7 : 0;
+    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;  // opponent color
+    num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+    num STARTRANK = COLOR == WHITE ? 80 : 30;
+    num PROMRANK = COLOR == WHITE ? 30 : 80;
+    num EPRANK = COLOR == WHITE ? 50 : 60;
+    num CASTLERANK = COLOR == WHITE ? 90 : 20;
 
     if (do_quiets) {  // castling moves
         //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
         //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
         //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
         CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
-        if (castlingrights.rc and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+7] == COLOR + ROOK) {  // short castle O-O
-            if (not board[8*CASTLERANK+5] and not board[8*CASTLERANK+6] and
-                    not square_in_check(COLOR, CASTLERANK, 4) and not square_in_check(COLOR, CASTLERANK, 5) and not square_in_check(COLOR, CASTLERANK, 6))
-                quiets_end = move_store(quiets_end, COLOR, CASTLERANK, 4, CASTLERANK, 6, 'c');
-        }
-        if (castlingrights.lc and board[8*CASTLERANK+4] == COLOR + KING and board[8*CASTLERANK+0] == COLOR + ROOK) {  // long castle O-O-O
-            if (not board[8*CASTLERANK+1] and not board[8*CASTLERANK+2] and not board[8*CASTLERANK+3] and
-                    not square_in_check(COLOR, CASTLERANK, 2) and not square_in_check(COLOR, CASTLERANK, 3) and not square_in_check(COLOR, CASTLERANK, 4))
-                quiets_end = move_store(quiets_end, COLOR, CASTLERANK, 4, CASTLERANK, 2, 'c');
+        if (castlingrights.rc and board[CASTLERANK+5] == COLOR + KING and board[CASTLERANK+8] == COLOR + ROOK)  // short castle O-O
+            if (not board[CASTLERANK+6] and not board[CASTLERANK+7])
+                if (not square_in_check(COLOR, CASTLERANK+5) and not square_in_check(COLOR, CASTLERANK+6) and not square_in_check(COLOR, CASTLERANK+7))
+                    quiets_end = move_store(quiets_end, CASTLERANK+5, CASTLERANK+7, 'c');
+        if (castlingrights.lc and board[CASTLERANK+5] == COLOR + KING and board[CASTLERANK+1] == COLOR + ROOK) {  // long castle O-O-O
+            if (not board[CASTLERANK+2] and not board[CASTLERANK+3] and not board[CASTLERANK+4])
+                if (not square_in_check(COLOR, CASTLERANK+3) and not square_in_check(COLOR, CASTLERANK+4) and not square_in_check(COLOR, CASTLERANK+5))
+                    quiets_end = move_store(quiets_end, CASTLERANK+5, CASTLERANK+3, 'c');
         }
     }
 
     // I made the mistake of using mailbox addressing here in 2015, so looping over all 64 squares (most empty) will always be slow
     // This engine could realistically be switched to 12x10 boards, but for bitboards I would probably do a new engine
-    gentuples {
-        num bij = board[8*i+j];
-        if (not (bij & COLOR))
+    for (num i = 0; i < 120; ++i) {
+        num bij = board[i];
+        if (not (bij & COLOR))  // also covers bij == OOB
             continue;
         if (bij & PAWN) {  // pawn moves
             if (do_captures) {
                 // diagonal captures
-                if (j < 7 and board[8*(i+ADD)+j+1] & NCOLOR)
-                    captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j+1);
-                if (j > 0 and board[8*(i+ADD)+j-1] & NCOLOR)
-                    captures_end = move_store_maybe_promote(captures_end, COLOR, i == PROMRANK, i, j, i+ADD, j-1);
-
-                if (i == EPRANK) {  // en passant capture
-                    if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j-1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j-1 and board[8*i+j-1] & PAWN)
-                        captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j-1, 'e');
-                    if (LASTMOVE.f0 == i+ADD+ADD and LASTMOVE.f1 == j+1 and LASTMOVE.t0 == i and LASTMOVE.t1 == j+1 and board[8*i+j+1] & PAWN)
-                        captures_end = move_store(captures_end, COLOR, i, j, i+ADD, j+1, 'e');
+                if (board[i+ADD+1] & NCOLOR)
+                    captures_end = move_store_maybe_promote(captures_end, PROMRANK < i and i < PROMRANK + 10, i, i+ADD+1);
+                if (board[i+ADD-1] & NCOLOR)
+                    captures_end = move_store_maybe_promote(captures_end, PROMRANK < i and i < PROMRANK + 10, i, i+ADD-1);
+                if (EPRANK < i and i < EPRANK + 10) {  // en passant capture
+                    if (LASTMOVE.from == i+ADD+ADD-1 and LASTMOVE.to == i-1 and board[i-1] & PAWN)
+                        captures_end = move_store(captures_end, i, i+ADD-1, 'e');
+                    if (LASTMOVE.from == i+ADD+ADD+1 and LASTMOVE.to == i+1 and board[i+1] & PAWN)
+                        captures_end = move_store(captures_end, i, i+ADD+1, 'e');
                 }
             }
             if (do_quiets)
-                if (not board[8*(i+ADD)+j]) {  // 1 square forward
-                    quiets_end = move_store_maybe_promote(quiets_end, COLOR, i == PROMRANK, i, j, i+ADD, j);
-                    if (i == STARTRANK and not board[8*(i+ADD+ADD)+j])  // 2 squares forward
-                        quiets_end = move_store(quiets_end, COLOR, i, j, i+ADD+ADD, j, '\0');
+                if (not board[i+ADD]) {  // 1 square forward
+                    quiets_end = move_store_maybe_promote(quiets_end, PROMRANK < i and i < PROMRANK + 10, i, i+ADD);
+                    if (STARTRANK < i and i < STARTRANK + 10 and not board[i+ADD+ADD])  // 2 squares forward
+                        quiets_end = move_store(quiets_end, i, i+ADD+ADD, '\0');
                 }
         } else {  // piece moves
             num bijpiece = bij & COLORBLIND;
-            for (num l = 0; PIECEDIRS[bijpiece][l].a != 0 or PIECEDIRS[bijpiece][l].b != 0; ++l) {
-                num a = PIECEDIRS[bijpiece][l].a;
-                num b = PIECEDIRS[bijpiece][l].b;
-                for (num k = 1; k <= PIECERANGE[bijpiece]; ++k)
+            for (num l = 0; PIECEDIRS[bijpiece][l] != 0; ++l) {
+                for (num sq = i;;)
                 {
-                    if (not is_inside(i+a*k, j+b*k))  // out of bounds
+                    sq += PIECEDIRS[bijpiece][l];
+                    if (board[sq] == OOB)  // out of bounds
                         break;
-                    if (board[8*(i+a*k)+j+b*k] & COLOR)  // move to square with own piece (illegal)
+                    if (board[sq] & COLOR)  // move to square with own piece (illegal)
                         break;
-                    if (board[8*(i+a*k)+j+b*k] & NCOLOR) {  // move to square with enemy piece (capture)
+                    if (board[sq] & NCOLOR) {  // move to square with enemy piece (capture)
                         if (do_captures)
-                            captures_end = move_store(captures_end, COLOR, i, j, i+a*k, j+b*k, '\0');
+                            captures_end = move_store(captures_end, i, sq, '\0');
                         break;
                     }
-                    if (do_quiets and not board[8*(i+a*k)+j+b*k])  // move to empty square
-                        quiets_end = move_store(quiets_end, COLOR, i, j, i+a*k, j+b*k, '\0');
+                    if (do_quiets)  // move to empty square  // board[sq] HAS TO BE 0 at this point
+                        quiets_end = move_store(quiets_end, i, sq, '\0');
+                    if (not PIECESLIDE[bijpiece])
+                        break;
                 }
             }
         }
@@ -844,8 +851,8 @@ int move_order_mvv_lva(const void* a, const void* b)
 {
     Move mv_a = **((Move **)a);
     Move mv_b = **((Move **)b);
-    return 1000 * PIECEVALS[board[8*mv_b.t0+mv_b.t1] & COLORBLIND] - PIECEVALS[board[8*mv_b.f0+mv_b.f1] & COLORBLIND]
-        - (1000 * PIECEVALS[board[8*mv_a.t0+mv_a.t1] & COLORBLIND] - PIECEVALS[board[8*mv_a.f0+mv_a.f1] & COLORBLIND]);
+    return 1000 * PIECEVALS[board[mv_b.to] & COLORBLIND] - PIECEVALS[board[mv_b.from] & COLORBLIND]
+        - (1000 * PIECEVALS[board[mv_a.to] & COLORBLIND] - PIECEVALS[board[mv_a.from] & COLORBLIND]);
 }
 
 
@@ -980,7 +987,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         // Delta pruning -- do not make_move for captures that can never raise alpha
         if (is_quies) {
-            num eval_max_improve = board_eval + (COLOR == WHITE ? 1 : -1) * (PIECEVALS[board[8*mv.t0+mv.t1] & COLORBLIND] + 200);
+            num eval_max_improve = board_eval + (COLOR == WHITE ? 1 : -1) * (PIECEVALS[board[mv.to] & COLORBLIND] + 200);
 
             if ((COLOR == WHITE ? eval_max_improve < alpha : eval_max_improve > beta) and not mv.prom)
                 goto continue_proper;
@@ -1004,7 +1011,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         if (!is_quies) {  // "search extensions", i.e. searching checks or promoting pawns more deeply
             num OTHER_COLOR = COLOR == WHITE ? BLACK : WHITE;
             bool ext_check = king_in_check(OTHER_COLOR);  // https://www.chessprogramming.org/Check_Extensions
-            bool ext_seventh_rank_pawn = (mv.t0 == 1 or mv.t0 == 6) and (board[8 * mv.t0 + mv.t1] & PAWN);
+            bool ext_seventh_rank_pawn = ((30 < mv.to and mv.to < 39) or (80 < mv.to and mv.to < 89)) and (board[mv.to] & PAWN);
             do_extend = ext_check || ext_seventh_rank_pawn;
         }
 
@@ -1151,14 +1158,12 @@ std::string calc_move(bool lines = false)
     //memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
 
     num game_phase = 0;   // game phase based on pieces traded. initial pos: 24, rook endgame: 8
-    gentuples {
-        num p = board[8*i+j];
+    for (num i = 0; i < 120; ++i) {
+        num p = board[i];
         game_phase += 1 * !!(p & KNIGHT) + 1 * !!(p & BISHOP) + 2 * !!(p & ROOK) + 4 * !!(p & QUEEN);
 
-        if (p == WHITE + KING)
-            KINGPOS_WHITE = 8*i+j;
-        if (p == BLACK + KING)
-            KINGPOS_BLACK = 8*i+j;
+        if (p == WHITE + KING)  KINGPOS_WHITE = i;
+        if (p == BLACK + KING)  KINGPOS_BLACK = i;
     }
 
     printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");
@@ -1207,48 +1212,49 @@ void init_data(void) {
     board_initial_position();
     init_zobrint();
 
-    PIECEDIRS[KNIGHT][0] = {1, 2};
-    PIECEDIRS[KNIGHT][1] = {2, 1};
-    PIECEDIRS[KNIGHT][2] = {-1, 2};
-    PIECEDIRS[KNIGHT][3] = {2, -1};
-    PIECEDIRS[KNIGHT][4] = {-1, -2};
-    PIECEDIRS[KNIGHT][5] = {-2, -1};
-    PIECEDIRS[KNIGHT][6] = {1, -2};
-    PIECEDIRS[KNIGHT][7] = {-2, 1};
-    PIECEDIRS[KNIGHT][8] = {0, 0};
+    PIECEDIRS[KNIGHT][0] = 12;
+    PIECEDIRS[KNIGHT][1] = 21;
+    PIECEDIRS[KNIGHT][2] = -8;
+    PIECEDIRS[KNIGHT][3] = 19;
+    PIECEDIRS[KNIGHT][4] = -12;
+    PIECEDIRS[KNIGHT][5] = -21;
+    PIECEDIRS[KNIGHT][6] = 8;
+    PIECEDIRS[KNIGHT][7] = -19;
+    PIECEDIRS[KNIGHT][8] = 0;
 
-    PIECEDIRS[BISHOP][0] = {1, 1};
-    PIECEDIRS[BISHOP][1] = {1, -1};
-    PIECEDIRS[BISHOP][2] = {-1, 1};
-    PIECEDIRS[BISHOP][3] = {-1, -1};
-    PIECEDIRS[BISHOP][4] = {0, 0};
+    PIECEDIRS[BISHOP][0] = 11;
+    PIECEDIRS[BISHOP][1] = 9;
+    PIECEDIRS[BISHOP][2] = -9;
+    PIECEDIRS[BISHOP][3] = -11;
+    PIECEDIRS[BISHOP][4] = 0;
 
-    PIECEDIRS[ROOK][0] = {0, 1};
-    PIECEDIRS[ROOK][1] = {1, 0};
-    PIECEDIRS[ROOK][2] = {0, -1};
-    PIECEDIRS[ROOK][3] = {-1, 0};
-    PIECEDIRS[ROOK][4] = {0, 0};
+    PIECEDIRS[ROOK][0] = 1;
+    PIECEDIRS[ROOK][1] = 10;
+    PIECEDIRS[ROOK][2] = -1;
+    PIECEDIRS[ROOK][3] = -10;
+    PIECEDIRS[ROOK][4] = 0;
 
     for (num piece = QUEEN; piece <= KING; piece += KING - QUEEN) {  // what
-        PIECEDIRS[piece][0] = {0, 1};
-        PIECEDIRS[piece][1] = {1, 0};
-        PIECEDIRS[piece][2] = {0, -1};
-        PIECEDIRS[piece][3] = {-1, 0};
-        PIECEDIRS[piece][4] = {1, 1};
-        PIECEDIRS[piece][5] = {1, -1};
-        PIECEDIRS[piece][6] = {-1, 1};
-        PIECEDIRS[piece][7] = {-1, -1};
-        PIECEDIRS[piece][8] = {0, 0};
+        PIECEDIRS[piece][0] = 1;
+        PIECEDIRS[piece][1] = 10;
+        PIECEDIRS[piece][2] = -1;
+        PIECEDIRS[piece][3] = -10;
+        PIECEDIRS[piece][4] = 11;
+        PIECEDIRS[piece][5] = 9;
+        PIECEDIRS[piece][6] = -9;
+        PIECEDIRS[piece][7] = -11;
+        PIECEDIRS[piece][8] = 0;
     }
 
-    PIECERANGE[KNIGHT] = 1;
-    PIECERANGE[BISHOP] = 7;
-    PIECERANGE[ROOK] = 7;
-    PIECERANGE[QUEEN] = 7;
-    PIECERANGE[KING] = 1;
+    PIECESLIDE[KNIGHT] = false;
+    PIECESLIDE[BISHOP] = true;
+    PIECESLIDE[ROOK] = true;
+    PIECESLIDE[QUEEN] = true;
+    PIECESLIDE[KING] = false;
 
     // https://lichess.org/@/ubdip/blog/finding-the-value-of-pieces/PByOBlNB
     PIECEVALS[0] = 0;
+    PIECEVALS[OOB] = 0;
     PIECEVALS[PAWN] = 100;
     PIECEVALS[KNIGHT] = 305;
     PIECEVALS[BISHOP] = 325;  // Should not trade bishop for a knight, unless it wins a pawn or king pawn structure becomes damaged
@@ -1289,9 +1295,9 @@ void test()
 
     std::cout << "\nTests Castling" << std::endl;
     board_initial_position();
-    board[7*8+5] = 0;
-    board[7*8+6] = 0;
-    board[6*8+4] = 0;
+    board[96] = 0;
+    board[97] = 0;
+    board[85] = 0;
     pprint();
     IM_WHITE = true;
     std::cout << calc_move(true) << std::endl;
@@ -1299,8 +1305,9 @@ void test()
     std::cout << "\nTests detecting/avoiding repetitions" << std::endl;
     board_initial_position();
     IM_WHITE = true;
-    zobrint_hash ^= zobrint_random_table[board[3]][3];
-    board[3] = 0;  // up a queen so shouldn't draw
+    zobrint_hash ^= zobrint_random_table[board[24]][24];
+    board[24] = 0;  // up a queen so shouldn't draw
+    board_eval += PIECEVALS[QUEEN] + PIECE_SQUARE_TABLES[QUEEN][24];
     board_positions_seen.insert(board_to_zobrint_hash());
     make_move_str("g1f3"); make_move_str("g8f6");
     make_move_str("f3g1"); make_move_str("f6g8");

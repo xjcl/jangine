@@ -1150,13 +1150,6 @@ std::string calc_move(bool lines = false)
     //memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
     //memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
 
-    // Have to re-calculate board info anew each time because GUI/Lichess might reset state
-    board_eval = initial_eval();
-    zobrint_hash = board_to_zobrint_hash();
-    num my_color = IM_WHITE ? WHITE : BLACK;
-    num OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
-    Move mv = {0};
-
     num game_phase = 0;   // game phase based on pieces traded. initial pos: 24, rook endgame: 8
     gentuples {
         num p = board[8*i+j];
@@ -1171,7 +1164,14 @@ std::string calc_move(bool lines = false)
     printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");
     set_piece_square_table(game_phase <= 8);
 
-    printf("Starting iterative deepening alphabeta search at ZOB %ld\n", zobrint_hash);
+    // Have to re-calculate board info anew each time because GUI/Lichess might reset state
+    board_eval = initial_eval();
+    zobrint_hash = board_to_zobrint_hash();
+    num my_color = IM_WHITE ? WHITE : BLACK;
+    num OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
+    Move mv = {0};
+
+    printf("Starting iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
     for (num search_depth = 1; search_depth <= MAX_SEARCH_DEPTH; search_depth++)
     {
         SEARCH_ADAPTIVE_DEPTH = search_depth;
@@ -1194,7 +1194,7 @@ std::string calc_move(bool lines = false)
             break;
         }
     }
-    printf("|End|ing iterative deepening alphabeta search at ZOB %ld\n", zobrint_hash);
+    printf("|End|ing iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
 
     make_move(mv);
 

@@ -964,8 +964,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
             for (Move** swap = cur_mv; swap < gl.quiets_end; swap++) {
                 if (**swap == KILLER_TABLE[depth][try_killer_move]) {  // triangle swap
-                    Move* tmp = *gl.quiets;
-                    *gl.quiets = *swap;
+                    Move* tmp = *cur_mv;
+                    *cur_mv = *swap;
                     *swap = tmp;
                     break;
                 }

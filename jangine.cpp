@@ -304,7 +304,7 @@ int64_t board_to_zobrint_hash() {
 }
 
 void set_piece_square_table(bool is_endgame = false) {
-    for (int j = 0; j < 120; j++) {
+    for (num j = 0; j < 120; j++) {
         PIECE_SQUARE_TABLES[0][j] = 0;
         PIECE_SQUARE_TABLES[OOB][j] = 0;
 
@@ -315,6 +315,12 @@ void set_piece_square_table(bool is_endgame = false) {
 
         PIECE_SQUARE_TABLES[KING][j] = PIECE_SQUARE_TABLES_SOURCE[is_endgame ? KING_ENDGAME : KING_EARLYGAME][j];
         PIECE_SQUARE_TABLES[PAWN][j] = PIECE_SQUARE_TABLES_SOURCE[is_endgame ? PAWN_ENDGAME : PAWN_EARLYGAME][j];
+
+        for (num piece = PAWN; piece <= KING; piece <<= 1) {
+            num j_black = 10 * (11 - (j / 10)) + (j % 10);
+            PIECE_SQUARE_TABLES[piece + WHITE][j      ] =  PIECE_SQUARE_TABLES[piece][j];
+            PIECE_SQUARE_TABLES[piece + BLACK][j_black] = -PIECE_SQUARE_TABLES[piece][j];
+        }
     }
 }
 
@@ -429,16 +435,12 @@ std::string move_to_str(Move mv, bool algebraic = false) {
 }
 
 
-num eval_material(num piece_with_color) {
-    num piece = piece_with_color & COLORBLIND;
-    return piece_with_color & WHITE ? PIECEVALS[piece] : -PIECEVALS[piece];
+inline num eval_material(num piece_with_color) {
+    return PIECEVALS[piece_with_color];
 }
 
-// TODO XXX FAST PSQT ACCESS!!!!!!!
-num eval_piece_on_square(num piece_with_color, num i) {
-    num piece = piece_with_color & COLORBLIND;
-    //return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][i] : -PIECE_SQUARE_TABLES[piece][i];
-    return piece_with_color & WHITE ? PIECE_SQUARE_TABLES[piece][i] : -PIECE_SQUARE_TABLES[piece][10 * (11 - (i / 10)) + (i % 10)];
+inline num eval_piece_on_square(num piece_with_color, num i) {
+    return PIECE_SQUARE_TABLES[piece_with_color][i];
 }
 
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
@@ -1257,6 +1259,11 @@ void init_data(void) {
     PIECEVALS[ROOK] = 470;  // Engine keeps trading its knight+bishop for a rook+pawn, thinking it is a good trade, which it is not
     PIECEVALS[QUEEN] = 950;  // Engine also trades into having 2 rooks for a queen, this is usually also not worth it
     PIECEVALS[KING] = inf;
+
+    for (num piece = PAWN; piece <= KING; piece <<= 1) {
+        PIECEVALS[piece + WHITE] =  PIECEVALS[piece];
+        PIECEVALS[piece + BLACK] = -PIECEVALS[piece];
+    }
 }
 
 

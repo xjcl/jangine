@@ -715,7 +715,7 @@ inline Move** move_store_maybe_promote(Move** mvsend, bool is_promrank, num a, n
 }
 
 // generates all captures if captures=true, generates all quiet moves if captures=false
-GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 27% of time spent here
+GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 30% of time spent here
 {
     Move** captures = do_captures ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // Maximum should be 218 moves  // array of NULLptrs
     Move** captures_end = captures;
@@ -746,12 +746,11 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 
     }
 
     // I made the mistake of using mailbox addressing here in 2015, so looping over all 64 squares (most empty) will always be slow
-    // This engine could realistically be switched to 12x10 boards, but for bitboards I would probably do a new engine
-    for (num i = 0; i < 120; ++i) {
-        num bij = board[i];
-        if (not (bij & COLOR))  // also covers bij == OOB
+    // I ended up switching this engine to 12x10 boards for efficiency, but for bitboards I would probably do a new engine
+    for (num i = 0; i < 120; ++i) {  // i = 21; i < 99 is SLOWER for some reason! :(
+        if (not (board[i] & COLOR))  // also covers board[i] == OOB
             continue;
-        if (bij & PAWN) {  // pawn moves
+        if (board[i] & PAWN) {  // pawn moves
             if (do_captures) {
                 // diagonal captures
                 if (board[i+ADD+1] & NCOLOR)
@@ -772,7 +771,7 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 
                         quiets_end = move_store(quiets_end, i, i+ADD+ADD, '\0');
                 }
         } else {  // piece moves
-            num bijpiece = bij & COLORBLIND;
+            num bijpiece = board[i] & COLORBLIND;
             for (num l = 0; PIECEDIRS[bijpiece][l] != 0; ++l) {
                 for (num sq = i;;)
                 {
@@ -933,7 +932,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             // TODO: selection-type sort instead ? Or custom qsort?
             num caps_len = gl.captures_end - gl.captures;  // can only be 0 in illegal positions -> add assert statement
             if (caps_len > 1)
-                qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);  // TODO: use std::sort  // 1-2%
+                qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);  // TODO: use std::sort  // 7% of runtime
         }
 
         if (cur_mv == gl.captures_end)  // [3/3] after captures, try quiet moves
@@ -951,7 +950,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 // TODO: write to separate list during gen_moves?
 
                 // NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
-                // qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 8% of runtime
+                //qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 10% of runtime
 
                 try_killer_move = 0;
             }

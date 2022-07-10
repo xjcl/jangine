@@ -1070,7 +1070,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
                 alpha_raised_n_times++;
             }
             if (beta <= alpha) {  // alpha-beta cutoff
-                if (not ppc.hit_piece) {  // store non-captures producing cutoffs as killer moves
+                if (not ppc.hit_piece and mv.prom != 'e') {  // store non-captures producing cutoffs as killer moves
                     for (num i = 0; i < MAX_KILLER_MOVES; i++)
                         if (KILLER_TABLE[depth][i] == mv)
                             goto do_not_store_in_killer_table;

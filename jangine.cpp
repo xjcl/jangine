@@ -701,23 +701,33 @@ inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiet
 {
     // TODO: move these to global variables? and just overwrite?
     // TODO: generally avoid double indirection here
-    Move* captures = do_captures ? ((Move*)malloc(125 * sizeof(Move))) : NULL;
+    Move* captures = do_captures ? ((Move*)malloc(125 * sizeof(Move))) : NULL;  // malloc appears faster than global array
     Move* captures_end = captures;
     Move* quiets = do_quiets ? ((Move*)malloc(125 * sizeof(Move))) : NULL;  // weird 10% slowdown only if BOTH calloc and >=126
     Move* quiets_end = quiets;
 
-    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;  // opponent color
-    num ADD = COLOR == WHITE ? -10 : 10;  // "up"
-    num STARTRANK = COLOR == WHITE ? 80 : 30;
-    num PROMRANK = COLOR == WHITE ? 30 : 80;
-    num EPRANK = COLOR == WHITE ? 50 : 60;
-    num CASTLERANK = COLOR == WHITE ? 90 : 20;
+    num NCOLOR = WHITE;  // opponent color
+    num ADD = 10;  // "up"
+    num STARTRANK = 30;
+    num PROMRANK = 80;
+    num EPRANK = 60;
+    num CASTLERANK = 20;
+    CASTLINGRIGHTS castlingrights = CASTLINGBLACK;
+
+    if (COLOR == WHITE) {  // maybe make 2 structs with these constants?
+        NCOLOR = BLACK;
+        ADD = -10;
+        STARTRANK = 80;
+        PROMRANK = 30;
+        EPRANK = 50;
+        CASTLERANK = 90;
+        castlingrights = CASTLINGWHITE;
+    }
 
     if (do_quiets) {  // castling moves
         //    TODO: FIX THIS!!! TRIES TO CASTLE WHEN BISHOP ON C8
         //    INPUT: position startpos moves d2d4 b8c6 e2e4 d7d5 e4d5 d8d5 g1f3 d5e4 f1e2
         //    MOVE   B f5  (c8f5 ) | KH        4 | EVAL    0.45   | VAR  ...   c4  (c2c4 ) Kxc8  (e8c8c)
-        CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
         if (castlingrights.rc and board[CASTLERANK+5] == COLOR + KING and board[CASTLERANK+8] == COLOR + ROOK)  // short castle O-O
             if (not board[CASTLERANK+6] and not board[CASTLERANK+7])
                 if (not square_in_check(COLOR, CASTLERANK+5) and not square_in_check(COLOR, CASTLERANK+6) and not square_in_check(COLOR, CASTLERANK+7))

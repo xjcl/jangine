@@ -31,14 +31,6 @@ typedef int_fast16_t num;
 
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
-bool input_is_move(const char* s) {
-    if (strlen(s) < 5 || strlen(s) > 6)  // newline character
-        return false;
-
-    return 'a' <= s[0] and s[0] <= 'h' and 'a' <= s[2] && s[2] <= 'h' and
-            '1' <= s[1] && s[1] <= '8' and '1' <= s[3] && s[3] <= '8';
-}
-
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num KING_EARLYGAME = 8001, KING_ENDGAME = 8002, PAWN_EARLYGAME = 9001, PAWN_ENDGAME = 9002;
 num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
@@ -238,6 +230,14 @@ void pprint() {
 bool startswith(const char *pre, const char *str) {
     size_t lenpre = strlen(pre), lenstr = strlen(str);
     return lenstr >= lenpre and strncmp(pre, str, lenpre) == 0;
+}
+
+bool input_is_move(const char* s) {
+    if (strlen(s) < 5 || strlen(s) > 6)  // newline character
+        return false;
+
+    return 'a' <= s[0] and s[0] <= 'h' and 'a' <= s[2] and s[2] <= 'h' and
+           '1' <= s[1] and s[1] <= '8' and '1' <= s[3] and s[3] <= '8';
 }
 
 num default_board[120] = {  // https://www.chessprogramming.org/10x12_Board
@@ -462,7 +462,7 @@ num initial_eval() {
 }
 
 
-inline PiecePlusCatling make_move(Move mv)  // apparently 7% of time spent in make and unmake
+inline PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and unmake
 {
     if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE\n");
@@ -481,13 +481,13 @@ inline PiecePlusCatling make_move(Move mv)  // apparently 7% of time spent in ma
 
     if (mv.prom) {
         if (mv.prom == 'e') {  // en passant
-            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn
+            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn  // faster than ternary ? :
             board_eval -= eval_material(board[ep_square]) + eval_piece_on_square(board[ep_square], ep_square);  // captured pawn did not get removed earlier
             zobrint_hash ^= zobrint_random_table[board[ep_square]][ep_square];  // xor OUT captured pawn
             board[ep_square] = 0;
         } else if (mv.prom == 'c') {  // castling -- rook part
             bool is_short_castling = mv.to > mv.from;  // otherwise long castling
-            num rookpos_new = is_short_castling ? (mv.from + 1) : (mv.from - 1);
+            num rookpos_new = is_short_castling ? (mv.from + 1) : (mv.from - 1);  // tests faster because short-castle gets branch-predicted => store castle direction in prom?
             num rookpos_old = is_short_castling ? (mv.from + 3) : (mv.from - 4);
 
             board[rookpos_new] = board[rookpos_old];
@@ -531,8 +531,6 @@ inline void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTL
     num piece = board[mv.to];
     board[mv.to] = hit_piece;
     board[mv.from] = piece;
-
-    num CASTLERANK = piece & WHITE ? 7 : 0;
 
     board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.to);  // add captured piece back in
     board_eval -= eval_piece_on_square(piece, mv.to) - eval_piece_on_square(piece, mv.from);  // adjust position values of moved piece
@@ -642,21 +640,6 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
 
     std::cout << std::endl;
 }
-
-void printf_moves(Move** mvs, num count, std::string header) {
-    std::cout << header;
-    for (long int i = 0; i < count; ++i)
-    {
-        if (mvs[i] != NULL) {
-            printf("%ld ", i);
-            printf_move(*(mvs[i]));
-            printf("\n");
-        }
-        else
-            printf("%ld MISSING\n", i);
-    }
-}
-
 
 bool square_in_check(num COLOR, num i)
 {
@@ -805,31 +788,6 @@ inline void free_GenMoves(GenMoves gl)
 }
 
 
-// https://www.chessprogramming.org/MVV-LVA
-// In this specific implementation, all captures are sorted before non-captures.
-// - For captures, first consider low-value pieces capturing high-value pieces to produce alpha-beta-cutoffs
-// - For the remaining non-captures, try killer moves, then promotions, then remaining moves
-// https://www.chessprogramming.org/Move_Ordering#Typical_move_ordering
-int move_order_key(Move mv)
-{
-    // try "killer moves"
-    for (num i = 0; i < MAX_KILLER_MOVES; i++)
-        if (KILLER_TABLE[NODE_DEPTH][i] == mv)
-            return 49000 - i;
-
-    if (mv.prom and (mv.prom != 'c'))
-        return 1;
-
-    return 0;
-}
-
-
-int move_order_quiet(const void* a, const void* b)
-{
-    return move_order_key(**((Move **)b)) - move_order_key(**((Move **)a));  // invert comparison so biggest-valued move is at start of list
-}
-
-
 int move_order_mvv_lva(const void* a, const void* b)
 {
     Move mv_a = *((Move *)a);
@@ -931,21 +889,15 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             cur_mv = gl.quiets;
 
             num quiets_len = gl.quiets_end - gl.quiets;
-            if (quiets_len > 1) {
-                // note that WHEN we sort also plays a role because the KILLER_TABLE will be filled differently
-                // TODO: write to separate list during gen_moves?
-
-                // NODE_DEPTH = depth;  // unable to pass context to qsort so have to use a global here
-                //qsort(gl.quiets, quiets_len, sizeof(Move *), move_order_quiet);  // 10% of runtime
-
+            if (quiets_len > 1)
                 try_killer_move = 0;
-            }
         }
 
         if (try_killer_move > -1 and try_killer_move < MAX_KILLER_MOVES)
         {
             // try moves in killer table first
             // use selection sort instead of qsort because only 1 or 2 values in the list matter
+            // note: WHEN we sort also plays a role because the KILLER_TABLE will be filled differently
 
             for (Move* swap = cur_mv; swap < gl.quiets_end; swap++) {
                 if (*swap == KILLER_TABLE[depth][try_killer_move]) {  // triangle swap

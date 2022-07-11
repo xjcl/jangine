@@ -462,7 +462,7 @@ num initial_eval() {
 }
 
 
-PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and unmake
+inline PiecePlusCatling make_move(Move mv)  // apparently 7% of time spent in make and unmake
 {
     if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE\n");
@@ -526,7 +526,7 @@ PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and u
     return {hit_piece, old_cr_w, old_cr_b};
 }
 
-void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b)
+inline void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b)
 {
     num piece = board[mv.to];
     board[mv.to] = hit_piece;
@@ -715,7 +715,7 @@ inline Move** move_store_maybe_promote(Move** mvsend, bool is_promrank, num a, n
 }
 
 // generates all captures if captures=true, generates all quiet moves if captures=false
-GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 30% of time spent here
+inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 30% of time spent here
 {
     Move** captures = do_captures ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // Maximum should be 218 moves  // array of NULLptrs
     Move** captures_end = captures;
@@ -797,7 +797,7 @@ GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 
     return {captures, captures_end, quiets, quiets_end};
 }
 
-void free_GenMoves(GenMoves gl)
+inline void free_GenMoves(GenMoves gl)
 {
     if (gl.captures) {
         for (int i = 0; i < 128; ++i) {

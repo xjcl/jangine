@@ -193,6 +193,8 @@ typedef struct PiecePlusCatling {
     num hit_piece;
     CASTLINGRIGHTS c_rights_w;
     CASTLINGRIGHTS c_rights_b;
+    int64_t zobrint_hash;
+    num board_eval;
 } PiecePlusCatling;
 
 CASTLINGRIGHTS CASTLINGWHITE = {true, true};
@@ -462,10 +464,15 @@ num initial_eval() {
 }
 
 
-PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and unmake
+PiecePlusCatling make_move(Move mv)  // apparently 7% of time spent in make and unmake
 {
     if (mv == NULLMOVE)
         printf("XXX DANGEROUS! NULL MOVE\n");
+
+    int64_t zobrint_hash_ = zobrint_hash;
+    num board_eval_ = board_eval;
+    num kingpos_white_ = KINGPOS_WHITE;
+    num kingpos_black_ = KINGPOS_BLACK;
 
     num piece = board[mv.from];
     num hit_piece = board[mv.to];
@@ -523,31 +530,29 @@ PiecePlusCatling make_move(Move mv)  // apparenly 7% of time spent in make and u
 
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 
-    return {hit_piece, old_cr_w, old_cr_b};
+    return {hit_piece, old_cr_w, old_cr_b, zobrint_hash_, board_eval_, kingpos_white_, kingpos_black_};
 }
 
-void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGHTS c_rights_b)
+void unmake_move(Move mv, PiecePlusCatling ppc)
 {
+    board_eval = ppc.board_eval;
+    zobrint_hash = ppc.zobrint_hash;
+    CASTLINGWHITE = ppc.c_rights_w;
+    CASTLINGBLACK = ppc.c_rights_b;
+    KINGPOS_WHITE = ppc.kingpos_white;
+    KINGPOS_BLACK = ppc.kingpos_black;
+
+    num hit_piece = ppc.hit_piece;
+
     num piece = board[mv.to];
     board[mv.to] = hit_piece;
     board[mv.from] = piece;
-
-    num CASTLERANK = piece & WHITE ? 7 : 0;
-
-    board_eval += eval_material(hit_piece) + eval_piece_on_square(hit_piece, mv.to);  // add captured piece back in
-    board_eval -= eval_piece_on_square(piece, mv.to) - eval_piece_on_square(piece, mv.from);  // adjust position values of moved piece
-
-    zobrint_hash ^= zobrint_random_table[piece][mv.from];
-    zobrint_hash ^= zobrint_random_table[piece][mv.to];
-    zobrint_hash ^= zobrint_random_table[hit_piece][mv.to];
 
     if (mv.prom)
     {
         if (mv.prom == 'e') {  // en passant
             num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn
             board[ep_square] = PAWN + (ep_square < 60 ? BLACK : WHITE);
-            board_eval += eval_material(board[ep_square]) + eval_piece_on_square(board[ep_square], ep_square);  // captured pawn did not get removed earlier
-            zobrint_hash ^= zobrint_random_table[board[ep_square]][ep_square];
         } else if (mv.prom == 'c') {  // castling -- undo rook move
             bool is_short_castling = mv.to > mv.from;  // otherwise long castling
             num rookpos_new = is_short_castling ? (mv.from + 1) : (mv.from - 1);
@@ -555,26 +560,10 @@ void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTLINGRIGH
 
             board[rookpos_old] = board[rookpos_new];
             board[rookpos_new] = 0;
-            board_eval += eval_piece_on_square(board[rookpos_old], rookpos_old) - eval_piece_on_square(board[rookpos_old], rookpos_new);  // rook positioning
-            zobrint_hash ^= zobrint_random_table[board[rookpos_old]][rookpos_old];
-            zobrint_hash ^= zobrint_random_table[board[rookpos_old]][rookpos_new];
         } else {  // promotion
-            num old_pawn = PAWN + (mv.to < 30 ? WHITE : BLACK);
-            board[mv.from] = old_pawn;
-            board_eval -= eval_material(piece) - eval_material(old_pawn);
-            board_eval -= eval_piece_on_square(piece, mv.from) - eval_piece_on_square(old_pawn, mv.from);  // to compensate for wrong pieceval earlier
-            zobrint_hash ^= zobrint_random_table[old_pawn][mv.from];
-            zobrint_hash ^= zobrint_random_table[   piece][mv.from];
+            board[mv.from] = PAWN + (mv.to < 30 ? WHITE : BLACK);
         }
     }
-
-    CASTLINGWHITE = c_rights_w;
-    CASTLINGBLACK = c_rights_b;
-
-    if (piece == WHITE + KING)      KINGPOS_WHITE = mv.from;
-    else if (piece == BLACK + KING) KINGPOS_BLACK = mv.from;
-
-    zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
 
 void make_move_str(const char* mv) {
@@ -637,7 +626,7 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
 
     for (i = moves.size() - 1; i >= 0; i--) {
         ppc = ppcs[i];
-        unmake_move(moves[i], ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+        unmake_move(moves[i], ppc);
     }
 
     std::cout << std::endl;
@@ -993,7 +982,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         ppc = make_move(mv);
 
         if (king_in_check(COLOR)) {  // illegal move  // king_in_check takes 11s of the 30s program time!!
-            unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+            unmake_move(mv, ppc);
             goto continue_proper;
         }
 
@@ -1047,7 +1036,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
             best = {rec.value, mv};
 
-        unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+        unmake_move(mv, ppc);
 
         if ((depth == 0 and lines) or (DEBUG >= 3)) {
             for (int i = 0; i < depth; i++)

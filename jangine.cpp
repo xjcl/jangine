@@ -399,10 +399,10 @@ num MAX_SEARCH_DEPTH = 99999;
 num OWN_CLOCK_REMAINING = 18000;
 
 typedef struct GenMoves {
-    Move** captures;
-    Move** captures_end;
-    Move** quiets;
-    Move** quiets_end;
+    Move* captures;
+    Move* captures_end;
+    Move* quiets;
+    Move* quiets_end;
 } GenMoves;
 
 typedef struct ValuePlusMove {
@@ -696,14 +696,13 @@ bool king_in_check(num COLOR)  // 36% of time spent in this function
 
 
 // TODO TODO TODO replace with vector push_back OR AT LEAST fewer indirect mallocs
-inline Move** move_store(Move** mvsend, num a, num b, num c)
+inline Move* move_store(Move* mvsend, num a, num b, num c)
 {
-    *mvsend = (Move*)malloc(sizeof(Move));
-    (*mvsend)->from = a; (*mvsend)->to = b; (*mvsend)->prom = c;
+    mvsend->from = a; mvsend->to = b; mvsend->prom = c;
     return ++mvsend;
 }
 
-inline Move** move_store_maybe_promote(Move** mvsend, bool is_promrank, num a, num b)
+inline Move* move_store_maybe_promote(Move* mvsend, bool is_promrank, num a, num b)
 {
     if (is_promrank) {
         mvsend = move_store(mvsend, a, b, 'q'); /* best */
@@ -719,10 +718,10 @@ inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiet
 {
     // TODO: move these to global variables? and just overwrite?
     // TODO: generally avoid double indirection here
-    Move** captures = do_captures ? ((Move**)malloc(125 * sizeof(Move*))) : NULL;
-    Move** captures_end = captures;
-    Move** quiets = do_quiets ? ((Move**)malloc(125 * sizeof(Move*))) : NULL;  // weird 10% slowdown only if BOTH calloc and >=126
-    Move** quiets_end = quiets;
+    Move* captures = do_captures ? ((Move*)malloc(125 * sizeof(Move))) : NULL;
+    Move* captures_end = captures;
+    Move* quiets = do_quiets ? ((Move*)malloc(125 * sizeof(Move))) : NULL;  // weird 10% slowdown only if BOTH calloc and >=126
+    Move* quiets_end = quiets;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;  // opponent color
     num ADD = COLOR == WHITE ? -10 : 10;  // "up"
@@ -801,11 +800,7 @@ inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiet
 
 inline void free_GenMoves(GenMoves gl)
 {
-    for (Move** cur = gl.captures; cur < gl.captures_end; ++cur)
-        free(*cur);
     free(gl.captures);
-    for (Move** cur = gl.quiets; cur < gl.quiets_end; ++cur)
-        free(*cur);
     free(gl.quiets);
 }
 
@@ -837,10 +832,10 @@ int move_order_quiet(const void* a, const void* b)
 
 int move_order_mvv_lva(const void* a, const void* b)
 {
-    Move mv_a = **((Move **)a);
-    Move mv_b = **((Move **)b);
+    Move mv_a = *((Move *)a);
+    Move mv_b = *((Move *)b);
     return 1000 * PIECEVALS[board[mv_b.to] & COLORBLIND] - PIECEVALS[board[mv_b.from] & COLORBLIND]
-        - (1000 * PIECEVALS[board[mv_a.to] & COLORBLIND] - PIECEVALS[board[mv_a.from] & COLORBLIND]);
+           - (1000 * PIECEVALS[board[mv_a.to] & COLORBLIND] - PIECEVALS[board[mv_a.from] & COLORBLIND]);
 }
 
 
@@ -888,7 +883,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     Move mv = {0};
     PiecePlusCatling ppc;
     GenMoves gl = {0};
-    Move** cur_mv = NULL;
+    Move* cur_mv = NULL;
 
     num adaptive_new = 0;
     num legal_moves_found = 0;
@@ -923,7 +918,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             // TODO: selection-type sort instead ? Or custom qsort?
             num caps_len = gl.captures_end - gl.captures;  // can only be 0 in illegal positions -> add assert statement
             if (caps_len > 1)
-                qsort(gl.captures, caps_len, sizeof(Move *), move_order_mvv_lva);  // TODO: use std::sort  // 7% of runtime
+                qsort(gl.captures, caps_len, sizeof(Move), move_order_mvv_lva);  // TODO: use std::sort  // 7% of runtime
         }
 
         if (cur_mv == gl.captures_end)  // [3/3] after captures, try quiet moves
@@ -952,9 +947,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             // try moves in killer table first
             // use selection sort instead of qsort because only 1 or 2 values in the list matter
 
-            for (Move** swap = cur_mv; swap < gl.quiets_end; swap++) {
-                if (**swap == KILLER_TABLE[depth][try_killer_move]) {  // triangle swap
-                    Move* tmp = *cur_mv;
+            for (Move* swap = cur_mv; swap < gl.quiets_end; swap++) {
+                if (*swap == KILLER_TABLE[depth][try_killer_move]) {  // triangle swap
+                    Move tmp = *cur_mv;
                     *cur_mv = *swap;
                     *swap = tmp;
                     break;
@@ -967,7 +962,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         if (cur_mv == gl.quiets_end)  // end of move list
             break;
 
-        mv = **(cur_mv);
+        mv = *(cur_mv);
 
         // skip hash move that we already did before gen_moves_maybe_legal
         if (mv == pv_mv)

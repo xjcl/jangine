@@ -717,9 +717,11 @@ inline Move** move_store_maybe_promote(Move** mvsend, bool is_promrank, num a, n
 // generates all captures if captures=true, generates all quiet moves if captures=false
 inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 30% of time spent here
 {
-    Move** captures = do_captures ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // Maximum should be 218 moves  // array of NULLptrs
+    // TODO: move these to global variables? and just overwrite?
+    // TODO: generally avoid double indirection here
+    Move** captures = do_captures ? ((Move**)malloc(125 * sizeof(Move*))) : NULL;
     Move** captures_end = captures;
-    Move** quiets = do_quiets ? ((Move**)calloc(128, sizeof(Move*))) : NULL;  // array of NULLptrs
+    Move** quiets = do_quiets ? ((Move**)malloc(125 * sizeof(Move*))) : NULL;  // weird 10% slowdown only if BOTH calloc and >=126
     Move** quiets_end = quiets;
 
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;  // opponent color
@@ -799,23 +801,12 @@ inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiet
 
 inline void free_GenMoves(GenMoves gl)
 {
-    if (gl.captures) {
-        for (int i = 0; i < 128; ++i) {
-            if (not gl.captures[i])
-                break;
-            free(gl.captures[i]);
-        }
-        free(gl.captures);
-    }
-
-    if (gl.quiets) {
-        for (int i = 0; i < 128; ++i) {
-            if (not gl.quiets[i])
-                break;
-            free(gl.quiets[i]);
-        }
-        free(gl.quiets);
-    }
+    for (Move** cur = gl.captures; cur < gl.captures_end; ++cur)
+        free(*cur);
+    free(gl.captures);
+    for (Move** cur = gl.quiets; cur < gl.quiets_end; ++cur)
+        free(*cur);
+    free(gl.quiets);
 }
 
 

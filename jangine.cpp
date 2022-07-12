@@ -187,6 +187,15 @@ typedef struct PiecePlusCatling {
     CASTLINGRIGHTS c_rights_b;
 } PiecePlusCatling;
 
+int8_t tte_exact = 0; int8_t tte_alpha = 1; int8_t tte_beta = 2;
+typedef struct TTEntry {
+    int64_t zobrint_hash;
+    Move move;  // either the best move found if an exact node, or a node good enough to cause a cutoff
+    num value;
+    int8_t tte_flag;  // best, alpha, or beta value
+    int8_t depth;
+} TTEntry;
+
 CASTLINGRIGHTS CASTLINGWHITE = {true, true};
 CASTLINGRIGHTS CASTLINGBLACK = {true, true};
 
@@ -194,8 +203,7 @@ Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
 
-Move TRANSPOS_TABLE[16777216] = {0};  // 24 bits -> 3 * 2**24 bytes = 192 MiB
-int64_t TRANSPOS_TABLE_ZOB[16777216] = {0};
+TTEntry TRANSPOS_TABLE[16777216] = {0};  // 4+3+4+1+1 = 13 bits -> 13 * 2**24 bytes = 208 MiB
 #define ZOB_MASK 0xffffff
 
 num PIECEDIRS[65][9] = {0};
@@ -619,8 +627,8 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
     num i = 0;  // prevent infinite repetition
 
     // TODO: revealing PV from hash table is faster but cuts off parts of it
-    while ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash) && (i < 12)) {
-        Move mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
+    while ((TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash == zobrint_hash) && (i < 12)) {
+        Move mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move;
         std::cout << move_to_str(mv, true) << " ";
 
         ppc = make_move(mv);  // updates zobrist_hash
@@ -629,8 +637,8 @@ void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (
         ++i;
     }
 
-    if ((TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] != zobrint_hash) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] != 0)
-            and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] == NULLMOVE))
+    if ((TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash != zobrint_hash) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash)
+            and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move == NULLMOVE))
         std::cout << "[HASH COLLISION] ";
 
     for (i = moves.size() - 1; i >= 0; i--) {
@@ -807,6 +815,15 @@ int move_order_mvv_lva(const void* a, const void* b)
 }
 
 
+inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, bool is_quies)
+{
+    // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
+    // TODO: calculate expected number of collisions
+    //if ((depth <= 5) and not (best.move == NULLMOVE)) {
+    if (not (move == NULLMOVE) and (((depth <= 9) and (not is_quies)) or DEBUG))
+        TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = {zobrint_hash, move, value, tte_flag, depth};
+}
+
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
 ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
@@ -840,6 +857,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             alpha = best.value;
     }
 
+    num alpha_orig = alpha;
     Move mv = {0};
     PiecePlusCatling ppc;
     GenMoves gl = {0};
@@ -851,8 +869,8 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     num try_killer_move = -1;
     num alpha_raised_n_times = 0;
-    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] == zobrint_hash);
-    Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
+    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash == zobrint_hash);
+    Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move;
 
     // per-move variables
     bool do_extend = false;
@@ -972,16 +990,12 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
                 -(alpha+1), -alpha,
                 adaptive_new, is_quies, depth + 1, lines, lines_accurate
             );
-            rec.value *= -1;
-
-            if (rec.value > alpha)  // costly re-search if above search fails
+            if ((-rec.value) > alpha)  // costly re-search if above search fails
                 rec = negamax(
                     COLOR == WHITE ? BLACK : WHITE,
                     -beta, -alpha,
                     adaptive_new, is_quies, depth + 1, lines, lines_accurate
                 );
-
-            rec.value *= -1;
         }
 
         rec.value *= -1;
@@ -1015,7 +1029,12 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
                     KILLER_TABLE[depth][0] = mv;
                 }
 
-                do_not_store_in_killer_table: break;
+                do_not_store_in_killer_table:
+
+                // TODO: okay to give back exact higher value here? should only happen in case of checkmate right?
+                store_hash_entry(best.move, beta, tte_beta, depth, is_quies);  // true value is >= beta
+                free_GenMoves(gl);
+                return best;
             }
             if (best.value > alpha) {  // alpha-raising (new low bound)
                 alpha = best.value;
@@ -1052,16 +1071,13 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     if (is_quies and !legal_moves_found)  // "no captures" in quiescence search
         return best;
 
-    // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
-    // TODO: calculate expected number of collisions
-    //if ((depth <= 5) and not (best.move == NULLMOVE)) {
-    if (not (best.move == NULLMOVE) and (((depth <= 9) and (not is_quies)) or DEBUG)) {
-        TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = best.move;
-        TRANSPOS_TABLE_ZOB[zobrint_hash & ZOB_MASK] = zobrint_hash;  // verify we got the right one
-    }
-
     if (is_quies)
         best.value = alpha;
+
+    if (alpha != alpha_orig)
+        store_hash_entry(best.move, best.value, tte_exact, depth, is_quies);  // exact value
+    else
+        store_hash_entry(best.move, alpha, tte_alpha, depth, is_quies);  // true value is <= alpha
 
     return best;
 }

@@ -809,7 +809,7 @@ int move_order_mvv_lva(const void* a, const void* b)
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
+ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quies, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
 {
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
@@ -821,31 +821,23 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     if (is_quies) {
         // TODO: limit quiescence search depth somehow
         if (NO_QUIES)
-            return {board_eval, {0}};
+            return {COLOR == WHITE ? board_eval : -board_eval, {0}};
     }
     else
         // Main search is done, do quiescence search at the leaf nodes
         if (adaptive <= 0)
-            return alphabeta(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
+            return negamax(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
 
-    ValuePlusMove best = {COLOR == WHITE ? -inf : inf, {0}};
+    ValuePlusMove best = {-inf, {0}};
     if (is_quies) {
         // "standing pat": to compensate for not considering non-capture moves, at least one move should be
         //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
-        best = {board_eval, {0}};
+        best = {COLOR == WHITE ? board_eval : -board_eval, {0}};
 
-        if (COLOR == WHITE) {
-            if (best.value >= beta)
-                return {beta, {0}};
-            if (alpha < best.value)
-                alpha = best.value;
-        }
-        if (COLOR == BLACK) {
-            if (best.value <= alpha)
-                return {alpha, {0}};
-            if (beta > best.value)
-                beta = best.value;
-        }
+        if (best.value >= beta)
+            return {beta, {0}};
+        if (alpha < best.value)
+            alpha = best.value;
     }
 
     Move mv = {0};
@@ -932,9 +924,9 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
         // Delta pruning -- do not make_move for captures that can never raise alpha
         if (is_quies) {
-            num eval_max_improve = board_eval + (COLOR == WHITE ? 1 : -1) * (PIECEVALS[board[mv.to] & COLORBLIND] + 200);
+            num eval_max_improve = (COLOR == WHITE ? 1 : -1) * board_eval + (PIECEVALS[board[mv.to] & COLORBLIND] + 200);
 
-            if ((COLOR == WHITE ? eval_max_improve < alpha : eval_max_improve > beta) and not mv.prom)
+            if (eval_max_improve < alpha and not mv.prom)  // TODO: also check != 'c' and != 'e'
                 goto continue_proper;
         }
 
@@ -966,33 +958,35 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
         // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
         if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or not (pv_in_hash_table and (alpha_raised_n_times == 1)))
             // Normal alpha-beta search
-            rec = alphabeta(
+            rec = negamax(
                 COLOR == WHITE ? BLACK : WHITE,
-                alpha,
-                beta,
+                -beta, -alpha,
                 adaptive_new, is_quies, depth + 1, lines, lines_accurate
             );
         else {
             // https://www.chessprogramming.org/Principal_Variation_Search
             // Idea of PV: assume hash move will already be best move, so use null window to aggressively prune other moves
             // Should be active when (alpha_raised_n_times == 1) (PV move raised alpha and no move beat PV move yet)
-            rec = alphabeta(  // try a null-window search that saves time if everything is below alpha
+            rec = negamax(  // try a null-window search that saves time if everything is below alpha
                 COLOR == WHITE ? BLACK : WHITE,
-                COLOR == WHITE ? alpha : (beta - 1),
-                COLOR == WHITE ? (alpha + 1) : beta,
+                -(alpha+1), -alpha,
                 adaptive_new, is_quies, depth + 1, lines, lines_accurate
             );
+            rec.value *= -1;
 
-            if (COLOR == WHITE ? rec.value > alpha : rec.value < beta)  // costly re-search if above search fails
-                rec = alphabeta(
+            if (rec.value > alpha)  // costly re-search if above search fails
+                rec = negamax(
                     COLOR == WHITE ? BLACK : WHITE,
-                    alpha,
-                    beta,
+                    -beta, -alpha,
                     adaptive_new, is_quies, depth + 1, lines, lines_accurate
                 );
+
+            rec.value *= -1;
         }
 
-        if (COLOR == WHITE ? rec.value > best.value : rec.value < best.value)
+        rec.value *= -1;
+
+        if (rec.value > best.value)
             best = {rec.value, mv};
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
@@ -1007,16 +1001,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             printf_move_eval(mv_printable, accurate);
         }
 
-        if (not is_quies and not (lines_accurate and depth == 0)) {  // alpha-raising and alpha-beta-cutoffs
-            if (COLOR == WHITE and best.value > alpha) {  // lo bound
-                alpha = best.value;
-                alpha_raised_n_times++;
-            }
-            if (COLOR == BLACK and best.value < beta) {  // hi bound
-                beta = best.value;
-                alpha_raised_n_times++;
-            }
-            if (beta <= alpha) {  // alpha-beta cutoff
+        if (not is_quies and not (lines_accurate and depth == 0)) {
+            if (best.value >= beta) {  // alpha-beta cutoff
                 if (not ppc.hit_piece and mv.prom != 'e') {  // store non-captures producing cutoffs as killer moves
                     for (num i = 0; i < MAX_KILLER_MOVES; i++)
                         if (KILLER_TABLE[depth][i] == mv)
@@ -1031,11 +1017,15 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
 
                 do_not_store_in_killer_table: break;
             }
+            if (best.value > alpha) {  // alpha-raising (new low bound)
+                alpha = best.value;
+                alpha_raised_n_times++;
+            }
         }
 
         // TODO: combine both cases
         // quiescence cutoff
-        if (is_quies and COLOR == WHITE) {
+        if (is_quies) {
             if (best.value >= beta) {
                 best.value = beta;
                 free_GenMoves(gl);
@@ -1043,15 +1033,6 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
             }
             if (best.value > alpha)
                 alpha = best.value;
-        }
-        if (is_quies and COLOR == BLACK) {
-            if (best.value <= alpha) {
-                best.value = alpha;
-                free_GenMoves(gl);
-                return best;
-            }
-            if (best.value < beta)
-                beta = best.value;
         }
 
         continue_proper:
@@ -1064,8 +1045,8 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     // TODO: stalemate/checkmate detection here or in evaluation? adjust to depth
     if (!is_quies and !legal_moves_found) {  // "no legal moves" during normal search
         if (not king_in_check(COLOR))
-            return {0, {0}};  // stalemate
-        return {(COLOR == WHITE ? 1 : -1) * (-inf+2000+100*depth), {0}};  // checkmate
+            return {0, {0}};  // COLOR is stalemated
+        return {-inf + 2000 + 100*depth, {0}};  // COLOR is checkmated
     }
 
     if (is_quies and !legal_moves_found)  // "no captures" in quiescence search
@@ -1080,7 +1061,7 @@ ValuePlusMove alphabeta(num COLOR, num alpha, num beta, num adaptive, bool is_qu
     }
 
     if (is_quies)
-        best.value = COLOR == WHITE ? alpha : beta;
+        best.value = alpha;
 
     return best;
 }
@@ -1127,7 +1108,7 @@ std::string calc_move(bool lines = false)
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = alphabeta(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, 0, (DEBUG >= 2), (DEBUG >= 2));
+        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, 0, (DEBUG >= 2), (DEBUG >= 2));
 
         printf_move(best_at_depth.move);
         printf_move_eval(best_at_depth, true);

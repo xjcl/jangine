@@ -815,13 +815,13 @@ int move_order_mvv_lva(const void* a, const void* b)
 }
 
 
-inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, bool is_quies)
+inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, num depth_left, bool is_quies)
 {
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
     // TODO: calculate expected number of collisions
     //if ((depth <= 5) and not (best.move == NULLMOVE)) {
     if (not (move == NULLMOVE) and (((depth <= 9) and (not is_quies)) or DEBUG))
-        TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = {zobrint_hash, move, value, tte_flag, depth};
+        TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = {zobrint_hash, move, value, tte_flag, depth_left};
 }
 
 // non-negamax quiescent alpha-beta minimax search
@@ -840,10 +840,23 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
         if (NO_QUIES)
             return {COLOR == WHITE ? board_eval : -board_eval, {0}};
     }
-    else
+    else {
+        // TODO: allow only at depth >= 1 to prevent three-folding?
+        TTEntry tte = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
+        if (tte.zobrint_hash == zobrint_hash)
+            if (tte.depth >= adaptive) {
+                if (tte.tte_flag == tte_exact)
+                    return {tte.value, tte.move};
+                if (tte.tte_flag == tte_alpha and tte.value <= alpha)  // TODO: handle mate scores
+                    return {alpha, tte.move};
+                if (tte.tte_flag == tte_beta and tte.value >= beta)
+                    return {beta, tte.move};
+            }
+
         // Main search is done, do quiescence search at the leaf nodes
         if (adaptive <= 0)
             return negamax(COLOR, alpha, beta, adaptive, true, depth, lines, lines_accurate);
+    }
 
     ValuePlusMove best = {-inf, {0}};
     if (is_quies) {
@@ -1032,7 +1045,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
                 do_not_store_in_killer_table:
 
                 // TODO: okay to give back exact higher value here? should only happen in case of checkmate right?
-                store_hash_entry(best.move, beta, tte_beta, depth, is_quies);  // true value is >= beta
+                store_hash_entry(best.move, beta, tte_beta, depth, adaptive, is_quies);  // true value is >= beta
                 free_GenMoves(gl);
                 return best;
             }
@@ -1074,10 +1087,10 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     if (is_quies)
         best.value = alpha;
 
-    if (alpha != alpha_orig)
-        store_hash_entry(best.move, best.value, tte_exact, depth, is_quies);  // exact value
+    if (alpha > alpha_orig)
+        store_hash_entry(best.move, best.value, tte_exact, depth, adaptive, is_quies);  // exact value
     else
-        store_hash_entry(best.move, alpha, tte_alpha, depth, is_quies);  // true value is <= alpha
+        store_hash_entry(best.move, alpha, tte_alpha, depth, adaptive, is_quies);  // true value is <= alpha
 
     return best;
 }

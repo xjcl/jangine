@@ -840,7 +840,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
         if (NO_QUIES)
             return {COLOR == WHITE ? board_eval : -board_eval, {0}};
     }
-    else {
+    else if (depth > 0) {
         // TODO: allow only at depth >= 1 to prevent three-folding?
         TTEntry tte = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         if (tte.zobrint_hash == zobrint_hash)

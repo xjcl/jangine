@@ -1,7 +1,12 @@
 # jangine -- Jan's C++ chess engine
 
 Chess engine I wrote in 2022 (some parts in 2015)
-- Algorithms used:
+- Algorithms used: 
+    - **Board representation** is using 10x12 boards. This is similar to 8x8 boards but only needs a single
+        index, instead relying on sentinel values for efficient out-of-bounds detection. This leads to a
+        clear programming model but low speed compared to the more advanced technique of bitboards which
+        I haven't had time to research yet.
+
     - **Evaluation** is very simple. It is based entirely on (material counting) and piece-square tables,
         meaning each piece type gets a value based on the square it is on and the game phase (middlegame/endgame).
         The square values were obtained from looking at other engines and using my intuition and testing.
@@ -14,8 +19,7 @@ Chess engine I wrote in 2022 (some parts in 2015)
         1. Hash move
         2. Captures in MVV-LVA order
         3. Killer moves (killer heuristic)
-        4. Other quiet promotions
-        5. Other quiet moves
+        4. Other quiet moves (incl. promotions)
 
     - No principal variation search (did not speed program up), no null move pruning, 
         no late move reductions (risky!), no futility pruning (check cannot be detected efficiently),
@@ -26,11 +30,13 @@ Chess engine I wrote in 2022 (some parts in 2015)
  
 - Strength (Ryzen 3600X single-core):
     - [33d1b644 2022-06-20] Was able to beat my NM friend 6-0 in Blitz (3+0) and 37½-2½ (35W 3D 1L) in Bullet (1+0)
-    - Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but here are estimates based on Lichess:
+    - Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but here are estimates based on online
+        matches played on Lichess:
     ```
-    - [e2108b47 2022-07-01] 30 -78  (28  %) vs Honzovy Šachy 2.0 (2061) (implied CCRL 1900)   PREDICT: 43%
-    - [8f7c031a 2022-07-03] 25½-74½ (25.5%) vs Fornax (2296)            (implied CCRL 2010)
-    - [8f7c031a 2022-07-03] 91 - 9  (91  %) vs zeekat (?)               (implied rating zeekat+400)
+    - [8a78bead 2022-07-11] 41 - 59  (41  %) vs Honzovy Šachy 2.0 (2060) (implied CCRL 1995)
+    - [a6ef6d49 2022-07-06] 70 -130  (35  %) vs Honzovy Šachy 2.0 (2060) (implied CCRL 1950)
+    - [8f7c031a 2022-07-03] 25½- 74½ (25.5%) vs Fornax (2296)            (implied CCRL 2010)
+    - [8f7c031a 2022-07-03] 91 -  9  (91  %) vs zeekat (?)               (implied rating zeekat+400)
     ```
 
 - Time management:

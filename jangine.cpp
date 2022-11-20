@@ -1379,13 +1379,25 @@ int main(int argc, char const *argv[])
         }
         /*** UCI END ***/
 
+        /*** XBOARD ***/
+        if (startswith("setboard", line)) {
+            std::string fen = line_cpp.substr(9);
+            board_from_fen(fen.c_str());
+        }
+        /*** XBOARD END ***/
+
         if (strcmp(line, "force\n") == 0 or startswith("result", line)) {
             started = false;
         }
 
         if (strcmp(line, "white\n") == 0) {
             IM_WHITE = true;
-            board_initial_position();
+            num_moves = 0;
+        }
+
+        if (strcmp(line, "black\n") == 0) {
+            IM_WHITE = false;
+            num_moves = 1;
         }
 
         if (strcmp(line, "new\n") == 0) {
@@ -1395,26 +1407,19 @@ int main(int argc, char const *argv[])
         }
 
         // TODO: "protover 2" -> reset board
-        // engine not started -> make moves anyway
-        if (input_is_move(line) and not started) {
-            pprint();
-            printf("unstarted bs\n");
-            pprint();
-            make_move_str(line);
-            num_moves++;
-            pprint();
-        }
 
-        if (input_is_move(line) and started) {
+        if (input_is_move(line)) {
             pprint();
-            IM_WHITE = (num_moves + 1) % 2;
             make_move_str(line);
             num_moves++;
-            pprint();
-            std::string mv = calc_move(true);
-            num_moves++;
-            pprint();
-            printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
+            if (started) {
+                pprint();
+                IM_WHITE = (num_moves + 1) % 2;
+                std::string mv = calc_move(true);
+                num_moves++;
+                pprint();
+                printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
+            }
         }
 
         if (startswith("go", line)) {

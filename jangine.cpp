@@ -367,6 +367,7 @@ void board_from_fen(const char* fen) {  // setting up a game
     num i = 2;
     num j = 1;
 
+    // board
     while (*c != ' ') {
         if (*c == '/') { i++; j = 0; }
         if (*c == '1')  j += 0;
@@ -387,17 +388,34 @@ void board_from_fen(const char* fen) {  // setting up a game
         if (*c == 'r')  board[10*i+j] = BLACK + ROOK;
         if (*c == 'Q')  board[10*i+j] = WHITE + QUEEN;
         if (*c == 'q')  board[10*i+j] = BLACK + QUEEN;
-        if (*c == 'K')  board[10*i+j] = WHITE + KING;
-        if (*c == 'k')  board[10*i+j] = BLACK + KING;
+        if (*c == 'K') {
+            board[10*i+j] = WHITE + KING;
+            KINGPOS_WHITE = 10*i+j;
+        }
+        if (*c == 'k') {
+            board[10*i+j] = BLACK + KING;
+            KINGPOS_BLACK = 10*i+j;
+        }
         j++;
-        *c++;
+        c++;
     }
 
-    *c++;
-    IM_WHITE = (*c == 'w');
+    // side to move
+    c++;
+    IM_WHITE = (*c == 'w');  // TODO: have to set num_moves for a lasting effect...
+    c++;
 
-    // ignore castling for now
-    // ignore en passant and halfmove/fullmove clocks for now
+    // castling => board_clear() sets it all to false
+    c++;
+    while (*c != ' ') {
+        if (*c == 'Q')  CASTLINGWHITE.lc = true;
+        if (*c == 'K')  CASTLINGWHITE.rc = true;
+        if (*c == 'q')  CASTLINGBLACK.lc = true;
+        if (*c == 'k')  CASTLINGBLACK.rc = true;
+        c++;
+    }
+
+    // TODO ignore en passant and halfmove/fullmove clocks for now
     zobrint_hash = board_to_zobrint_hash();
 }
 
@@ -1305,6 +1323,73 @@ void test()
     std::exit(0);
 }
 
+uint64_t perft(num depth_left, num COLOR)
+{
+    if (depth_left == 0)
+        return 1;
+
+    uint64_t nodes = 0;
+    GenMoves gl = gen_moves_maybe_legal(COLOR, true, true);
+    Move* cur = gl.quiets;
+
+    while (cur != gl.captures_end) {
+        while (cur != gl.quiets_end && cur != gl.captures_end)
+        {
+            Move mv = *cur;
+            PiecePlusCatling ppc = make_move(mv);
+            LASTMOVE = mv;
+
+            if (!king_in_check(COLOR))
+                nodes += perft(depth_left - 1, COLOR == WHITE ? BLACK : WHITE);
+
+            unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+            cur++;
+        }
+
+        if (cur == gl.quiets_end)
+            cur = gl.captures;
+    }
+
+    free_GenMoves(gl);
+
+    return nodes;
+}
+
+
+// Verify number of legal moves: https://www.chessprogramming.org/Perft_Results
+void test_perft()
+{
+    const char* fens[6] = {
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",  // initial position
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
+        "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -",
+        "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
+        "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
+        "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+    };
+    // expected number of leaf nodes at depth $index
+    const uint64_t nodes[6][6] = {
+        {1, 20,  400,  8902,  197281,   4865609},
+        {1, 48, 2039, 97862, 4085603, 193690690},
+        {1, 14,  191,  2812,   43238,    674624},
+        {1,  6,  264,  9467,  422333,  15833292},
+        {1, 44, 1486, 62379, 2103487,  89941194},
+        {1, 46, 2079, 89890, 3894594, 164075551},
+    };
+
+    for (num i = 0; i < 6; i++)
+    {
+        board_from_fen(fens[i]);
+        std::cout << "Perft Position " << (i + 1) << std::endl;
+        for (num d = 0; d < 6; d++) {
+            uint64_t p = perft(d, IM_WHITE ? WHITE : BLACK);
+            std::cout << (p == nodes[i][d] ? "OK" : "-- WRONG -->") << " " << d << " " << p << std::endl;
+        }
+    }
+
+    std::exit(0);
+}
+
 
 int main(int argc, char const *argv[])
 {
@@ -1313,6 +1398,9 @@ int main(int argc, char const *argv[])
 
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
+
+    if (argc >= 2 and strcmp(argv[1], "-p") == 0)
+        test_perft();
 
     std::string line_cpp;
     int num_moves = 0;
@@ -1371,7 +1459,7 @@ int main(int argc, char const *argv[])
                 tokens.push_back(buf);
 
             board_initial_position();
-            for (int i = 3; i < tokens.size(); ++i) {
+            for (size_t i = 3; i < tokens.size(); ++i) {
                 make_move_str(tokens[i].c_str());
                 num_moves++;
             }

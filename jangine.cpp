@@ -401,6 +401,7 @@ void board_from_fen(const char* fen) {  // setting up a game
     }
 
     // side to move
+    // if you are a real C pro, replace this block with  (*((++c)++) == 'w')  ;)
     c++;
     IM_WHITE = (*c == 'w');  // TODO: have to set num_moves for a lasting effect...
     c++;
@@ -415,7 +416,20 @@ void board_from_fen(const char* fen) {  // setting up a game
         c++;
     }
 
-    // TODO ignore en passant and halfmove/fullmove clocks for now
+    // en passant target square
+    c++;
+    if (*c != '-') {
+        num j = (*c - 'a') + 1;
+        c++;
+        num i = ('8' - *c) + 2;
+        bool was_white = !!(board[10*(i-1)+j] & WHITE);
+        Move mv = {was_white ? 10*(i+1)+j : 10*(i-1)+j, was_white ? 10*(i-1)+j : 10*(i+1)+j};
+        LASTMOVE_GAME = mv;
+    } else {
+        LASTMOVE_GAME = {0};
+    }
+
+    // TODO ignore halfmove/fullmove clocks for now since no global move variable yet
     zobrint_hash = board_to_zobrint_hash();
 }
 
@@ -1359,29 +1373,32 @@ uint64_t perft(num depth_left, num COLOR)
 // Verify number of legal moves: https://www.chessprogramming.org/Perft_Results
 void test_perft()
 {
-    const char* fens[6] = {
+    const char* fens[7] = {
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",  // initial position
         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
         "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -",
         "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
         "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
         "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+        "rnbqkbnr/p1p1pppp/1p6/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",  // own idea: test LASTMOVE
     };
     // expected number of leaf nodes at depth $index
-    const uint64_t nodes[6][6] = {
+    const uint64_t nodes[7][6] = {
         {1, 20,  400,  8902,  197281,   4865609},
         {1, 48, 2039, 97862, 4085603, 193690690},
         {1, 14,  191,  2812,   43238,    674624},
         {1,  6,  264,  9467,  422333,  15833292},
         {1, 44, 1486, 62379, 2103487,  89941194},
         {1, 46, 2079, 89890, 3894594, 164075551},
+        {1, 31,  836, 25874,  689955,  22041575},
     };
 
-    for (num i = 0; i < 6; i++)
+    for (num i = 0; i < 7; i++)
     {
         board_from_fen(fens[i]);
         std::cout << "Perft Position " << (i + 1) << std::endl;
         for (num d = 0; d < 6; d++) {
+            LASTMOVE = LASTMOVE_GAME;
             uint64_t p = perft(d, IM_WHITE ? WHITE : BLACK);
             std::cout << (p == nodes[i][d] ? "OK" : "-- WRONG -->") << " " << d << " " << p << std::endl;
         }

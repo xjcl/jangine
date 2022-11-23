@@ -436,7 +436,7 @@ void board_from_fen(const char* fen) {  // setting up a game
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
 num MAX_SEARCH_DEPTH = 99999;
-num OWN_CLOCK_REMAINING = 18000;
+num OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
 
 typedef struct GenMoves {
     Move* captures;
@@ -1180,7 +1180,7 @@ std::string calc_move(bool lines = false)
             break;
         }
 
-        double time_expired = 100.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+        double time_expired = 1000.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;  // millis
         if (time_expired * 5 > OWN_TIME_TO_USE_MAX) {  // assume next depth takes 5 times as long
             printf("Used up time budget of %7ldcs allocated to finding this move\n", OWN_TIME_TO_USE_MAX);
             break;
@@ -1408,6 +1408,19 @@ void test_perft()
 }
 
 
+std::vector<std::string> split_string(std::string line_cpp)
+{
+    std::string buf;
+    std::stringstream ss(line_cpp);
+    std::vector<std::string> tokens;
+
+    while (ss >> buf)
+        tokens.push_back(buf);
+
+    return tokens;
+}
+
+
 int main(int argc, char const *argv[])
 {
     setbuf(stdout, NULL);
@@ -1446,8 +1459,8 @@ int main(int argc, char const *argv[])
             MODE_UCI = false;
         }
         if (startswith("time", line)) {
-            int time_left = std::stoi(line_cpp.substr(5));
-            OWN_CLOCK_REMAINING = time_left;  // time left in centiseconds
+            // time left is given as centiseconds (1/100) but we store it as milliseconds (1/1000)
+            OWN_CLOCK_REMAINING = 10 * std::stoi(line_cpp.substr(5));
         }
 
         /*** UCI ***/
@@ -1467,14 +1480,9 @@ int main(int argc, char const *argv[])
         }
 
         if (startswith("position startpos moves", line)) {
-            std::string buf;
-            std::stringstream ss(line_cpp);
-            std::vector<std::string> tokens;
+            std::vector<std::string> tokens = split_string(line_cpp);
+
             num_moves = 0;
-
-            while (ss >> buf)
-                tokens.push_back(buf);
-
             board_initial_position();
             for (size_t i = 3; i < tokens.size(); ++i) {
                 make_move_str(tokens[i].c_str());
@@ -1529,6 +1537,12 @@ int main(int argc, char const *argv[])
 
         if (startswith("go", line)) {
             IM_WHITE = (num_moves + 1) % 2;
+
+            std::vector<std::string> tokens = split_string(line_cpp);
+            for (size_t i = 0; i < tokens.size(); ++i)
+                if ((IM_WHITE && strcmp(tokens[i].c_str(), "wtime") == 0) || (!IM_WHITE && strcmp(tokens[i].c_str(), "btime") == 0))
+                    OWN_CLOCK_REMAINING = std::stoi(tokens[i+1]);  // time left in MILLISECONDS
+
             started = true;
             std::string mv = calc_move(true);
             num_moves++;

@@ -191,7 +191,7 @@ int8_t tte_exact = 0; int8_t tte_alpha = 1; int8_t tte_beta = 2;
 typedef struct TTEntry {
     int64_t zobrint_hash;
     Move move;  // either the best move found if an exact node, or a node good enough to cause a cutoff
-    num value;
+    int16_t value;
     int8_t tte_flag;  // best, alpha, or beta value
     int8_t depth;
 } TTEntry;
@@ -203,7 +203,7 @@ Move NULLMOVE = {0};
 Move LASTMOVE = {0};
 Move LASTMOVE_GAME = {0};
 
-TTEntry TRANSPOS_TABLE[16777216] = {0};  // 4+3+4+1+1 = 13 bits -> 13 * 2**24 bytes = 208 MiB
+TTEntry TRANSPOS_TABLE[16777216] = {0};  // 4+3+2+1+1 = 11 bits -> 11 * 2**24 bytes = 176 MiB
 #define ZOB_MASK 0xffffff
 
 num PIECEDIRS[65][9] = {0};

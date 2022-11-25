@@ -867,7 +867,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     NODES_QUIES += is_quies;
 
     // treat all repeated positions as an instant draw to avoid repetitions when winning and encourage when losing
-    if ((depth == 1 or depth == 2) and board_positions_seen.count(zobrint_hash))
+    if ((depth >= 1) and board_positions_seen.count(zobrint_hash))
         return {0, {0}};
 
     if (is_quies) {

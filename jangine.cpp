@@ -271,6 +271,7 @@ num KINGPOS_WHITE = 95;
 num KINGPOS_BLACK = 25;
 
 int64_t zobrint_random_table[257][120] = {0};
+// TODO: handle as TTEntry flag instead?
 std::set<int64_t> board_positions_seen;
 int64_t zobrint_hash = 0;
 
@@ -344,6 +345,7 @@ void board_initial_position() {  // setting up a game
     CASTLINGBLACK = {true, true};
     board_eval = 0;
 
+    IM_WHITE = true;
     zobrint_hash = board_to_zobrint_hash();
     board_positions_seen.clear();
     board_positions_seen.insert(zobrint_hash);
@@ -431,6 +433,7 @@ void board_from_fen(const char* fen) {  // setting up a game
 
     // TODO ignore halfmove/fullmove clocks for now since no global move variable yet
     zobrint_hash = board_to_zobrint_hash();
+    board_positions_seen.insert(zobrint_hash);
 }
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
@@ -615,8 +618,8 @@ inline void unmake_move(Move mv, num hit_piece, CASTLINGRIGHTS c_rights_w, CASTL
     zobrint_hash ^= zobrint_random_table[1][0];  // switch side to move
 }
 
-void make_move_str(const char* mv) {
-
+void make_move_str(const char* mv)
+{
     num a = 8 - (mv[1] - '0');
     num b = (num)(mv[0] - 'a');
     num c = 8 - (mv[3] - '0');
@@ -634,7 +637,7 @@ void make_move_str(const char* mv) {
     make_move(to_mv);
     LASTMOVE_GAME = to_mv;  // copies the struct
 
-    board_positions_seen.insert(board_to_zobrint_hash());
+    board_positions_seen.insert(zobrint_hash);
 }
 
 void printf_move(Move mv) {
@@ -1189,6 +1192,7 @@ std::string calc_move(bool lines = false)
     printf("|End|ing iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
 
     make_move(mv);
+    board_positions_seen.insert(zobrint_hash);
 
     return move_to_str(mv);
 }

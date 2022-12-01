@@ -438,8 +438,8 @@ void board_from_fen(const char* fen) {  // setting up a game
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
-num MAX_SEARCH_DEPTH = 99999;
-num OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
+num MAX_SEARCH_DEPTH = 9999;
+uint64_t OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
 
 typedef struct GenMoves {
     Move* captures;
@@ -1163,7 +1163,7 @@ std::string calc_move(bool lines = false)
     board_eval = initial_eval();
     zobrint_hash = board_to_zobrint_hash();
     num my_color = IM_WHITE ? WHITE : BLACK;
-    num OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
+    uint64_t OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
     Move mv = {0};
 
     printf("Starting iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);

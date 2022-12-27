@@ -75,6 +75,12 @@ Build:
 
     g++ -Ofast jangine.cpp -o jangine
 
+Build on Linux for Windows:
+
+    sudo apt install mingw-w64
+    x86_64-w64-mingw32-g++ -Wall -c -g -Ofast jangine.cpp -o jangine.o
+    x86_64-w64-mingw32-g++ -static -static-libgcc -static-libstdc++ -o jangine.exe jangine.o
+
 Run the included test suites:
 
     # Validate move generation using move path enumeration ("perft")
@@ -90,3 +96,15 @@ Run as an interactive (stdin/stdout) UCI engine:
 
 To host bot for lichess, clone the lichess-bot project https://github.com/ShailChoksi/lichess-bot and place the
 engine binary in the `engines/` folder.
+
+
+## Versions
+
+| Version    | vs previous | est. CCRL | <improve | CCRL |
+|------------|-------------|-----------|----------|------|
+| 2022-12-01 | -           | 1900      | -        | -    |
+| 2022-12-27 | 342.0/500   | 2033      | +133     | -    |
+
+CCRL rating estimated by self-play against other versions of Jangine:
+
+    1 / (1 + 10^((ratingA - ratingB)/400))  =  scorePercentage

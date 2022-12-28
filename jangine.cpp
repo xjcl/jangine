@@ -27,7 +27,7 @@ typedef int_fast16_t num;
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
 #define MAX_KILLER_MOVES 1
-#define NO_PRINCIPAL_VARIATION_SEARCH 1 // seems to actually be slower since my leaf eval is so cheap
+#define NO_PRINCIPAL_VARIATION_SEARCH 0 // seems to actually be slower since my leaf eval is so cheap
 
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
@@ -892,8 +892,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
         if (NO_QUIES)
             return {COLOR == WHITE ? board_eval : -board_eval, {0}};
     }
-    else if (depth > 0) {
-        // TODO: allow only at depth >= 1 to prevent three-folding?
+    else if (depth >= 1) {
         TTEntry tte = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         if (tte.zobrint_hash == zobrint_hash)
             if (tte.depth >= adaptive) {
@@ -926,8 +925,8 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     // TODO: Only one null move in entire search or just disallow 2 in a row?
     // TODO: set LASTMOVE?
     // Null Move Pruning
-    bool in_check = king_in_check(COLOR);  // maybe okay to do without as no duplicate moves possible and king will be captured instead
-    if (can_null_move && !in_check && depth >= 1 && adaptive >= 3)
+    // maybe okay to do without as no duplicate moves possible and king will be captured instead
+    if (can_null_move && depth >= 1 && adaptive >= 3 && !king_in_check(COLOR))
     {
         PiecePlusCatling ppc = make_null_move();
         ValuePlusMove rec = negamax(COLOR == WHITE ? BLACK : WHITE, -beta, -beta + 1, adaptive - 3, is_quies, false, depth + 1, lines, lines_accurate);
@@ -1053,8 +1052,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
         adaptive_new = adaptive - (1 - do_extend);
 
         // "Since there is not much to be gained in the last two plies of the normal search, one might disable PVS there"
-        // No sense in searching beyond depth 5 anyway because we only record depth <= 5 in transpos table
-        if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or not (pv_in_hash_table and (alpha_raised_n_times == 1)))
+        if (NO_PRINCIPAL_VARIATION_SEARCH or (depth > 5) or not (pv_in_hash_table and (alpha_raised_n_times >= 1)))
             // Normal alpha-beta search
             rec = negamax(
                 COLOR == WHITE ? BLACK : WHITE,
@@ -1065,6 +1063,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             // https://www.chessprogramming.org/Principal_Variation_Search
             // Idea of PV: assume hash move will already be best move, so use null window to aggressively prune other moves
             // Should be active when (alpha_raised_n_times == 1) (PV move raised alpha and no move beat PV move yet)
+            // Why does ">= 1" also work (and even produce better results)?
             rec = negamax(  // try a null-window search that saves time if everything is below alpha
                 COLOR == WHITE ? BLACK : WHITE,
                 -(alpha+1), -alpha,
@@ -1177,7 +1176,6 @@ std::string calc_move(bool lines = false)
             KILLER_TABLE[i][j] = KILLER_TABLE[i+2][j];
     // Since game positions are correlated and the TABLE_ZOB is checked we actually go faster if we do not clear this
     //memset(TRANSPOS_TABLE, 0, sizeof TRANSPOS_TABLE);
-    //memset(TRANSPOS_TABLE_ZOB, 0, sizeof TRANSPOS_TABLE_ZOB);
 
     num game_phase = 0;   // game phase based on pieces traded. initial pos: 24, rook endgame: 8
     for (num i = 0; i < 120; ++i) {

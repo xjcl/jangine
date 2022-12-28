@@ -24,7 +24,7 @@ lines = [line for line in open("win_at_chess.epd").read().split("\n") if line]
 solved = [False] * len(lines)
 
 
-for time in [10 * 16**i for i in range(20)]:
+for time in [10 * 2**i for i in range(20)]:
     score = 0
 
     print(f"{time:6d} ", end="")

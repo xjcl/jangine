@@ -23,6 +23,7 @@ _Logo of Jangine, created by DALL-E_
   - Transposition table of constant size 176 MiB for storing information about searched positions.
   - Iterative deepening is used so that the best move from depth-n-search can be stored as hash move in the hash table
     and tried first during depth-(n+1)-search.
+  - Null move pruning, delta pruning
   - Depth extensions for
       1. checks
       2. pawn reaching seventh rank
@@ -32,9 +33,9 @@ _Logo of Jangine, created by DALL-E_
       3. Killer moves (killer heuristic)
       4. Other quiet moves (incl. promotions) in no particular order
 
-- For now: No principal variation search (did not speed program up), no null move pruning,
+- For now: No principal variation search (did not speed program up),
     no late move reductions (risky!), no futility pruning (I cannot detect checks efficiently),
-    no delta pruning, no static exchange evaluation.
+    no static exchange evaluation.
 
 - **Opening/endgame optimizations**:
   - No opening or endgame database is built-in, and should be provided externally.

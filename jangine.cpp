@@ -878,7 +878,7 @@ inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, n
 
 // non-negamax quiescent alpha-beta minimax search
 // https://www.chessprogramming.org/Quiescence_Search
-ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quies, bool can_null_move, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
+ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quies, bool can_null_move, bool in_check, num depth, bool lines, bool lines_accurate)  // 22% of time spent here
 {
     NODES_NORMAL += !is_quies;
     NODES_QUIES += is_quies;
@@ -906,7 +906,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
         // Main search is done, do quiescence search at the leaf nodes
         if (adaptive <= 0)
-            return negamax(COLOR, alpha, beta, adaptive, true, false, depth, lines, lines_accurate);
+            return negamax(COLOR, alpha, beta, adaptive, true, false, false, depth, lines, lines_accurate);
     }
 
     ValuePlusMove best = {-inf, {0}};
@@ -926,10 +926,10 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     // TODO: set LASTMOVE?
     // Null Move Pruning
     // maybe okay to do without as no duplicate moves possible and king will be captured instead
-    if (can_null_move && depth >= 1 && adaptive >= 3 && !king_in_check(COLOR))
+    if (can_null_move && depth >= 1 && adaptive >= 3 && !in_check)
     {
         PiecePlusCatling ppc = make_null_move();
-        ValuePlusMove rec = negamax(COLOR == WHITE ? BLACK : WHITE, -beta, -beta + 1, adaptive - 3, is_quies, false, depth + 1, lines, lines_accurate);
+        ValuePlusMove rec = negamax(COLOR == WHITE ? BLACK : WHITE, -beta, -beta + 1, adaptive - 3, is_quies, false, false, depth + 1, lines, lines_accurate);
         unmake_null_move(ppc.c_rights_w, ppc.c_rights_b);
 
         if (-rec.value >= beta)
@@ -953,6 +953,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     // per-move variables
     bool do_extend = false;
+    bool mv_delivers_check = false;
 
     // [1/3] try best move (hash/pv move) from previous search iterative deepening search first
     //  -> skip move generation if alpha-beta cutoff (3.6% fewer calls to genmoves, overall 1.4% speedup Sadge)
@@ -1044,9 +1045,9 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
         if (!is_quies) {  // "search extensions", i.e. searching checks or promoting pawns more deeply
             num OTHER_COLOR = COLOR == WHITE ? BLACK : WHITE;
-            bool ext_check = king_in_check(OTHER_COLOR);  // https://www.chessprogramming.org/Check_Extensions
+            mv_delivers_check = king_in_check(OTHER_COLOR);  // https://www.chessprogramming.org/Check_Extensions
             bool ext_seventh_rank_pawn = ((30 < mv.to and mv.to < 39) or (80 < mv.to and mv.to < 89)) and (board[mv.to] & PAWN);
-            do_extend = ext_check || ext_seventh_rank_pawn;
+            do_extend = mv_delivers_check || ext_seventh_rank_pawn;
         }
 
         adaptive_new = adaptive - (1 - do_extend);
@@ -1057,7 +1058,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             rec = negamax(
                 COLOR == WHITE ? BLACK : WHITE,
                 -beta, -alpha,
-                adaptive_new, is_quies, can_null_move, depth + 1, lines, lines_accurate
+                adaptive_new, is_quies, can_null_move, mv_delivers_check, depth + 1, lines, lines_accurate
             );
         else {
             // https://www.chessprogramming.org/Principal_Variation_Search
@@ -1067,13 +1068,13 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             rec = negamax(  // try a null-window search that saves time if everything is below alpha
                 COLOR == WHITE ? BLACK : WHITE,
                 -(alpha+1), -alpha,
-                adaptive_new, is_quies, can_null_move, depth + 1, lines, lines_accurate
+                adaptive_new, is_quies, can_null_move, mv_delivers_check, depth + 1, lines, lines_accurate
             );
             if ((-rec.value) > alpha)  // costly re-search if above search fails
                 rec = negamax(
                     COLOR == WHITE ? BLACK : WHITE,
                     -beta, -alpha,
-                    adaptive_new, is_quies, can_null_move, depth + 1, lines, lines_accurate
+                    adaptive_new, is_quies, can_null_move, mv_delivers_check, depth + 1, lines, lines_accurate
                 );
         }
 
@@ -1195,6 +1196,7 @@ std::string calc_move(bool lines = false)
     num my_color = IM_WHITE ? WHITE : BLACK;
     uint64_t OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
     Move mv = {0};
+    bool in_check = king_in_check(my_color);
 
     printf("Starting iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
     for (num search_depth = 1; search_depth <= MAX_SEARCH_DEPTH; search_depth++)
@@ -1202,7 +1204,7 @@ std::string calc_move(bool lines = false)
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, true, 0, (DEBUG >= 2), (DEBUG >= 2));
+        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, true, in_check, 0, (DEBUG >= 2), (DEBUG >= 2));
 
         printf_move(best_at_depth.move);
         printf_move_eval(best_at_depth, true);

@@ -921,16 +921,21 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             alpha = best.value;
     }
 
+    Move LASTMOVE_BAK = LASTMOVE;
+
     // TODO: when switching to bitboards, also check if a piece other than a pawn is still on the board
     // TODO: Only one null move in entire search or just disallow 2 in a row?
-    // TODO: set LASTMOVE?
     // Null Move Pruning
     // maybe okay to do without as no duplicate moves possible and king will be captured instead
     if (can_null_move && depth >= 1 && adaptive >= 3 && !king_in_check(COLOR))
     {
         PiecePlusCatling ppc = make_null_move();
+        LASTMOVE = {0};
+
         ValuePlusMove rec = negamax(COLOR == WHITE ? BLACK : WHITE, -beta, -beta + 1, adaptive - 3, is_quies, false, depth + 1, lines, lines_accurate);
+
         unmake_null_move(ppc.c_rights_w, ppc.c_rights_b);
+        LASTMOVE = LASTMOVE_BAK;
 
         if (-rec.value >= beta)
             return {beta, {0}};
@@ -944,7 +949,6 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     num adaptive_new = 0;
     num legal_moves_found = 0;
-    Move LASTMOVE_BAK = LASTMOVE;
 
     num try_killer_move = -1;
     num alpha_raised_n_times = 0;
@@ -1530,6 +1534,7 @@ int main(int argc, char const *argv[])
         if (startswith("setboard", line)) {
             std::string fen = line_cpp.substr(9);
             board_from_fen(fen.c_str());
+            pprint();
         }
         /*** XBOARD END ***/
 

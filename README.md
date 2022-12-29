@@ -101,11 +101,29 @@ engine binary in the `engines/` folder.
 
 ## Versions
 
-| Version    | vs previous | est. CCRL | <improve | CCRL |
-|------------|-------------|-----------|----------|------|
-| 2022-12-01 | -           | 1900      | -        | -    |
-| 2022-12-27 | 342.0/500   | 2033      | +133     | -    |
+| Version    | G1920             | est. CCRL | CCRL |
+|------------|-------------------|-----------|------|
+| 2022-12-01 | 273.5/495 (55.3%) | 1957      | -    |
+| 2022-12-27 | 379.5/495 (76.7%) | 2127      | -    |
+| 2022-12-29 | 394.0/495 (79.6%) | 2156      | -    |
 
-CCRL rating estimated by self-play against other versions of Jangine:
+G1920 is an 11-man gauntlet against the following opponents rated an average of 1920:
+- (1995) Gully-2.16pl1
+- (1965) Weasel-1.0.2-Beta
+- (1965) Sissa-64-2.0
+- (1962) ALChess_184_x64
+- (1954) Tinman-v0.4.0
+- (1927) Heracles 0.6.16
+- (1912) Matmoi-7.15.0-cct
+- (1876) Rustic-alpha-3.0.0-linux-64-bit-popcnt
+- (1863) Deepov-0.4
+- (1856) Fatalii-v0.3.1-x86_64-unknown-linux-musl
+- (1842) Sayuri-2018.05.23-linux-64bit
 
-    1 / (1 + 10^((ratingA - ratingB)/400))  =  scorePercentage
+CCRL rating estimated by assuming opponents in a group are rated close to the average:
+
+    1 / (1 + 10^((opponentAverage - myRating)/400))  =  scorePercentage
+
+Rearranges to:
+
+    myRating  =  opponentAverage - 400 * math.log10(1/scorePercentage - 1)

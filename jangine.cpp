@@ -1488,14 +1488,6 @@ int main(int argc, char const *argv[])
             printf("feature done=1\n");
             MODE_UCI = false;
         }
-        if (strcmp(line, "xboard\n") == 0) {
-            printf("feature myname=\"jangine\"\n");
-            // printf("feature sigint=0 sigterm=0\n");
-            printf("feature ping=1\n");
-            printf("feature setboard=1\n");
-            printf("feature done=1\n");
-            MODE_UCI = false;
-        }
         if (startswith("time", line)) {
             // time left is given as centiseconds (1/100) but we store it as milliseconds (1/1000)
             OWN_CLOCK_REMAINING = 10 * std::stoi(line_cpp.substr(5));
@@ -1503,7 +1495,8 @@ int main(int argc, char const *argv[])
 
         /*** UCI ***/
         if (strcmp(line, "uci\n") == 0) {
-            printf("id name jangine\n");
+            printf("id name Jangine\n");
+            printf("id author Jan-Frederik Konopka\n");
             printf("uciok\n");
             MODE_UCI = true;
         }

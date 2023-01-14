@@ -756,6 +756,146 @@ inline Move* move_store_maybe_promote(Move* mvsend, bool is_promrank, num a, num
         return   move_store(mvsend, a, b, '\0');
 }
 
+
+inline bool is_pseudo_legal_old(num COLOR, Move mv)
+{
+    if (!(board[mv.from] & COLOR))  // moving empty/enemy piece (impossible)
+        return false;
+    if (board[mv.to] & COLOR)  // self-capture (impossible)
+        return false;
+
+    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
+    num bijpiece = board[mv.from] & COLORBLIND;
+
+    if (mv.prom == 'c' && bijpiece != KING)  // only king can castle
+        return false;
+    if ((mv.prom == 'q' || mv.prom == 'n' || mv.prom == 'r' || mv.prom == 'b' || mv.prom == 'e') && bijpiece != PAWN)  // only pawn can en-passant or promote
+        return false;
+
+    if (bijpiece == PAWN) {
+        num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+        num STARTRANK = COLOR == WHITE ? 80 : 30;
+        num PROMRANK = COLOR == WHITE ? 30 : 80;
+        /*
+        if (PROMRANK < mv.from && mv.from < PROMRANK + 10)  // have to specify which piece to promote to, otherwise it could have been a different piece's move
+            if (!(mv.prom == 'q' || mv.prom == 'n' || mv.prom == 'r' || mv.prom == 'b'))
+                return false;
+        if (mv.prom == 'q' || mv.prom == 'n' || mv.prom == 'r' || mv.prom == 'b')  // can't promote if not on PROMRANK (TT entry could be opponent promotion)
+            return false;
+        */
+        /*
+        // can promote if and only if on promrank (either 0 or 2 conditions satisfied => XOR)
+        if ((mv.prom == 'q' || mv.prom == 'n' || mv.prom == 'r' || mv.prom == 'b') ^ (PROMRANK < mv.from && mv.from < PROMRANK + 10)) {
+            std::cout << "CONFLICT" << std::endl;
+            return false;
+        }
+        */
+        if (PROMRANK < mv.from && mv.from < PROMRANK + 10)  // have to specify which piece to promote to, otherwise it could have been a different piece's move
+            if (!(mv.prom == 'q' || mv.prom == 'n' || mv.prom == 'r' || mv.prom == 'b'))
+                return false;
+        if (mv.from + ADD == mv.to)  // 1 square forward (needs empty square)
+            return !board[mv.to];
+        if (mv.from + ADD + ADD == mv.to)  // 2 squares forward (needs empty squares + startrank)
+            return !board[mv.from + ADD] && !board[mv.from + ADD + ADD] && STARTRANK < mv.from && mv.from < STARTRANK + 10;
+        if (mv.prom == 'e')  // en passant -- capture opponent pawn (this check has to come before regular diagonal capture)
+            return board[10 * (mv.from / 10) + (mv.to % 10)] == NCOLOR + PAWN;
+        if ((mv.from + ADD + 1 == mv.to) || (mv.from + ADD - 1 == mv.to))  // if not en passant: can only move diagonally if occupied
+            return !!board[mv.to];
+    } else
+        for (num l = 0; PIECEDIRS[bijpiece][l] != 0; ++l) {
+            for (num sq = mv.from;;)
+            {
+                sq += PIECEDIRS[bijpiece][l];
+                if (sq == mv.to)  // move is at least theoretically possible ("pseudo-legal")
+                    return true;
+                if (board[sq])
+                    break;
+                if (not PIECESLIDE[bijpiece])
+                    break;
+            }
+        }
+
+    if (mv.prom == 'c') {  // castling (normal king movement is covered by PIECEDIRS)
+        CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
+        num CASTLERANK = COLOR == WHITE ? 90 : 20;
+        if (mv.from + 2 == mv.to)  // short castle O-O
+            return (castlingrights.rc && !board[CASTLERANK+6] && !board[CASTLERANK+7] && board[CASTLERANK+8] == COLOR + ROOK);
+        if (mv.from - 2 == mv.to)  // long castle O-O-O
+            return (castlingrights.lc && !board[CASTLERANK+2] && !board[CASTLERANK+3] && !board[CASTLERANK+4] && board[CASTLERANK+1] == COLOR + ROOK);
+    }
+
+    return false;
+}
+
+
+inline bool is_pseudo_legal(num COLOR, Move mv)
+{
+    if (!(board[mv.from] & COLOR))  // moving empty/enemy piece (impossible)
+        return false;
+    if (board[mv.to] & COLOR)  // self-capture (impossible)
+        return false;
+
+    num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
+    num bijpiece = board[mv.from] & COLORBLIND;
+
+    if (mv.prom > 0) {
+        if (mv.prom == 'c') {  // castling
+            if (bijpiece != KING)
+                return false;
+
+            // castling (normal king movement is covered by PIECEDIRS)
+            CASTLINGRIGHTS castlingrights = COLOR == WHITE ? CASTLINGWHITE : CASTLINGBLACK;
+            num CASTLERANK = COLOR == WHITE ? 90 : 20;
+            if (mv.from + 2 == mv.to)  // short castle O-O
+                return (castlingrights.rc && !board[CASTLERANK+6] && !board[CASTLERANK+7] && board[CASTLERANK+8] == COLOR + ROOK);
+            if (mv.from - 2 == mv.to)  // long castle O-O-O
+                return (castlingrights.lc && !board[CASTLERANK+2] && !board[CASTLERANK+3] && !board[CASTLERANK+4] && board[CASTLERANK+1] == COLOR + ROOK);
+        }
+        else if (mv.prom == 'e') {  // en passant -- capture opponent pawn (this check has to come before regular diagonal capture)
+            if (bijpiece != PAWN)
+                return false;
+
+            // see this is why i hate en passant -- this code slows down the entire program by 5%, even if no EP moves are fetched
+            num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+            return (LASTMOVE.from-ADD-ADD == LASTMOVE.to) && (board[10 * (mv.from / 10) + (mv.to % 10)] == NCOLOR + PAWN) &&
+                (LASTMOVE.to == mv.from-1 || LASTMOVE.to == mv.from+1);
+        } else {  // promotion
+            if (bijpiece != PAWN)
+                return false;
+
+            num PROMRANK = COLOR == WHITE ? 30 : 80;
+            if (!(PROMRANK < mv.from && mv.from < PROMRANK + 10))  // have to specify which piece to promote to, otherwise it could have been a different piece's move
+                return false;
+        }
+    }
+
+    if (bijpiece == PAWN) {
+        num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+        if (mv.from + ADD == mv.to)  // 1 square forward (needs empty square)
+            return !board[mv.to];
+        if ((mv.from + ADD + 1 == mv.to) || (mv.from + ADD - 1 == mv.to))  // if not en passant: can only move diagonally if occupied
+            return !!board[mv.to];
+        num STARTRANK = COLOR == WHITE ? 80 : 30;
+        if (mv.from + ADD + ADD == mv.to)  // 2 squares forward (needs empty squares + startrank)
+            return !board[mv.from + ADD] && !board[mv.from + ADD + ADD] && STARTRANK < mv.from && mv.from < STARTRANK + 10;
+    } else
+        for (num l = 0; PIECEDIRS[bijpiece][l] != 0; ++l) {
+            for (num sq = mv.from;;)
+            {
+                sq += PIECEDIRS[bijpiece][l];
+                if (sq == mv.to)  // move is at least theoretically possible ("pseudo-legal")
+                    return true;
+                if (board[sq])
+                    break;
+                if (not PIECESLIDE[bijpiece])
+                    break;
+            }
+        }
+
+    return false;
+}
+
+
 // generates all captures if captures=true, generates all quiet moves if captures=false
 inline GenMoves gen_moves_maybe_legal(num COLOR, bool do_captures, bool do_quiets)  // 30% of time spent here
 {
@@ -952,8 +1092,8 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     num try_killer_move = -1;
     num alpha_raised_n_times = 0;
-    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash == zobrint_hash);
     Move pv_mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move;
+    bool pv_in_hash_table = (not is_quies) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash == zobrint_hash) and is_pseudo_legal(COLOR, pv_mv);
 
     // per-move variables
     bool do_extend = false;

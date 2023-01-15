@@ -441,7 +441,7 @@ void board_from_fen(const char* fen) {  // setting up a game
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
 
-num MAX_SEARCH_DEPTH = 9999;
+num MAX_SEARCH_DEPTH = 99;  // has to be somewhat low because depth_left is stored as 8-bit number
 uint64_t OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
 
 typedef struct GenMoves {

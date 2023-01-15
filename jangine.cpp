@@ -1011,8 +1011,8 @@ inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, n
 {
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
     // TODO: calculate expected number of collisions
-    //if ((depth <= 5) and not (best.move == NULLMOVE)) {
-    if (not (move == NULLMOVE) and (((depth <= 9) and (not is_quies)) or DEBUG))
+    // TODO: why nullmove??
+    if (!(move == NULLMOVE) && ((not is_quies) or DEBUG))
         TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = {zobrint_hash, move, value, tte_flag, depth_left};
 }
 

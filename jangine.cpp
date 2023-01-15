@@ -1552,7 +1552,7 @@ int main(int argc, char const *argv[])
         printf("INPUT: %s", line);
 
         if (strcmp(line, "xboard\n") == 0) {
-            printf("feature myname=\"jangine\"\n");
+            printf("feature myname=\"Jangine\"\n");
             // printf("feature sigint=0 sigterm=0\n");
             printf("feature ping=1\n");
             printf("feature setboard=1\n");

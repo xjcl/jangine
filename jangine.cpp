@@ -193,7 +193,8 @@ typedef struct TTEntry {
     Move move;  // either the best move found if an exact node, or a node good enough to cause a cutoff
     int16_t value;
     int8_t tte_flag;  // best, alpha, or beta value
-    int8_t depth;
+    int8_t depth_left;
+    // TODO: why not unsigned
 } TTEntry;
 
 CASTLINGRIGHTS CASTLINGWHITE = {true, true};
@@ -1035,7 +1036,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     else if (depth >= 1) {
         TTEntry tte = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK];
         if (tte.zobrint_hash == zobrint_hash)
-            if (tte.depth >= adaptive) {
+            if (tte.depth_left >= adaptive) {
                 if (tte.tte_flag == tte_exact)
                     return {tte.value, tte.move};
                 if (tte.tte_flag == tte_alpha and tte.value <= alpha)  // TODO: handle mate scores

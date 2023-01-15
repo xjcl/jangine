@@ -216,6 +216,7 @@ Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for eac
 
 num board[120] = {0};
 num board_eval = 0;  // takes about 10% of compute time
+int num_moves = 0;
 bool IM_WHITE = false;
 bool started = true;
 bool MODE_UCI = false;
@@ -406,7 +407,8 @@ void board_from_fen(const char* fen) {  // setting up a game
     // side to move
     // if you are a real C pro, replace this block with  (*((++c)++) == 'w')  ;)
     c++;
-    IM_WHITE = (*c == 'w');  // TODO: have to set num_moves for a lasting effect...
+    IM_WHITE = (*c == 'w');
+    num_moves += 30 + (num_moves % 2 != IM_WHITE);
     c++;
 
     // castling => board_clear() sets it all to false
@@ -1612,7 +1614,6 @@ int main(int argc, char const *argv[])
         test_perft();
 
     std::string line_cpp;
-    int num_moves = 0;
 
     while (true) {
         std::getline(std::cin, line_cpp);

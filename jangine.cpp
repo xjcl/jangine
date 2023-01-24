@@ -20,9 +20,6 @@
 
 typedef int_fast16_t num;
 
-#define DEBUG 0  // 1: debug PV, 2: all lines, 3: tons of output
-#define OUTPUT_TIME 1
-
 #define SIMPLE_EVAL  // TODO: just-material eval, piece-square-eval, and turochamp eval
 #define NO_QUIES 0
 #define QUIES_DEPTH 0  // TODO: limit search of quiescence captures
@@ -219,13 +216,16 @@ num board_eval = 0;  // takes about 10% of compute time
 int num_moves = 0;
 bool IM_WHITE = false;
 bool started = true;
-bool MODE_UCI = false;
+num MODE_UCI = 1; num MODE_XBOARD = 2; num MODE_XJ = 3; num MODE = MODE_UCI;
+num VERBOSITY = 1;  // 0: bestmove only, 1: uci INFO, 2: print boards/state, 3: all lines, 4: tons of output
 
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
 std::clock_t SEARCH_START_CLOCK;
 
 void pprint() {
+    if (VERBOSITY < 2) return;
+
     for (num i = 0; i < 8; ++i) {
         printf("  %ld ", (8 - i));
         for (num j = 0; j < 8; ++j) {
@@ -660,44 +660,56 @@ void make_move_str(const char* mv)
     board_positions_seen.insert(zobrint_hash);
 }
 
-void printf_move(Move mv) {
-    std::string move_str = move_to_str(mv, true);
-    const char* cstr = move_str.c_str();
-    printf("MOVE %15s |", cstr);
-}
-
-void printf_move_eval(ValuePlusMove rec, bool accurate)  // print eval of move (before call to make_move)
+void printf_move_eval(num depth, ValuePlusMove rec, bool accurate)  // print eval of move (before call to make_move)
 {
-    double time_expired = OUTPUT_TIME ? (1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC) : 0;
-    printf(" EVAL %7.2f %c | D%2ld | NN%9ld | NQ%9ld | t%7.3f | VAR  ... ",
-        (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
+    if (VERBOSITY < 1) return;
+
+    // TODO support xboard
+    if (MODE == MODE_UCI)
+        printf("info depth %ld score cp %ld nodes %ld pv", depth, rec.value, NODES_NORMAL + NODES_QUIES);
+    else if (MODE == MODE_XJ) {
+        double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+        std::string move_str = move_to_str(rec.move, true);
+        const char* cstr = move_str.c_str();
+        printf("MOVE %15s |", cstr);
+
+        printf(" EVAL %7.2f %c | D%2ld | NN%9ld | NQ%9ld | t%7.3f | VAR  ... ",
+            (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
+    }
 
     // reveal PV from hash table, this saves work of returning a std::deque
     std::deque<Move> moves;
     std::deque<PiecePlusCatling> ppcs;
 
-    PiecePlusCatling ppc = make_move(rec.move);
-    moves.push_back(rec.move);
-    ppcs.push_back(ppc);
     num i = 0;  // prevent infinite repetition
 
     // TODO: revealing PV from hash table is faster but cuts off parts of it
     while ((TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash == zobrint_hash) && (i < 12)) {
         Move mv = TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move;
-        std::cout << move_to_str(mv, true) << " ";
 
-        ppc = make_move(mv);  // updates zobrist_hash
+        // if (i == 0 && !(rec.move == mv)) std::exit(2);
+
+        if (MODE == MODE_UCI)
+            std::cout << " " << move_to_str(mv, false);
+        else if (MODE == MODE_XJ) {
+            if (i >= 1)
+                std::cout << move_to_str(mv, true) << " ";
+        }
+
+        PiecePlusCatling ppc = make_move(mv);  // updates zobrist_hash
         moves.push_back(mv);
         ppcs.push_back(ppc);
         ++i;
     }
 
-    if ((TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash != zobrint_hash) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash)
-            and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move == NULLMOVE))
-        std::cout << "[HASH COLLISION] ";
+    // TODO: check pesudo-legality -> re-use pv_in_hash_table as function
+    // TODO: check this after every mode + only print this in MODE_XJ
+//    if ((TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash != zobrint_hash) and (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].zobrint_hash)
+//            and not (TRANSPOS_TABLE[zobrint_hash & ZOB_MASK].move == NULLMOVE))
+//        std::cout << "[HASH COLLISION] ";
 
     for (i = moves.size() - 1; i >= 0; i--) {
-        ppc = ppcs[i];
+        PiecePlusCatling ppc = ppcs[i];
         unmake_move(moves[i], ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
     }
 
@@ -944,7 +956,7 @@ inline void store_hash_entry(Move move, num value, int8_t tte_flag, num depth, n
     // https://crypto.stackexchange.com/questions/27370/formula-for-the-number-of-expected-collisions
     // TODO: calculate expected number of collisions
     // TODO: why nullmove??
-    if (!(move == NULLMOVE) && ((not is_quies) or DEBUG))
+    if (!(move == NULLMOVE) && !is_quies)
         TRANSPOS_TABLE[zobrint_hash & ZOB_MASK] = {zobrint_hash, move, value, tte_flag, depth_left};
 }
 
@@ -1160,14 +1172,13 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
         unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
 
-        if ((depth == 0 and lines) or (DEBUG >= 3)) {
+        if ((depth == 0 and lines) or (VERBOSITY >= 4)) {
             for (int i = 0; i < depth; i++)
                 printf("    ");
-            printf_move(mv);
             // due to alpha-beta pruning, this isn't the "true" eval for suboptimal moves, unless lines_accurate=true
             bool accurate = (best.move == mv) or lines_accurate;
             ValuePlusMove mv_printable = {rec.value, mv};
-            printf_move_eval(mv_printable, accurate);
+            printf_move_eval(depth, mv_printable, accurate);
         }
 
         if (not is_quies and not (lines_accurate and depth == 0)) {
@@ -1262,7 +1273,8 @@ std::string calc_move(bool lines = false)
         if (p == BLACK + KING)  KINGPOS_BLACK = i;
     }
 
-    printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");
+    if (VERBOSITY >= 2)
+        printf((game_phase <= 8) ? "Setting piece-square tables to endgame\n" : "Setting piece-square tables to middlegame\n");
     set_piece_square_table(game_phase <= 8);
 
     // Have to re-calculate board info anew each time because GUI/Lichess might reset state
@@ -1272,30 +1284,33 @@ std::string calc_move(bool lines = false)
     uint64_t OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
     Move mv = {0};
 
-    printf("Starting iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
+    if (VERBOSITY >= 2)
+        printf("Starting iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
     for (num search_depth = 1; search_depth <= MAX_SEARCH_DEPTH; search_depth++)
     {
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, true, 0, (DEBUG >= 2), (DEBUG >= 2));
+        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, true, 0, (VERBOSITY >= 3), (VERBOSITY >= 3));
 
-        printf_move(best_at_depth.move);
-        printf_move_eval(best_at_depth, true);
+        printf_move_eval(search_depth, best_at_depth, true);
         mv = best_at_depth.move;
 
         if ((best_at_depth.value <= -inf/2) or (best_at_depth.value >= inf/2)) {
-            printf("Found mate score already so stopping iterative deepening early\n");
+            if (VERBOSITY >= 2)
+                printf("Found mate score already so stopping iterative deepening early\n");
             break;
         }
 
         double time_expired = 1000.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;  // millis
         if (time_expired * 5 > OWN_TIME_TO_USE_MAX) {  // assume next depth takes 5 times as long
-            printf("Used up time budget of %7ldcs allocated to finding this move\n", OWN_TIME_TO_USE_MAX);
+            if (VERBOSITY >= 2)
+                printf("Used up time budget of %7ldcs allocated to finding this move\n", OWN_TIME_TO_USE_MAX);
             break;
         }
     }
-    printf("|End|ing iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
+    if (VERBOSITY >= 2)
+        printf("|End|ing iterative deepening alphabeta search at ZOB %ld eval %ld\n", zobrint_hash, board_eval);
 
     make_move(mv);
     board_positions_seen.insert(zobrint_hash);
@@ -1376,6 +1391,8 @@ void test_fen(const char* desc, const char* fen)
 
 void test()
 {
+    MODE = MODE_XJ;
+    VERBOSITY = 2;
     MAX_SEARCH_DEPTH = 7;
     OWN_CLOCK_REMAINING = 9999999;
 
@@ -1542,14 +1559,18 @@ int main(int argc, char const *argv[])
     if (argc >= 2 and strcmp(argv[1], "-p") == 0)
         test_perft();
 
+    // TODO: add --verbosity and other command line arguments
+
     std::string line_cpp;
 
     while (true) {
         std::getline(std::cin, line_cpp);
         line_cpp.append(1, '\n');
+        std::vector<std::string> tokens = split_string(line_cpp);
         const char* line = line_cpp.c_str();
 
-        printf("INPUT: %s", line);
+        if (VERBOSITY >= 2)
+            printf("INPUT: %s", line);
 
         if (strcmp(line, "xboard\n") == 0) {
             printf("feature myname=\"Jangine\"\n");
@@ -1557,11 +1578,15 @@ int main(int argc, char const *argv[])
             printf("feature ping=1\n");
             printf("feature setboard=1\n");
             printf("feature done=1\n");
-            MODE_UCI = false;
+            MODE = MODE_XBOARD;
         }
         if (startswith("time", line)) {
             // time left is given as centiseconds (1/100) but we store it as milliseconds (1/1000)
             OWN_CLOCK_REMAINING = 10 * std::stoi(line_cpp.substr(5));
+        }
+
+        if (startswith("verbosity", line)) {  // custom jangine extension
+            VERBOSITY = std::stoi(tokens[1]);
         }
 
         /*** UCI ***/
@@ -1569,7 +1594,7 @@ int main(int argc, char const *argv[])
             printf("id name Jangine\n");
             printf("id author Jan-Frederik Konopka\n");
             printf("uciok\n");
-            MODE_UCI = true;
+            MODE = MODE_UCI;
         }
 
         if (strcmp(line, "isready\n") == 0) {
@@ -1581,9 +1606,8 @@ int main(int argc, char const *argv[])
             board_initial_position();
         }
 
+        // TODO: "position fen 2b2rk1/p1p4p/2p1p1p1/br2N1Q1/1p2q3/8/PB3PPP/3R1RK1 w - - 0 1 moves e5f7"
         if (startswith("position startpos moves", line)) {
-            std::vector<std::string> tokens = split_string(line_cpp);
-
             num_moves = 0;
             board_initial_position();
             for (size_t i = 3; i < tokens.size(); ++i) {
@@ -1625,7 +1649,6 @@ int main(int argc, char const *argv[])
         // TODO: "protover 2" -> reset board
 
         if (input_is_move(line)) {
-            pprint();
             make_move_str(line);
             num_moves++;
             if (started) {
@@ -1634,14 +1657,13 @@ int main(int argc, char const *argv[])
                 std::string mv = calc_move(true);
                 num_moves++;
                 pprint();
-                printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
+                printf((MODE == MODE_UCI) ? "bestmove %s\n" : "move %s\n", mv.c_str());
             }
         }
 
         if (startswith("go", line)) {
             IM_WHITE = (num_moves + 1) % 2;
 
-            std::vector<std::string> tokens = split_string(line_cpp);
             for (size_t i = 0; i < tokens.size(); ++i)
                 if ((IM_WHITE && strcmp(tokens[i].c_str(), "wtime") == 0) || (!IM_WHITE && strcmp(tokens[i].c_str(), "btime") == 0))
                     OWN_CLOCK_REMAINING = std::stoi(tokens[i+1]);  // time left in MILLISECONDS
@@ -1650,7 +1672,7 @@ int main(int argc, char const *argv[])
             std::string mv = calc_move(true);
             num_moves++;
             pprint();
-            printf(MODE_UCI ? "bestmove %s\n" : "move %s\n", mv.c_str());
+            printf((MODE == MODE_UCI) ? "bestmove %s\n" : "move %s\n", mv.c_str());
         }
 
         if (startswith("ping", line)) {

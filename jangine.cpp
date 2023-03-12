@@ -31,7 +31,7 @@ typedef int_fast16_t num;
 num PAWN = 1, KNIGHT = 2, BISHOP = 4, ROOK = 8, QUEEN = 16, KING = 32, WHITE = 64, BLACK = 128;
 num KING_EARLYGAME = 8001, KING_ENDGAME = 8002, PAWN_EARLYGAME = 9001, PAWN_ENDGAME = 9002;
 num COLORBLIND = ~(WHITE | BLACK);  // use 'piece & COLORBLIND' to remove color from a piece
-num inf = 32000;
+num inf = 20000;  num inf_king = 26000;
 num OOB = 256; num OOV = 0;  // out-of-bounds for "10x12" (12x10) boards and OOB value
 std::map<num, char> piece_to_letter = {{0, ' '}, {1, ' '}, {2, 'N'}, {4, 'B'}, {8, 'R'}, {16, 'Q'}, {32, 'K'}};
 std::map<num, std::string> id_to_unicode = {
@@ -982,7 +982,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             if (tte.depth_left >= adaptive) {
                 if (tte.tte_flag == tte_exact)
                     return {tte.value, tte.move};
-                if (tte.tte_flag == tte_alpha and tte.value <= alpha)  // TODO: handle mate scores
+                if (tte.tte_flag == tte_alpha and tte.value <= alpha)
                     return {alpha, tte.move};
                 if (tte.tte_flag == tte_beta and tte.value >= beta)
                     return {beta, tte.move};
@@ -1010,7 +1010,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     // TODO: when switching to bitboards, also check if a piece other than a pawn is still on the board
     // TODO: Only one null move in entire search or just disallow 2 in a row?
     // Null Move Pruning
-    // maybe okay to do without as no duplicate moves possible and king will be captured instead
+    // maybe okay to do without king_in_check-call as no duplicate moves possible and king will be captured instead?
     if (can_null_move && depth >= 1 && adaptive >= 3 && !king_in_check(COLOR))
     {
         PiecePlusCatling ppc = make_null_move();
@@ -1231,7 +1231,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
     if (!is_quies and !legal_moves_found) {  // "no legal moves" during normal search
         if (not king_in_check(COLOR))
             return {0, {0}};  // COLOR is stalemated
-        return {-inf + 2000 + 100*depth, {0}};  // COLOR is checkmated
+        return {-inf, {0}};  // COLOR is checkmated
     }
 
     if (is_quies and !legal_moves_found)  // "no captures" in quiescence search
@@ -1239,6 +1239,12 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     if (is_quies)
         best.value = alpha;
+
+    // for (exact) mate scores, we encode the distance, so we add 100cp per depth to the already-encoded distance
+    if (best.value > inf/2)
+        best.value = best.value - 100;
+    if (best.value < -inf/2)
+        best.value = best.value + 100;
 
     if (alpha > alpha_orig)
         store_hash_entry(best.move, best.value, tte_exact, depth, adaptive, is_quies);  // exact value
@@ -1291,7 +1297,7 @@ std::string calc_move(bool lines = false)
         SEARCH_ADAPTIVE_DEPTH = search_depth;
         LASTMOVE = LASTMOVE_GAME;
 
-        ValuePlusMove best_at_depth = negamax(my_color, -inf/2, inf/2, SEARCH_ADAPTIVE_DEPTH, false, true, 0, (VERBOSITY >= 3), (VERBOSITY >= 3));
+        ValuePlusMove best_at_depth = negamax(my_color, -inf-1, inf+1, SEARCH_ADAPTIVE_DEPTH, false, true, 0, (VERBOSITY >= 3), (VERBOSITY >= 3));
 
         printf_move_eval(search_depth, best_at_depth, true);
         mv = best_at_depth.move;
@@ -1372,7 +1378,7 @@ void init_data(void) {
     PIECEVALS[BISHOP] = 325;  // Should not trade bishop for a knight, unless it wins a pawn or king pawn structure becomes damaged
     PIECEVALS[ROOK] = 470;  // Engine keeps trading its knight+bishop for a rook+pawn, thinking it is a good trade, which it is not
     PIECEVALS[QUEEN] = 950;  // Engine also trades into having 2 rooks for a queen, this is usually also not worth it
-    PIECEVALS[KING] = inf;
+    PIECEVALS[KING] = inf_king;
 
     for (num piece = PAWN; piece <= KING; piece <<= 1) {
         PIECEVALS[piece + WHITE] =  PIECEVALS[piece];

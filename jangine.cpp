@@ -782,7 +782,7 @@ inline bool is_pseudo_legal(num COLOR, Move mv)
     num NCOLOR = COLOR == WHITE ? BLACK : WHITE;
     num bijpiece = board[mv.from] & COLORBLIND;
 
-    if (mv.prom > 0) {
+    if (mv.prom) {
         if (mv.prom == 'c') {  // castling
             if (bijpiece != KING)
                 return false;
@@ -794,27 +794,26 @@ inline bool is_pseudo_legal(num COLOR, Move mv)
                 return (castlingrights.rc && !board[CASTLERANK+6] && !board[CASTLERANK+7] && board[CASTLERANK+8] == COLOR + ROOK);
             if (mv.from - 2 == mv.to)  // long castle O-O-O
                 return (castlingrights.lc && !board[CASTLERANK+2] && !board[CASTLERANK+3] && !board[CASTLERANK+4] && board[CASTLERANK+1] == COLOR + ROOK);
+            // this line should be unreachable
         }
-        else if (mv.prom == 'e') {  // en passant -- capture opponent pawn (this check has to come before regular diagonal capture)
+        else {
             if (bijpiece != PAWN)
                 return false;
 
-            // see this is why i hate en passant -- this code slows down the entire program by 5%, even if no EP moves are fetched
-            num ADD = COLOR == WHITE ? -10 : 10;  // "up"
-            return (LASTMOVE.from-ADD-ADD == LASTMOVE.to) && (board[10 * (mv.from / 10) + (mv.to % 10)] == NCOLOR + PAWN) &&
-                (LASTMOVE.to == mv.from-1 || LASTMOVE.to == mv.from+1);
-        } else {  // promotion
-            if (bijpiece != PAWN)
-                return false;
-
-            num PROMRANK = COLOR == WHITE ? 30 : 80;
-            if (!(PROMRANK < mv.from && mv.from < PROMRANK + 10))  // have to specify which piece to promote to, otherwise it could have been a different piece's move
-                return false;
+            if (mv.prom == 'e') {  // en passant -- capture opponent pawn (this check replaces regular diagonal capture)
+                num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+                return (LASTMOVE.from-ADD-ADD == LASTMOVE.to) && (board[LASTMOVE.to] == NCOLOR + PAWN) &&
+                    (LASTMOVE.to == mv.from-1 || LASTMOVE.to == mv.from+1) && (mv.to == LASTMOVE.from-ADD);
+            }
+            // intentional fall-through, we still have to check if the requested forward/diagonal movement is possible for promotions
         }
     }
 
     if (bijpiece == PAWN) {
         num ADD = COLOR == WHITE ? -10 : 10;  // "up"
+        num PROMRANK = COLOR == WHITE ? 30 : 80;
+        if ((PROMRANK < mv.from && mv.from < PROMRANK + 10) ^ (mv.prom != '\0'))  // (on 7th rank) iff (has promotion piece set)
+            return false;  // importantly, mv.prom == 'e' was handled earlier
         if (mv.from + ADD == mv.to)  // 1 square forward (needs empty square)
             return !board[mv.to];
         if ((mv.from + ADD + 1 == mv.to) || (mv.from + ADD - 1 == mv.to))  // if not en passant: can only move diagonally if occupied

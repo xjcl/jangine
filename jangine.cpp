@@ -1116,12 +1116,12 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
         ppc = make_move(mv);
 
+        jump_into_loop_with_hash_move:
+
         if (king_in_check(COLOR)) {  // illegal move  // king_in_check takes 11s of the 30s program time!!
             unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
             goto continue_proper;
         }
-
-        jump_into_loop_with_hash_move:
 
         legal_moves_found++;
 

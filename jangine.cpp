@@ -341,6 +341,7 @@ void board_initial_position() {  // setting up a game
     CASTLINGWHITE = {true, true};
     CASTLINGBLACK = {true, true};
     board_eval = 0;
+    // TODO: also reset LASTMOVE, although that would lead to tablebase hits on the first move which would cause a super slowdown :/
 
     IM_WHITE = true;
     zobrint_hash = board_to_zobrint_hash();
@@ -524,7 +525,7 @@ inline PiecePlusCatling make_move(Move mv)  // apparently 7% of time spent in ma
 
     if (mv.prom) {
         if (mv.prom == 'e') {  // en passant
-            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn  // faster than ternary ? :
+            num ep_square = 10 * (mv.from / 10) + (mv.to % 10);  // square of the CAPTURED/en-passanted pawn  // faster than ternary ? :  // can we use LASTMOVE here?
             board_eval -= eval_material(board[ep_square]) + eval_piece_on_square(board[ep_square], ep_square);  // captured pawn did not get removed earlier
             zobrint_hash ^= zobrint_random_table[board[ep_square]][ep_square];  // xor OUT captured pawn
             board[ep_square] = 0;
@@ -1460,9 +1461,6 @@ void test()
     test_fen("Qxf3+ sac 34 https://lichess.org/2RWlBUCy#66", "1k2r3/2b3p1/1pp2pPp/r7/P2P4/2R2q2/2QR1PP1/6K1 w - - 0 34");
     test_fen("Qxf3+ sac 33 https://lichess.org/2RWlBUCy#64", "1k2r3/2b3p1/1pp2pPp/r2q4/P2P4/1R3N2/2QR1PP1/6K1 w - - 3 33");
 
-//    MAX_SEARCH_DEPTH = 12;
-//    test_fen("TODO", "8/8/p6P/P6k/4p1p1/6K1/8/8 b - - 0 52");  // produces WEIRDNESS on DEPTH 12 -> 64bit hash collision?
-
     std::exit(0);
 }
 
@@ -1684,17 +1682,20 @@ int main(int argc, char const *argv[])
         }
 
         if (strcmp(line, "ucinewgame\n") == 0) {
-            IM_WHITE = false;
+            IM_WHITE = false;  // TODO: check if we still need this
+            num_moves = 0;
             board_initial_position();
         }
 
         // TODO: "position fen 2b2rk1/p1p4p/2p1p1p1/br2N1Q1/1p2q3/8/PB3PPP/3R1RK1 w - - 0 1 moves e5f7"
-        if (startswith("position startpos moves", line)) {
+        if (startswith("position startpos", line)) {
             num_moves = 0;
             board_initial_position();
-            for (size_t i = 3; i < tokens.size(); ++i) {
-                make_move_str(tokens[i].c_str());
-                num_moves++;
+            if (tokens.size() >= 3 && strcmp(tokens[2].c_str(), "moves") == 0) {
+                for (size_t i = 3; i < tokens.size(); ++i) {
+                    make_move_str(tokens[i].c_str());
+                    num_moves++;
+                }
             }
             IM_WHITE = (num_moves + 1) % 2;
         }
@@ -1724,7 +1725,8 @@ int main(int argc, char const *argv[])
 
         if (strcmp(line, "new\n") == 0) {
             IM_WHITE = false;
-            started = true;  // TODO this line needed to fix xboard for white
+            started = true;
+            num_moves = 0;
             board_initial_position();
         }
 

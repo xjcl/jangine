@@ -218,7 +218,6 @@ num VERBOSITY = 0;  // 0: bestmove only, 1: uci INFO, 2: print boards/state, 3: 
 
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;
-std::clock_t SEARCH_START_CLOCK;
 
 void pprint() {
     if (VERBOSITY < 2) return;
@@ -441,7 +440,10 @@ num MAX_SEARCH_DEPTH = 99;  // has to be somewhat low because depth_left is stor
 num NODE_DEPTH = 0;
 Move KILLER_TABLE[99][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
 
+uint64_t SEARCH_START_CLOCK = 0;
 uint64_t OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
+uint64_t OWN_CLOCK_INCREMENT = 0;
+uint64_t TIME_BUDGET_THRESHOLD = 999999999999999;
 
 typedef struct GenMoves {
     Move* captures;
@@ -666,13 +668,13 @@ void printf_move_eval(num depth, ValuePlusMove rec, bool accurate)  // print eva
     if (MODE == MODE_UCI)
         printf("info depth %ld score cp %ld nodes %ld pv", depth, rec.value, NODES_NORMAL + NODES_QUIES);
     else if (MODE == MODE_XJ) {
-        double time_expired = 1.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;
+        double time_expired = (1000.0 * std::clock()) / CLOCKS_PER_SEC - SEARCH_START_CLOCK;  // millis
         std::string move_str = move_to_str(rec.move, true);
         const char* cstr = move_str.c_str();
         printf("MOVE %15s |", cstr);
 
         printf(" EVAL %7.2f %c | D%2ld | NN%9ld | NQ%9ld | t%7.3f | VAR  ... ",
-            (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired);
+            (float)(rec.value) / 100, accurate ? ' ' : '?', SEARCH_ADAPTIVE_DEPTH, NODES_NORMAL, NODES_QUIES, time_expired / 1000);
     }
 
     // reveal PV from hash table, this saves work of returning a std::deque
@@ -1256,7 +1258,15 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 // TODO: lines
 std::string calc_move(bool lines = false)
 {
-    SEARCH_START_CLOCK = std::clock();
+    // http://facta.junis.ni.ac.rs/acar/acar200901/acar2009-07.pdf
+    // TIME MANAGEMENT PROCEDURE IN COMPUTER CHESS -- Vladan Vučković, Rade Šolak
+    SEARCH_START_CLOCK = (1000.0 * std::clock()) / CLOCKS_PER_SEC;
+
+    num MOVES_LEFT = 20;  // MOVES_LEFT in full-moves, num_moves in half-moves
+    if (num_moves < 80)
+        MOVES_LEFT = 60 - num_moves / 2;  // linear from (0, 60) to (80, 20)
+
+    double OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / (double)MOVES_LEFT) + (1.0 * OWN_CLOCK_INCREMENT);
 
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
@@ -1284,7 +1294,6 @@ std::string calc_move(bool lines = false)
     board_eval = initial_eval();
     zobrint_hash = board_to_zobrint_hash();
     num my_color = IM_WHITE ? WHITE : BLACK;
-    uint64_t OWN_TIME_TO_USE_MAX = (OWN_CLOCK_REMAINING / 20);  // assume 25-ish moves left
     Move mv = {0};
 
     if (VERBOSITY >= 2)
@@ -1305,10 +1314,12 @@ std::string calc_move(bool lines = false)
             break;
         }
 
-        double time_expired = 1000.0 * (std::clock() - SEARCH_START_CLOCK) / CLOCKS_PER_SEC;  // millis
+        double time_expired = (1000.0 * std::clock()) / CLOCKS_PER_SEC - SEARCH_START_CLOCK;  // millis
         if (time_expired * 5 > OWN_TIME_TO_USE_MAX) {  // assume next depth takes 5 times as long
             if (VERBOSITY >= 2)
-                printf("Used up time budget of %7ldcs allocated to finding this move\n", OWN_TIME_TO_USE_MAX);
+                printf("Used up %7ldms of time budget %7ldms allocated to finding this move\n",
+                    (uint64_t)time_expired, (uint64_t)OWN_TIME_TO_USE_MAX);
+
             break;
         }
     }
@@ -1664,6 +1675,10 @@ int main(int argc, char const *argv[])
             // time left is given as centiseconds (1/100) but we store it as milliseconds (1/1000)
             OWN_CLOCK_REMAINING = 10 * std::stoi(line_cpp.substr(5));
         }
+        if (startswith("level", line)) {
+            // increment is given as seconds, but we store it as milliseconds (1/1000)
+            OWN_CLOCK_INCREMENT = 1000 * std::stoi(tokens[3]);
+        }
 
         if (startswith("verbosity", line)) {  // custom jangine extension
             VERBOSITY = std::stoi(tokens[1]);
@@ -1750,7 +1765,11 @@ int main(int argc, char const *argv[])
 
             for (size_t i = 0; i < tokens.size(); ++i)
                 if ((IM_WHITE && strcmp(tokens[i].c_str(), "wtime") == 0) || (!IM_WHITE && strcmp(tokens[i].c_str(), "btime") == 0))
-                    OWN_CLOCK_REMAINING = std::stoi(tokens[i+1]);  // time left in MILLISECONDS
+                    OWN_CLOCK_REMAINING = std::stoi(tokens[i+1]);
+            OWN_CLOCK_INCREMENT = 0;
+            for (size_t i = 0; i < tokens.size(); ++i)
+                if ((IM_WHITE && strcmp(tokens[i].c_str(), "winc") == 0) || (!IM_WHITE && strcmp(tokens[i].c_str(), "binc") == 0))
+                    OWN_CLOCK_INCREMENT = std::stoi(tokens[i+1]);
 
             started = true;
             std::string mv = calc_move(true);

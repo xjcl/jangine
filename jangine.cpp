@@ -214,7 +214,7 @@ int num_moves = 0;
 bool IM_WHITE = false;
 bool started = true;
 num MODE_UCI = 1; num MODE_XBOARD = 2; num MODE_XJ = 3; num MODE = MODE_UCI;
-num VERBOSITY = 1;  // 0: bestmove only, 1: uci INFO, 2: print boards/state, 3: all lines, 4: tons of output
+num VERBOSITY = 0;  // 0: bestmove only, 1: uci INFO, 2: print boards/state, 3: all lines, 4: tons of output
 
 int64_t NODES_NORMAL = 0;
 int64_t NODES_QUIES = 0;

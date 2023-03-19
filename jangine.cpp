@@ -208,9 +208,6 @@ num PIECEDIRS[65][9] = {0};
 bool PIECESLIDE[65] = {0};
 num PIECEVALS[257] = {0};
 
-num NODE_DEPTH = 0;
-Move KILLER_TABLE[20][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
-
 num board[120] = {0};
 num board_eval = 0;  // takes about 10% of compute time
 int num_moves = 0;
@@ -440,8 +437,11 @@ void board_from_fen(const char* fen) {  // setting up a game
 }
 
 num SEARCH_ADAPTIVE_DEPTH = 6;  // how many plies to search
-
 num MAX_SEARCH_DEPTH = 99;  // has to be somewhat low because depth_left is stored as 8-bit number
+
+num NODE_DEPTH = 0;
+Move KILLER_TABLE[99][MAX_KILLER_MOVES] = {0};  // table of killer moves for each search depth
+
 uint64_t OWN_CLOCK_REMAINING = 180000;  // 180 seconds remaining
 
 typedef struct GenMoves {
@@ -1263,7 +1263,7 @@ std::string calc_move(bool lines = false)
     NODES_NORMAL = 0;
     NODES_QUIES = 0;
     // re-use killer moves from previous move (2 plies ago) -> very small speed improvement
-    for (num i = 0; i < 18; i++)
+    for (num i = 0; i < MAX_SEARCH_DEPTH; i++)  // TODO check size
         for (num j = 0; j < MAX_KILLER_MOVES; j++)
             KILLER_TABLE[i][j] = KILLER_TABLE[i+2][j];
     // Since game positions are correlated and the TABLE_ZOB is checked we actually go faster if we do not clear this

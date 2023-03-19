@@ -287,8 +287,6 @@ void init_zobrint() {
     // note that "0" entries have no effect on the final result (for example in zrt[0] for empty squares)
     for (const num& piece : pieces)
         for (int i = 0; i < 64; ++i)
-            // for backwards compatability of hashes, assign hashes to their old values for now
-            //zobrint_random_table[piece][i] = dist(e2);
             zobrint_random_table[piece][10*(i/8 + 2) + (i % 8) + 1] = dist(e2);
 
     zobrint_random_table[1][0] = zobrint_random_table[1][21];  // for side-to-move
@@ -794,7 +792,7 @@ inline bool is_pseudo_legal(num COLOR, Move mv)
                 return (castlingrights.rc && !board[CASTLERANK+6] && !board[CASTLERANK+7] && board[CASTLERANK+8] == COLOR + ROOK);
             if (mv.from - 2 == mv.to)  // long castle O-O-O
                 return (castlingrights.lc && !board[CASTLERANK+2] && !board[CASTLERANK+3] && !board[CASTLERANK+4] && board[CASTLERANK+1] == COLOR + ROOK);
-            // this line should be unreachable
+            return false;  // this line should be unreachable
         }
         else {
             if (bijpiece != PAWN)
@@ -992,7 +990,7 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
             return negamax(COLOR, alpha, beta, adaptive, true, false, depth, lines, lines_accurate);
     }
 
-    ValuePlusMove best = {-inf, {0}};
+    ValuePlusMove best = {-inf-1, {0}};
     if (is_quies) {
         // "standing pat": to compensate for not considering non-capture moves, at least one move should be
         //    better than doing no move ("null move") -> avoids senseless captures, but vulnerable to zugzwang
@@ -1241,9 +1239,9 @@ ValuePlusMove negamax(num COLOR, num alpha, num beta, num adaptive, bool is_quie
 
     // for (exact) mate scores, we encode the distance, so we add 100cp per depth to the already-encoded distance
     if (best.value > inf/2)
-        best.value = best.value - 100;
+        best.value = best.value - 1;
     if (best.value < -inf/2)
-        best.value = best.value + 100;
+        best.value = best.value + 1;
 
     if (alpha > alpha_orig)
         store_hash_entry(best.move, best.value, tte_exact, depth, adaptive, is_quies);  // exact value

@@ -455,7 +455,7 @@ typedef struct ValuePlusMove {
 } ValuePlusMove;
 
 
-std::string move_to_str(Move mv, bool algebraic = false) {
+std::string move_to_str(Move mv, bool algebraic = false, bool raw = false) {
     char c0 = 'a' + (char) (mv.from % 10 - 1);
     char c1 = '0' + (char) (10 - (mv.from / 10));  // 2..9 are valid rows
     char c2 = 'a' + (char) (mv.to % 10 - 1);
@@ -463,7 +463,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     char c4 = (char)(mv.prom ? mv.prom : ' ');
 
     if (!algebraic) {
-        if (c4 == ' ' or c4 == 'c' or c4 == 'e')
+        if (!raw && (c4 == ' ' || c4 == 'c' || c4 == 'e'))
             return std::string{c0, c1, c2, c3};
         return std::string{c0, c1, c2, c3, c4};
     }
@@ -474,8 +474,7 @@ std::string move_to_str(Move mv, bool algebraic = false) {
     char alg0 = piece_to_letter[piece & COLORBLIND];
     char alg1 = (hit_piece or mv.prom == 'e') ? 'x' : ' ';
 
-    std::string ret{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
-    return ret;
+    return std::string{alg0, alg1, c2, c3, ' ', ' ', '(', c0, c1, c2, c3, c4, ')'};
 }
 
 
@@ -1538,6 +1537,83 @@ void test_perft()
 }
 
 
+void pseudo(num depth_left, num COLOR)
+{
+    if (depth_left == 0)
+        return;
+
+    GenMoves gl = gen_moves_maybe_legal(COLOR, true, true);
+    Move* cur = gl.quiets;
+
+    std::set<Move> expected_legal_moves = std::set<Move>();
+
+    while (cur != gl.captures_end) {
+        while (cur != gl.quiets_end && cur != gl.captures_end) {
+            expected_legal_moves.insert(*cur);
+            cur++;
+        }
+
+        if (cur == gl.quiets_end)
+            cur = gl.captures;
+    }
+
+    free_GenMoves(gl);
+
+    for (int i = 0; i < 64; ++i) {
+        for (int j = 0; j < 64; ++j) {
+            int i_adj = 10*(i/8 + 2) + (i % 8) + 1;
+            int j_adj = 10*(j/8 + 2) + (j % 8) + 1;
+
+            char proms[] = "\0cebnrq";
+            for (int k = 0; k < 7; k++) {
+                Move mv_speculative = {i_adj, j_adj, proms[k]};
+                bool mv_is_pseudo_legal = is_pseudo_legal(COLOR, mv_speculative);
+                bool true_legal = !!expected_legal_moves.count(mv_speculative);
+
+                if (true_legal && !mv_is_pseudo_legal) {
+                    std::cout << "Legal move is not pseudo-legal " << move_to_str(mv_speculative, false, false) << std::endl;
+                    pprint();
+                }
+                if (!true_legal && mv_is_pseudo_legal) {
+                    std::cout << "Illegal move is pseudo-legal " << move_to_str(mv_speculative, false, false) << std::endl;
+                    pprint();
+                }
+            }
+        }
+    }
+
+    for (const Move& mv : expected_legal_moves) {
+        PiecePlusCatling ppc = make_move(mv);
+        LASTMOVE = mv;
+
+        if (!king_in_check(COLOR))
+            pseudo(depth_left - 1, COLOR == WHITE ? BLACK : WHITE);
+
+        unmake_move(mv, ppc.hit_piece, ppc.c_rights_w, ppc.c_rights_b);
+    }
+}
+
+
+// unit test for the function is_pseudo_legal
+void test_pseudo_legal()
+{
+    //board_from_fen("8/p7/1p5P/1P1k4/5pp1/7r/4R3/5K2 w - - 5 49");
+    //board_from_fen("8/6p1/7p/p2K1P1k/P7/8/8/8 w - - 0 56");
+    board_from_fen("5k2/7K/6P1/8/8/8/8/8 b - - 2 69");
+
+    for (num i = 0; i < 10; i++)
+    {
+        LASTMOVE = LASTMOVE_GAME;
+        std::cout << i << std::endl;
+        std::cout << zobrint_hash << std::endl;
+        pseudo(i, IM_WHITE ? WHITE : BLACK);
+        std::cout << zobrint_hash << std::endl;
+    }
+
+    std::exit(0);
+}
+
+
 std::vector<std::string> split_string(std::string line_cpp)
 {
     std::string buf;
@@ -1559,8 +1635,11 @@ int main(int argc, char const *argv[])
     if (argc >= 2 and strcmp(argv[1], "-t") == 0)
         test();
 
-    if (argc >= 2 and strcmp(argv[1], "-p") == 0)
+    if (argc >= 2 and strcmp(argv[1], "-tperft") == 0)
         test_perft();
+
+    if (argc >= 2 and strcmp(argv[1], "-tpseudo") == 0)
+        test_pseudo_legal();
 
     // TODO: add --verbosity and other command line arguments
 

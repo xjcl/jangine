@@ -55,11 +55,11 @@ for time in [10 * 2**i for i in range(20)]:
         p.stdin.write("go\n")
 
         reply = ""
-        while not reply.startswith("move "):
+        while not reply.startswith("bestmove "):
             reply = p.stdout.readline()
             if DEBUG:
                 print(reply, end="")
-        reply = reply.split("move ")[1].strip()
+        reply = reply.split("bestmove ")[1].strip()
 
         if "bm" in line and reply in sols:
             score += 1

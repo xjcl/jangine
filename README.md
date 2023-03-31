@@ -56,14 +56,6 @@ _Logo of Jangine, created by DALL-E_
 
 - **Strength**: On a (Ryzen 3600X single-core):
     - [33d1b644 2022-06-20] Was able to beat my NM friend 6-0 in Blitz (3+0) and 37½-2½ (35W 3D 1L) in Bullet (1+0)
-    - Not officially assessed by [CCRL](http://ccrl.chessdom.com/ccrl/404/), but here are estimates based on online
-        matches played on Lichess:
-    ```
-    - [8a78bead 2022-07-11] 41 - 59  (41  %) vs Honzovy Šachy 2.0 (2060) (implied CCRL 1995)
-    - [a6ef6d49 2022-07-06] 70 -130  (35  %) vs Honzovy Šachy 2.0 (2060) (implied CCRL 1950)
-    - [8f7c031a 2022-07-03] 25½- 74½ (25.5%) vs Fornax (2296)            (implied CCRL 2010)
-    - [8f7c031a 2022-07-03] 91 -  9  (91  %) vs zeekat (?)               (implied zeekat+400)
-    ```
 
 **Play me on Lichess!** https://lichess.org/@/jangine
 
@@ -84,10 +76,9 @@ Build on Linux for Windows:
 
 Run the included test suites:
 
-    # Validate move generation using move path enumeration ("perft")
-    ./jangine -p
     # Run set of demo positions (checkmate, stalemate, promotion, en passant, etc.)
     ./jangine -t
+
     # Solve tactics exercises from the book "Win At Chess"
     python test_win_at_chess.py  # Python >= 3.7
 
@@ -101,11 +92,28 @@ engine binary in the `engines/` folder.
 
 ## Versions
 
-| Version    | G1920             | est. CCRL | CCRL |
-|------------|-------------------|-----------|------|
-| 2022-12-01 | 273.5/495 (55.3%) | 1957      | -    |
-| 2022-12-27 | 379.5/495 (76.7%) | 2127      | -    |
-| 2022-12-29 | 394.0/495 (79.6%) | 2156      | -    |
+| Version    | G1920 2+1         | est. CCRL | G2315 2+1         | est. CCRL | CCRL      |
+|------------|-------------------|-----------|-------------------|-----------|-----------|
+| 2022-12-01 | -                 | -         | -                 | -         | -         |
+| 2022-12-27 | -                 | -         | -                 | -         | -         |
+| 2022-12-29 |  82.0/110 (74.5%) | 2106      |  18.5/100 (18.5%) | 2057      | **1938*** |
+| 2023-01-15 |  83.5/ 99 (84.3%) | 2213      | 115.0/500 (23.0%) | 2105      | -         |
+| 2023-03-31 | -                 | -         | 146.0/500 (29.2%) | 2161      | -         |
+
+
+*: Dubious rating as print statements were leading to large time losses on buggy testing setup
+
+G2315 is a 10-man gauntlet against the following opponents rated an average of 2315:
+- (2374) Jazz 721
+- (2361) Jackychess-0.13.4.jar
+- (2346) Plisk-0.2.7d
+- (2343) Chess4j-5.1-linux.jar
+- (2324) Mediocre_v0.5.jar
+- (2319) AICE Linux 0.99.2
+- (2310) Sungorus64-1.4
+- (2271) Paladin-0.1
+- (2264) Phalanx-scid-3.61
+- (2242) SpaceDog-0.97.7-Linux
 
 G1920 is an 11-man gauntlet against the following opponents rated an average of 1920:
 - (1995) Gully-2.16pl1
